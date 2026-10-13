@@ -19,22 +19,25 @@ npm run build
 npm start
 ```
 
-Приложение можно разместить на хостинге Next.js без собственной базы данных. Для ссылки, которую откроют с другого устройства, требуется доступный адрес размещённого приложения: localhost-ссылка работает только на том же компьютере. Публикация не выполнялась.
+Приложение размещено на Vercel без собственной базы данных. Для ссылок на другом устройстве используйте публичный адрес ниже: localhost-ссылка работает только на том же компьютере.
 
 ## Deployment · GitHub и Vercel
 
-Репозиторий: [Human-Unit/IPOS.Plan](https://github.com/Human-Unit/IPOS.Plan), ветка `main`. Публичный production URL пока отсутствует: deployment ожидает авторизации Vercel CLI.
+Production: **https://ipos-plan.vercel.app**. Проект Vercel: `diamond-dogs2/ipos-plan`. Репозиторий: [Human-Unit/IPOS.Plan](https://github.com/Human-Unit/IPOS.Plan), production-ветка `main`; native GitHub auto-deployment подключён и включён.
 
-Локальная разработка: `npm run dev`. Production build: `npm run build`. Для размещения войдите в Vercel через `npx vercel@latest login`, затем выполните из корня проекта:
+Локальная разработка: `npm run dev`. Production build: `npm run build`. Для ручного deployment после входа через `npx vercel@latest login` выполните из корня проекта:
 
 ```powershell
-npx vercel@latest
 npx vercel@latest --prod
 ```
 
-Настройки: Next.js, корень репозитория, build `npm run build`, install `npm ci`, автоматический output. Подключение репозитория к проекту Vercel для автодеплоя `main` выполняется отдельно после авторизации; сейчас оно не настроено. Environment variables приложению не нужны.
+Настройки: Next.js, корень репозитория (`rootDirectory: null`), build `npm run build`, install `npm ci`, автоматический output, Node.js `24.x`. Environment variables приложению не нужны. Локальная `.vercel/` и любые `.env*` игнорируются Git.
 
-Данные IndexedDB остаются локальными для каждого браузера и origin; планы с localhost автоматически не переносятся на домен Vercel. Share-ссылки содержат неизменяемый снимок в `/view#p=…`. После deployment нужно проверить эти ссылки и прямое открытие `/plan/[id]` и `/view` именно на публичном адресе.
+Данные IndexedDB остаются локальными для каждого браузера и origin; планы с localhost автоматически не переносятся на домен Vercel. Share-ссылки содержат неизменяемый снимок в `/view#p=…`.
+
+Первый Linux deployment выявил отсутствующие npm peer-зависимости `@emnapi/core` и `@emnapi/runtime` в Windows lockfile. Они зафиксированы как devDependencies версии `1.11.3`, чтобы `npm ci` работал и с npm 12 на Linux. Версии runtime-зависимостей и функциональность приложения не менялись.
+
+Production QA на публичном адресе выполнена 13 октября 2026: 3 Playwright-сценария прошли, включая создание/редактирование, сохранение после перезагрузки, предпросмотр, JSON import/export, ссылку в другой вкладке, неизменность старого снимка и восстановление версии. Проверены ширины 320/390/768/1024/1440 px. Дополнительная проверка со скриншотами подтвердила HTTP 200 при прямом обновлении `/plan/[id]` и `/view#p=…`, сохранение фрагмента URL, отсутствие полей редактирования в viewer, 0 ошибок/предупреждений консоли и 0 сетевых ошибок. Данные планов не отправлялись на сервер: запросов записи не обнаружено. Проверки выполнялись в Chromium без Vercel login в браузере; Safari, Firefox и физические устройства не проверялись.
 
 ## Что работает
 
