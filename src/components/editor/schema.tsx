@@ -1,20 +1,20 @@
 "use client";
 import { BlockNoteSchema, defaultBlockSpecs } from "@blocknote/core";
-import Image from "next/image";
 import { createReactBlockSpec } from "@blocknote/react";
-import { Link2, Info, ImageIcon } from "lucide-react";
+import { Info } from "lucide-react";
 import { TaskCard } from "@/components/task/task-card";
 import { usePlanContext } from "./plan-context";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ReferenceContent, ImageContent } from "./media-content";
+import { SelectableBlock } from "./selectable-block";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { webUrl } from "@/lib/schema/plan";
 const task = createReactBlockSpec(
   { type: "task", propSchema: { taskId: { default: "" } }, content: "none" },
   {
-    render: ({ block }) => <TaskCard taskId={block.props.taskId} />,
+    render: ({ block }) => (
+      <TaskCard taskId={block.props.taskId} blockId={block.id} />
+    ),
     // Clipboard conversion uses a detached React root, without PlanContext.
     toExternalHTML: () => (
       <p>Задача · используйте экспорт JSON для переноса всех полей</p>
@@ -42,79 +42,12 @@ const reference = createReactBlockSpec(
         <p>{block.props.note}</p>
       </div>
     ),
-    render: function Reference({ block, editor }) {
-      const { editable } = usePlanContext();
-      const { url, title, note } = block.props;
-      return (
-        <section className="reference-block" contentEditable={false}>
-          <div className="block-caption">
-            <Link2 aria-hidden="true" />
-            Референс
-          </div>
-          {editable ? (
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor={`${block.id}-url`}>Ссылка</FieldLabel>
-                <Input
-                  id={`${block.id}-url`}
-                  type="url"
-                  aria-invalid={Boolean(url && !webUrl.safeParse(url).success)}
-                  placeholder="https://…"
-                  value={url}
-                  onChange={(e) =>
-                    editor.updateBlock(block, {
-                      props: { url: e.target.value },
-                    })
-                  }
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor={`${block.id}-title`}>
-                  Название референса
-                </FieldLabel>
-                <Input
-                  id={`${block.id}-title`}
-                  maxLength={500}
-                  value={title}
-                  onChange={(e) =>
-                    editor.updateBlock(block, {
-                      props: { title: e.target.value },
-                    })
-                  }
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor={`${block.id}-note`}>Примечание</FieldLabel>
-                <Textarea
-                  id={`${block.id}-note`}
-                  maxLength={10000}
-                  value={note}
-                  onChange={(e) =>
-                    editor.updateBlock(block, {
-                      props: { note: e.target.value },
-                    })
-                  }
-                />
-              </Field>
-            </FieldGroup>
-          ) : (
-            <>
-              {url && webUrl.safeParse(url).success ? (
-                <a
-                  href={url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  referrerPolicy="no-referrer"
-                >
-                  {title || url}
-                </a>
-              ) : (
-                <strong>{title || "Ссылка не указана"}</strong>
-              )}
-              {note && <p>{note}</p>}
-            </>
-          )}
-        </section>
+    render: function Reference({ block }) {
+      const { embeddedIds } = usePlanContext();
+      return embeddedIds.has(block.id) ? (
+        <div className="embedded-placeholder" contentEditable={false} />
+      ) : (
+        <ReferenceContent block={block} />
       );
     },
   },
@@ -122,27 +55,41 @@ const reference = createReactBlockSpec(
 const callout = createReactBlockSpec(
   { type: "callout", propSchema: {}, content: "inline" },
   {
-    render: ({ contentRef }) => (
-      <Alert className="callout-block">
-        <Info aria-hidden="true" />
-        <AlertDescription>
-          <div ref={contentRef} />
-        </AlertDescription>
-      </Alert>
-    ),
+    render: function Callout({ block, contentRef }) {
+      const { editable, selectedId, selectBlock } = usePlanContext();
+      return (
+        <Alert
+          className="callout-block"
+          data-plan-block={block.id}
+          data-selected={
+            editable && selectedId === block.id ? "true" : undefined
+          }
+          onClick={editable ? () => selectBlock?.(block.id, false) : undefined}
+        >
+          <Info aria-hidden="true" />
+          <AlertDescription>
+            <div ref={contentRef} />
+          </AlertDescription>
+        </Alert>
+      );
+    },
   },
 )();
 const divider = createReactBlockSpec(
   { type: "divider", propSchema: {}, content: "none" },
   {
-    render: () => (
-      <div className="divider-block" contentEditable={false}>
+    render: ({ block }) => (
+      <SelectableBlock
+        id={block.id}
+        label="Разделитель"
+        className="divider-block"
+      >
         <Separator />
-      </div>
+      </SelectableBlock>
     ),
   },
 )();
-// URL-only image schema prevents upload/base64/blob content entering portable plans.
+// The URL-only image schema and all persisted properties are unchanged.
 const image = createReactBlockSpec(
   {
     type: "image",
@@ -168,68 +115,12 @@ const image = createReactBlockSpec(
         )}
       </div>
     ),
-    render: function ImageBlock({ block, editor }) {
-      const { editable } = usePlanContext();
-      const { url, caption } = block.props;
-      const safe = webUrl.safeParse(url).success;
-      return (
-        <figure className="image-block" contentEditable={false}>
-          {editable && (
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor={`${block.id}-image`}>
-                  URL изображения
-                </FieldLabel>
-                <Input
-                  id={`${block.id}-image`}
-                  type="url"
-                  value={url}
-                  placeholder="https://…"
-                  aria-invalid={Boolean(url && !safe)}
-                  onChange={(e) =>
-                    editor.updateBlock(block, {
-                      props: { url: e.target.value },
-                    })
-                  }
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor={`${block.id}-caption`}>
-                  Подпись изображения
-                </FieldLabel>
-                <Input
-                  id={`${block.id}-caption`}
-                  maxLength={2000}
-                  value={caption}
-                  onChange={(e) =>
-                    editor.updateBlock(block, {
-                      props: { caption: e.target.value },
-                    })
-                  }
-                />
-              </Field>
-            </FieldGroup>
-          )}
-          {safe ? (
-            <Image
-              unoptimized
-              width={1200}
-              height={800}
-              src={url}
-              alt={caption || "Изображение контент-плана"}
-              loading="lazy"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <p className="block-caption">
-              <ImageIcon aria-hidden="true" />
-              {url
-                ? "Укажите корректный URL изображения"
-                : "Изображение по ссылке"}
-            </p>
-          )}
-          {caption && <figcaption>{caption}</figcaption>}
-        </figure>
+    render: function ImageBlock({ block }) {
+      const { embeddedIds } = usePlanContext();
+      return embeddedIds.has(block.id) ? (
+        <div className="embedded-placeholder" contentEditable={false} />
+      ) : (
+        <ImageContent block={block} />
       );
     },
   },

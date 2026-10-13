@@ -52,7 +52,7 @@ export function ViewerScreen() {
           Только просмотр
         </span>
       </header>
-      <main className="document-shell">
+      <main className="viewer-stage">
         {state.error ? (
           <div className="viewer-error">
             <h1>Не удалось открыть снимок</h1>
@@ -67,19 +67,7 @@ export function ViewerScreen() {
               <LockKeyhole size={16} aria-hidden="true" />
               Снимок плана · изменения автора не обновляют эту копию
             </div>
-            <div className="document-title">
-              <p className="eyebrow">КОНТЕНТ-ПЛАН · IPOS</p>
-              <h1>{state.plan.title}</h1>
-              <p className="document-meta">
-                Задач: {Object.keys(state.plan.tasks).length} · Готово:{" "}
-                {
-                  Object.values(state.plan.tasks).filter(
-                    (t) => t.status === "done",
-                  ).length
-                }
-              </p>
-            </div>
-            <PlanRenderer key={state.key} plan={state.plan} />
+            <PlanRenderer key={state.key} plan={state.plan} showCover />
             <footer className="viewer-footer">
               IPOS · Общий снимок · Только просмотр
             </footer>

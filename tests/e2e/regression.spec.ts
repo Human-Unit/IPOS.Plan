@@ -41,7 +41,12 @@ test("references and slash blocks persist; deleted task supports undo", async ({
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
   await page.getByRole("link", { name: demoPlan.title }).click();
-  await page.getByLabel("Название задачи").first().waitFor();
+  await page
+    .getByRole("region", {
+      name: "Задача: Подготовить текст анонса",
+      exact: true,
+    })
+    .waitFor();
   await page.getByRole("button", { name: "Референс", exact: true }).click();
   await page
     .getByLabel("Ссылка", { exact: true })
@@ -76,12 +81,17 @@ test("references and slash blocks persist; deleted task supports undo", async ({
   await page.getByLabel("Подпись изображения").fill("Знак плана");
   await saved(page);
   await page.reload();
+  await page
+    .getByRole("region", { name: "Референс: Бриф мероприятия", exact: true })
+    .click();
   await expect(page.getByLabel("Название референса").last()).toHaveValue(
     "Бриф мероприятия",
   );
   await expect(page.getByRole("img", { name: "Знак плана" })).toBeVisible();
   await expect(
-    page.getByText("Проверить подписи перед публикацией", { exact: true }),
+    page
+      .getByRole("article", { name: "Документ плана" })
+      .getByText("Проверить подписи перед публикацией", { exact: true }),
   ).toBeVisible();
   const paragraph = page
     .locator('.bn-editor [data-content-type="paragraph"]')
@@ -107,14 +117,15 @@ test("references and slash blocks persist; deleted task supports undo", async ({
   await page.getByRole("button", { name: "Открыть меню блока" }).focus();
   await page.keyboard.press("Enter");
   await page.getByRole("menuitem", { name: "Удалить", exact: true }).click();
-  await expect(page.getByLabel("Название задачи")).toHaveCount(2);
+  await expect(page.locator(".task-brief")).toHaveCount(2);
   await saved(page);
   await page
     .locator('.bn-editor [data-content-type="paragraph"]')
     .last()
     .click();
   await page.keyboard.press("Control+z");
-  await expect(page.getByLabel("Название задачи")).toHaveCount(3);
+  await expect(page.locator(".task-brief")).toHaveCount(3);
+  await taskCard.click();
   await expect(page.getByLabel("Название задачи").first()).toHaveValue(
     "Подготовить текст анонса",
   );

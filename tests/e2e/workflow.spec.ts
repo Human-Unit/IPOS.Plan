@@ -35,12 +35,15 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
   await page.keyboard.press("Enter");
   await page.getByRole("button", { name: "Задача", exact: true }).click();
   await page.getByLabel("Название задачи").fill("Подготовить анонс");
-  await page.getByLabel("Исполнитель", { exact: true }).fill("Редактор");
-  await page.getByLabel("Срок", { exact: true }).fill("2026-10-25");
+  await page.getByLabel("Ответственные", { exact: true }).fill("Редактор");
+  await page.getByLabel("Дедлайн", { exact: true }).fill("2026-10-25");
   await page.getByLabel("Статус", { exact: true }).selectOption("in_progress");
   await saved(page);
   const editorUrl = page.url();
   await page.reload();
+  await page
+    .getByRole("region", { name: "Задача: Подготовить анонс", exact: true })
+    .click();
   await expect(page.getByLabel("Название задачи")).toHaveValue(
     "Подготовить анонс",
   );
@@ -106,6 +109,9 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
   await page
     .getByLabel("Название плана", { exact: true })
     .fill("Изменённый план");
+  await page
+    .getByRole("region", { name: "Задача: Подготовить анонс", exact: true })
+    .click();
   await page.getByLabel("Статус", { exact: true }).selectOption("done");
   await saved(page);
   await viewer.reload();
@@ -146,6 +152,9 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
   await expect(page.getByLabel("Название плана", { exact: true })).toHaveValue(
     "Тестовый план",
   );
+  await page
+    .getByRole("region", { name: "Задача: Подготовить анонс", exact: true })
+    .click();
   await expect(page.getByLabel("Статус", { exact: true })).toHaveValue(
     "in_progress",
   );
@@ -154,7 +163,7 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
     "Тестовый план",
   );
   expect(page.url()).toBe(editorUrl);
-  for (const width of [1440, 1024, 768, 390, 320]) {
+  for (const width of [1920, 1440, 1024, 768, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     await noOverflow(page);
     await viewer.setViewportSize({ width, height: 900 });

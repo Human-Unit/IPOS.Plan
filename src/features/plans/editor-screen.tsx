@@ -18,7 +18,6 @@ import { db } from "@/lib/db/database";
 import { event, saveRevision } from "./repository";
 import { PlanRenderer } from "@/components/plan/renderer";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImportDialog } from "@/features/import/import-dialog";
@@ -27,18 +26,14 @@ import { ShareDialog } from "@/features/sharing/share-dialog";
 import { HistoryDialog } from "@/features/revisions/history-dialog";
 import { encodeShare } from "@/lib/share/codec";
 import { errorMessage } from "@/lib/labels";
-import {
-  flattenBlocks,
-  toPortable,
-  type Block,
-  type PortablePlan,
-} from "@/lib/schema/plan";
+import { toPortable, type Block, type PortablePlan } from "@/lib/schema/plan";
 import type { Task } from "@/lib/schema/task";
 export function EditorScreen({ id }: { id: string }) {
   const { plan, loaded, status, error, update, flush, replace, generation } =
     usePlan(id);
   const router = useRouter();
   const [preview, setPreview] = useState(false);
+  const [watermark, setWatermark] = useState(true);
   const [dialog, setDialog] = useState<"import" | "export" | "history">();
   const [exportPlan, setExportPlan] = useState<PortablePlan>();
   const [shareUrl, setShareUrl] = useState("");
@@ -80,15 +75,6 @@ export function EditorScreen({ id }: { id: string }) {
         </Button>
       </main>
     );
-  const taskIds = new Set(
-    flattenBlocks(plan.blocks)
-      .filter((b) => b.type === "task")
-      .map((b) => b.props.taskId),
-  );
-  const visibleTasks = Object.values(plan.tasks).filter((t) =>
-    taskIds.has(t.id),
-  );
-  const taskCount = visibleTasks.length;
   return (
     <>
       <header className="editor-bar">
@@ -134,15 +120,17 @@ export function EditorScreen({ id }: { id: string }) {
           <Button
             size="sm"
             variant="ghost"
+            aria-label="История"
             disabled={busy}
             onClick={() => setDialog("history")}
           >
             <History data-icon="inline-start" />
-            История
+            <span className="toolbar-secondary-label">История</span>
           </Button>
           <Button
             size="sm"
             variant="ghost"
+            aria-label="Сохранить версию"
             disabled={busy}
             onClick={() =>
               void run(async () => {
@@ -153,20 +141,22 @@ export function EditorScreen({ id }: { id: string }) {
             }
           >
             <BookmarkPlus data-icon="inline-start" />
-            Сохранить версию
+            <span className="toolbar-secondary-label">Сохранить версию</span>
           </Button>
           <Button
             size="sm"
             variant="ghost"
+            aria-label="Импорт"
             disabled={busy}
             onClick={() => setDialog("import")}
           >
             <Upload data-icon="inline-start" />
-            Импорт
+            <span className="toolbar-secondary-label">Импорт</span>
           </Button>
           <Button
             size="sm"
             variant="ghost"
+            aria-label="Экспорт"
             disabled={busy}
             onClick={() =>
               void run(async () => {
@@ -176,7 +166,7 @@ export function EditorScreen({ id }: { id: string }) {
             }
           >
             <Download data-icon="inline-start" />
-            Экспорт
+            <span className="toolbar-secondary-label">Экспорт</span>
           </Button>
           <Button
             size="sm"
@@ -198,7 +188,7 @@ export function EditorScreen({ id }: { id: string }) {
           </Button>
         </nav>
       </header>
-      <main className="document-shell">
+      <main className="editor-stage">
         {error && (
           <Alert variant="destructive">
             <AlertDescription>
@@ -223,25 +213,6 @@ export function EditorScreen({ id }: { id: string }) {
             Предпросмотр · так выглядит снимок для читателя
           </div>
         )}
-        <div className="document-title">
-          <p className="eyebrow">КОНТЕНТ-ПЛАН · IPOS</p>
-          {preview ? (
-            <h1>{plan.title}</h1>
-          ) : (
-            <Input
-              className="title-input"
-              aria-label="Название плана"
-              value={plan.title}
-              maxLength={500}
-              disabled={busy || dialog !== undefined || Boolean(shareUrl)}
-              onChange={(e) => update((p) => ({ ...p, title: e.target.value }))}
-            />
-          )}
-          <p className="document-meta">
-            Задач: {taskCount} · Готово:{" "}
-            {visibleTasks.filter((t) => t.status === "done").length}
-          </p>
-        </div>
         <div
           className="document-content"
           inert={busy || dialog !== undefined || Boolean(shareUrl)}
@@ -250,6 +221,10 @@ export function EditorScreen({ id }: { id: string }) {
             key={`${generation}-${preview}`}
             plan={plan}
             editable={!preview}
+            showCover
+            onTitleChange={(title) => update((p) => ({ ...p, title }))}
+            watermark={watermark}
+            onWatermarkChange={setWatermark}
             onBlocksChange={changeBlocks}
             onTaskChange={changeTask}
           />
