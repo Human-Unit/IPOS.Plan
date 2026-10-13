@@ -1,0 +1,115 @@
+# Portable plan · schemaVersion 1
+
+Экспорт JSON и share используют один формат. Проверки: `src/lib/schema/plan.ts`, `task.ts`, `import.ts`. Внешние поля `id`, `version`, timestamps IndexedDB не экспортируются. Корневой объект строгий: неизвестные поля отклоняются. Неизвестная `schemaVersion` отклоняется, автоматической миграции файлов P0 нет.
+
+```json
+{
+  "schemaVersion": 1,
+  "title": "День студента",
+  "blocks": [
+    {
+      "id": "heading-1",
+      "type": "heading",
+      "props": { "level": 1 },
+      "content": [{ "type": "text", "text": "План публикаций", "styles": {} }]
+    },
+    { "id": "task-block-1", "type": "task", "props": { "taskId": "task_123" } },
+    {
+      "type": "reference",
+      "props": {
+        "url": "https://www.pexels.com/search/students/",
+        "title": "Композиция кадра",
+        "note": "Референс, не материал для публикации"
+      }
+    },
+    {
+      "type": "callout",
+      "content": [
+        {
+          "type": "text",
+          "text": "Согласовать материалы до публикации",
+          "styles": {}
+        }
+      ]
+    },
+    { "type": "divider" }
+  ],
+  "tasks": {
+    "task_123": {
+      "id": "task_123",
+      "title": "Подготовить анонс",
+      "description": "Уточнить программу у организаторов",
+      "status": "todo",
+      "assignee": "Редактор медиасектора",
+      "deadline": "2026-10-25",
+      "priority": "high"
+    }
+  }
+}
+```
+
+## Корневые поля
+
+| Поле          | Тип и правила                                               |
+| ------------- | ----------------------------------------------------------- |
+| schemaVersion | буквально `1`                                               |
+| title         | непустая строка, до 500 символов                            |
+| blocks        | массив допустимых блоков, может быть пустым                 |
+| tasks         | словарь структурированных задач; ключ совпадает с `Task.id` |
+
+Блок задачи обязан ссылаться на существующую задачу. Нельзя помещать task object в props блока. Повторные ссылки на одну задачу допустимы. Невостребованные задачи во входном файле валидируются, но при последующем сохранении/экспорте исключаются.
+
+## Блоки
+
+`id` необязателен при импорте: BlockNote создаёт его. Если указан, должен быть непустым, до 100 символов, уникальным в документе. `children` — необязательный массив вложенных блоков.
+
+| type             | props                                                                      | content |
+| ---------------- | -------------------------------------------------------------------------- | ------- |
+| paragraph        | опциональные textColor, backgroundColor, textAlignment                     | inline  |
+| heading          | те же поля, level `1/2/3`, isToggleable                                    | inline  |
+| bulletListItem   | как paragraph                                                              | inline  |
+| numberedListItem | как paragraph, опциональный start — положительное целое                    | inline  |
+| quote            | textColor, backgroundColor; textAlignment допускается форматом             | inline  |
+| task             | только taskId — непустая строка до 100 символов                            | нет     |
+| reference        | url, title до 500, note до 10000                                           | нет     |
+| callout          | пустой объект или отсутствует                                              | inline  |
+| divider          | пустой объект или отсутствует                                              | нет     |
+| image            | url, caption до 2000, опциональные textColor/backgroundColor/textAlignment | нет     |
+
+URL может быть пустым у ещё не заполненного reference/image. Заполненные ссылки — абсолютные http/https без credentials. `data:`, `blob:`, `javascript:` и другие протоколы отклоняются. У props нет произвольных пользовательских полей. Неизвестные дополнительные поля самого блока нормализуются Zod и не передаются в renderer.
+
+Inline:
+
+```json
+[
+  { "type": "text", "text": "Обычный текст", "styles": {} },
+  { "type": "text", "text": "Важное", "styles": { "bold": true } },
+  {
+    "type": "link",
+    "href": "https://example.org/",
+    "content": [{ "type": "text", "text": "Референс", "styles": {} }]
+  }
+]
+```
+
+Поддерживаются styles `bold`, `italic`, `underline`, `strike`, `code` (boolean), `textColor`, `backgroundColor` (строки до 40). `textAlignment`: left/center/right/justify. HTML и произвольные executable inline nodes не входят в формат.
+
+## Задача
+
+| Поле        | Правила                                                     |
+| ----------- | ----------------------------------------------------------- |
+| id          | непустая строка до 100 символов                             |
+| title       | строка до 500; допускается пустой черновик                  |
+| description | необязательная строка до 10000                              |
+| status      | todo, in_progress, review, done, cancelled                  |
+| assignee    | необязательная строка до 200; это текст, не ID пользователя |
+| deadline    | необязательная действительная календарная дата YYYY-MM-DD   |
+| priority    | low, medium, high                                           |
+
+Незаполненные optional поля следует опускать, а не отправлять null. Дополнительные поля задачи отклоняются.
+
+## Лимиты и обработка
+
+До 1 МБ UTF-8 JSON, 1000 блоков суммарно с children, 500 задач, 12 уровней вложенности блоков. JSON глубже 40 уровней отклоняется до рекурсивной Zod-проверки. Inline ограничен 2000 элементами на блок; один text — до 50000 символов; URL — до 4000. Распакованный shared snapshot ограничен тем же 1 МБ.
+
+Импорт целиком подтверждается после preview. При замене рабочего документа ID и createdAt сохраняются, updatedAt обновляется, локальная version увеличивается. Внешний формат при этом не меняется.
