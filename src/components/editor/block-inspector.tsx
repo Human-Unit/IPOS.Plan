@@ -1,7 +1,7 @@
 "use client";
 import { useId } from "react";
-import { MousePointer2, Trash2 } from "lucide-react";
-import type { Block } from "@/lib/schema/plan";
+import { MousePointer2, Trash2, Type, RotateCcw } from "lucide-react";
+import type { Block, BlockTypography } from "@/lib/schema/plan";
 import { webUrl } from "@/lib/schema/plan";
 import { usePlanContext } from "./plan-context";
 import { Input } from "@/components/ui/input";
@@ -11,14 +11,40 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { statuses, priorities, type Task } from "@/lib/schema/task";
 import { statusLabels, priorityLabels } from "@/lib/labels";
 
+const textBlockTypes = new Set([
+  "paragraph",
+  "heading",
+  "quote",
+  "bulletListItem",
+  "numberedListItem",
+  "callout",
+]);
+
+const suggestedFonts = [
+  "Inter",
+  "Roboto",
+  "Montserrat",
+  "Merriweather",
+  "Georgia",
+  "Arial",
+  "Verdana",
+  "Trebuchet MS",
+  "Times New Roman",
+  "system-ui",
+];
+
 export function BlockInspector({
   block,
   updateProps,
   remove,
+  typography,
+  updateTypography,
 }: {
   block?: Block;
   updateProps: (props: Record<string, string>) => void;
   remove: () => void;
+  typography?: BlockTypography;
+  updateTypography?: (value: BlockTypography) => void;
 }) {
   const id = useId();
   const { plan, updateTask } = usePlanContext();
@@ -26,6 +52,7 @@ export function BlockInspector({
     block?.type === "task" ? plan.tasks[block.props.taskId] : undefined;
   const tasks = Object.values(plan.tasks);
   const done = tasks.filter((item) => item.status === "done").length;
+  const isTextBlock = Boolean(block && textBlockTypes.has(block.type));
   const change = (patch: Partial<Task>) =>
     task && updateTask?.({ ...task, ...patch });
   const field = (
@@ -60,6 +87,100 @@ export function BlockInspector({
       )}
     </Field>
   );
+
+  const typographyControls = isTextBlock && updateTypography && (
+    <div className="typography-controls">
+      <div className="typography-heading">
+        <span>
+          <Type size={15} aria-hidden="true" />
+          Типографика
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => updateTypography({})}
+          disabled={!typography || Object.keys(typography).length === 0}
+        >
+          <RotateCcw size={14} />
+          Сбросить
+        </Button>
+      </div>
+      <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor={`${id}-font-family`}>Шрифт</FieldLabel>
+          <Input
+            id={`${id}-font-family`}
+            list={`${id}-font-options`}
+            value={typography?.fontFamily ?? ""}
+            maxLength={120}
+            placeholder="По умолчанию"
+            onChange={(e) =>
+              updateTypography({
+                ...typography,
+                fontFamily: e.target.value || undefined,
+              })
+            }
+          />
+          <datalist id={`${id}-font-options`}>
+            {suggestedFonts.map((font) => (
+              <option key={font} value={font} />
+            ))}
+          </datalist>
+          <p className="inspector-hint">
+            Можно вписать свой font-family. На другом устройстве он отобразится,
+            только если этот шрифт там установлен.
+          </p>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor={`${id}-font-size`}>Размер</FieldLabel>
+          <select
+            id={`${id}-font-size`}
+            value={typography?.fontSize ?? ""}
+            onChange={(e) =>
+              updateTypography({
+                ...typography,
+                fontSize: e.target.value ? Number(e.target.value) : undefined,
+              })
+            }
+          >
+            <option value="">По умолчанию</option>
+            {[14, 15, 16, 17, 18, 20, 22, 24, 28, 32, 36, 40, 44, 48].map(
+              (size) => (
+                <option value={size} key={size}>
+                  {size} px
+                </option>
+              ),
+            )}
+          </select>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor={`${id}-font-weight`}>Насыщенность</FieldLabel>
+          <select
+            id={`${id}-font-weight`}
+            value={typography?.fontWeight ?? ""}
+            onChange={(e) =>
+              updateTypography({
+                ...typography,
+                fontWeight: (e.target.value || undefined) as
+                  | BlockTypography["fontWeight"]
+                  | undefined,
+              })
+            }
+          >
+            <option value="">По умолчанию</option>
+            <option value="300">Light · 300</option>
+            <option value="400">Regular · 400</option>
+            <option value="500">Medium · 500</option>
+            <option value="600">SemiBold · 600</option>
+            <option value="700">Bold · 700</option>
+            <option value="800">ExtraBold · 800</option>
+          </select>
+        </Field>
+      </FieldGroup>
+    </div>
+  );
+
   return (
     <div className="block-inspector">
       <p className="panel-eyebrow">{block ? "СВОЙСТВА БЛОКА" : "ПЛАН"}</p>
@@ -78,9 +199,8 @@ export function BlockInspector({
           <MousePointer2 size={22} aria-hidden="true" />
           <h2>Выберите элемент</h2>
           <p>
-            Нажмите на задачу, референс или изображение. Панель откроет только
-            свойства выбранного элемента и не будет отнимать место у документа
-            без необходимости.
+            Нажмите на задачу, референс, изображение или текстовый блок, чтобы
+            открыть его свойства.
           </p>
         </div>
       ) : (
@@ -196,11 +316,12 @@ export function BlockInspector({
               </>
             ) : (
               <p className="inspector-hint">
-                Редактируйте текст в документе. Выделите фрагмент для
-                форматирования.
+                Текст редактируется прямо в документе. Здесь можно изменить
+                шрифт, размер и насыщенность выбранного блока.
               </p>
             )}
           </FieldGroup>
+          {typographyControls}
           <Button
             size="sm"
             variant="ghost"
