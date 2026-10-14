@@ -49,6 +49,22 @@ const textProps = {
   backgroundColor: z.string().max(40).optional(),
   textAlignment: z.enum(["left", "center", "right", "justify"]).optional(),
 };
+const fontFamily = z
+  .string()
+  .trim()
+  .max(120)
+  .refine((value) => !/[;{}<>]/.test(value), "Недопустимое имя шрифта");
+export const blockTypographySchema = z
+  .object({
+    fontFamily: fontFamily.optional(),
+    fontSize: z.number().int().min(12).max(48).optional(),
+    fontWeight: z.enum(["300", "400", "500", "600", "700", "800"]).optional(),
+  })
+  .strict();
+export type BlockTypography = z.infer<typeof blockTypographySchema>;
+const typographySchema = z
+  .record(z.string().min(1).max(100), blockTypographySchema)
+  .optional();
 const props = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("paragraph"),
@@ -135,6 +151,7 @@ export const portablePlanSchema = z
     title: z.string().trim().min(1).max(500),
     blocks: z.array(blockSchema).max(1000),
     tasks: z.record(z.string().min(1).max(100), taskSchema),
+    typography: typographySchema,
   })
   .strict()
   .superRefine((plan, ctx) => {
@@ -189,6 +206,14 @@ export const portablePlanSchema = z
           message: "Ключ задачи должен совпадать с её id",
           path: ["tasks", key],
         });
+    if (plan.typography)
+      for (const blockId of Object.keys(plan.typography))
+        if (!ids.has(blockId))
+          ctx.addIssue({
+            code: "custom",
+            message: "Настройка шрифта ссылается на отсутствующий блок",
+            path: ["typography", blockId],
+          });
   });
 export type PortablePlan = z.infer<typeof portablePlanSchema>;
 export const planSchema = z
@@ -201,6 +226,7 @@ export const planSchema = z
     title: z.string(),
     blocks: z.array(blockSchema),
     tasks: z.record(z.string(), taskSchema),
+    typography: typographySchema,
   })
   .strict()
   .superRefine((plan, ctx) => {
@@ -209,6 +235,7 @@ export const planSchema = z
       title: plan.title,
       blocks: plan.blocks,
       tasks: plan.tasks,
+      typography: plan.typography,
     });
     if (!result.success)
       for (const issue of result.error.issues)
@@ -230,6 +257,7 @@ export function toPortable(plan: PortablePlan): PortablePlan {
       .filter((b) => b.type === "task")
       .map((b) => b.props.taskId),
   );
+  const blockIds = new Set(flattenBlocks(plan.blocks).flatMap((b) => (b.id ? [b.id] : [])));
   const portable = portablePlanSchema.parse({
     schemaVersion: plan.schemaVersion,
     title: plan.title,
@@ -237,6 +265,11 @@ export function toPortable(plan: PortablePlan): PortablePlan {
     tasks: Object.fromEntries(
       Object.entries(plan.tasks).filter(([id]) => taskIds.has(id)),
     ),
+    typography: plan.typography
+      ? Object.fromEntries(
+          Object.entries(plan.typography).filter(([id]) => blockIds.has(id)),
+        )
+      : undefined,
   });
   if (
     new TextEncoder().encode(JSON.stringify(portable)).length > MAX_JSON_BYTES
