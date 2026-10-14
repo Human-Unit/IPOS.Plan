@@ -26,6 +26,7 @@ export const insertItems = [
 ] as const;
 export type InsertType = (typeof insertItems)[number]["type"];
 
+type TaskBlock = Extract<Block, { type: "task" }>;
 const childTypes = new Set(["heading", "reference", "image", "callout"]);
 
 export function PlanOutline({
@@ -48,8 +49,8 @@ export function PlanOutline({
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const structure = useMemo(() => {
     const loose: Block[] = [];
-    const groups: { task: Block; children: Block[] }[] = [];
-    let current: { task: Block; children: Block[] } | undefined;
+    const groups: { task: TaskBlock; children: Block[] }[] = [];
+    let current: { task: TaskBlock; children: Block[] } | undefined;
 
     for (const block of flattenBlocks(blocks)) {
       if (block.type === "task") {
