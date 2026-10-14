@@ -23,7 +23,11 @@ import {
   PanelLeft,
   SlidersHorizontal,
 } from "lucide-react";
-import type { Block, PortablePlan } from "@/lib/schema/plan";
+import type {
+  Block,
+  BlockTypography,
+  PortablePlan,
+} from "@/lib/schema/plan";
 import type { Task } from "@/lib/schema/task";
 import { uid } from "@/features/plans/repository";
 import { PlanContext } from "./plan-context";
@@ -47,10 +51,23 @@ type Props = {
   onTitleChange?: (title: string) => void;
   onBlocksChange?: (blocks: Block[]) => void;
   onTaskChange?: (task: Task) => void;
+  onTypographyChange?: (blockId: string, value: BlockTypography) => void;
   watermark?: boolean;
   onWatermarkChange?: (value: boolean) => void;
   focusMode?: boolean;
 };
+
+const inspectableTypes = new Set([
+  "task",
+  "reference",
+  "image",
+  "paragraph",
+  "heading",
+  "quote",
+  "bulletListItem",
+  "numberedListItem",
+  "callout",
+]);
 
 function subscribeWidth(callback: () => void) {
   const query = window.matchMedia("(min-width: 1200px)");
@@ -65,6 +82,7 @@ export default function PlanRenderer({
   onTitleChange,
   onBlocksChange,
   onTaskChange,
+  onTypographyChange,
   watermark = true,
   onWatermarkChange,
   focusMode = false,
@@ -87,9 +105,7 @@ export default function PlanRenderer({
     () => false,
   );
   const selected = selectedId ? editor.getBlock(selectedId) : undefined;
-  const inspectable = Boolean(
-    selected && ["task", "reference", "image"].includes(selected.type),
-  );
+  const inspectable = Boolean(selected && inspectableTypes.has(selected.type));
   const inspectorOpen = editable && wide && !focusMode && inspectable;
 
   const selectBlock = (id: string, openProperties = true) => {
@@ -123,6 +139,46 @@ export default function PlanRenderer({
   useEffect(() => {
     if (focusMode) setPanel(undefined);
   }, [focusMode]);
+
+  useEffect(() => {
+    const scope = root.current;
+    if (!scope) return;
+
+    scope
+      .querySelectorAll<HTMLElement>('[data-ipos-typography="true"]')
+      .forEach((element) => {
+        element.removeAttribute("data-ipos-typography");
+        element.style.removeProperty("--ipos-block-font-family");
+        element.style.removeProperty("--ipos-block-font-size");
+        element.style.removeProperty("--ipos-block-font-weight");
+      });
+
+    for (const [blockId, style] of Object.entries(plan.typography ?? {})) {
+      const escaped = CSS.escape(blockId);
+      scope
+        .querySelectorAll<HTMLElement>(
+          `.bn-block-outer[data-id="${escaped}"], [data-plan-block="${escaped}"]`,
+        )
+        .forEach((element) => {
+          element.dataset.iposTypography = "true";
+          if (style.fontFamily)
+            element.style.setProperty(
+              "--ipos-block-font-family",
+              style.fontFamily,
+            );
+          if (style.fontSize)
+            element.style.setProperty(
+              "--ipos-block-font-size",
+              `${style.fontSize}px`,
+            );
+          if (style.fontWeight)
+            element.style.setProperty(
+              "--ipos-block-font-weight",
+              style.fontWeight,
+            );
+        });
+    }
+  }, [plan.typography, blocks]);
 
   const locate = (id?: string) => {
     setPanel(undefined);
@@ -225,6 +281,12 @@ export default function PlanRenderer({
   const inspector = (
     <BlockInspector
       block={selected as Block | undefined}
+      typography={selectedId ? plan.typography?.[selectedId] : undefined}
+      updateTypography={
+        selectedId && onTypographyChange
+          ? (value) => onTypographyChange(selectedId, value)
+          : undefined
+      }
       updateProps={(props) => {
         if (
           selected &&
@@ -234,6 +296,7 @@ export default function PlanRenderer({
       }}
       remove={() => {
         if (selected) editor.removeBlocks([selected]);
+        if (selectedId) onTypographyChange?.(selectedId, {});
         setSelectedId(undefined);
         setPanel(undefined);
       }}
