@@ -24,6 +24,8 @@ export function BlockInspector({
   const { plan, updateTask } = usePlanContext();
   const task =
     block?.type === "task" ? plan.tasks[block.props.taskId] : undefined;
+  const tasks = Object.values(plan.tasks);
+  const done = tasks.filter((item) => item.status === "done").length;
   const change = (patch: Partial<Task>) =>
     task && updateTask?.({ ...task, ...patch });
   const field = (
@@ -60,14 +62,25 @@ export function BlockInspector({
   );
   return (
     <div className="block-inspector">
-      <p className="panel-eyebrow">СВОЙСТВА БЛОКА</p>
+      <p className="panel-eyebrow">{block ? "СВОЙСТВА БЛОКА" : "ПЛАН"}</p>
       {!block ? (
-        <div className="inspector-empty">
-          <MousePointer2 size={24} aria-hidden="true" />
-          <h2>Выберите блок</h2>
+        <div className="inspector-empty inspector-plan-summary">
+          <div className="inspector-stats" aria-label="Сводка плана">
+            <div>
+              <strong>{tasks.length}</strong>
+              <span>задач</span>
+            </div>
+            <div>
+              <strong>{done}</strong>
+              <span>готово</span>
+            </div>
+          </div>
+          <MousePointer2 size={22} aria-hidden="true" />
+          <h2>Выберите элемент</h2>
           <p>
-            Нажмите на задачу, референс или изображение в документе, чтобы
-            изменить свойства.
+            Нажмите на задачу, референс или изображение. Панель откроет только
+            свойства выбранного элемента и не будет отнимать место у документа
+            без необходимости.
           </p>
         </div>
       ) : (
@@ -94,9 +107,6 @@ export function BlockInspector({
                   (value) => change({ description: value || undefined }),
                   { multiline: true },
                 )}
-                <p className="inspector-hint">
-                  Формат, разрешение и FPS можно указать в описании.
-                </p>
                 {field(
                   "assignee",
                   "Ответственные",
