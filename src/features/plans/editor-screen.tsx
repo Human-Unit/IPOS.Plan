@@ -11,6 +11,9 @@ import {
   Download,
   Share2,
   BookmarkPlus,
+  MoreHorizontal,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { usePlan } from "./use-plan";
@@ -28,16 +31,19 @@ import { encodeShare } from "@/lib/share/codec";
 import { errorMessage } from "@/lib/labels";
 import { toPortable, type Block, type PortablePlan } from "@/lib/schema/plan";
 import type { Task } from "@/lib/schema/task";
+
 export function EditorScreen({ id }: { id: string }) {
   const { plan, loaded, status, error, update, flush, replace, generation } =
     usePlan(id);
   const router = useRouter();
   const [preview, setPreview] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
   const [watermark, setWatermark] = useState(true);
   const [dialog, setDialog] = useState<"import" | "export" | "history">();
   const [exportPlan, setExportPlan] = useState<PortablePlan>();
   const [shareUrl, setShareUrl] = useState("");
   const [busy, setBusy] = useState(false);
+
   // Keep entities in memory so BlockNote undo can restore a removed task block.
   const changeBlocks = useCallback(
     (blocks: Block[]) => update((p) => ({ ...p, blocks })),
@@ -48,6 +54,7 @@ export function EditorScreen({ id }: { id: string }) {
       update((p) => ({ ...p, tasks: { ...p.tasks, [task.id]: task } })),
     [update],
   );
+
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     try {
@@ -58,6 +65,7 @@ export function EditorScreen({ id }: { id: string }) {
       setBusy(false);
     }
   };
+
   if (!loaded)
     return (
       <main className="document-shell">
@@ -65,6 +73,7 @@ export function EditorScreen({ id }: { id: string }) {
         <Skeleton className="h-48 w-full" />
       </main>
     );
+
   if (!plan)
     return (
       <main className="document-shell">
@@ -75,9 +84,10 @@ export function EditorScreen({ id }: { id: string }) {
         </Button>
       </main>
     );
+
   return (
     <>
-      <header className="editor-bar">
+      <header className={`editor-bar${focusMode ? " is-focus" : ""}`}>
         <div className="editor-identity">
           <Button
             size="icon"
@@ -98,6 +108,7 @@ export function EditorScreen({ id }: { id: string }) {
             {status}
           </span>
         </div>
+
         <nav className="editor-actions" aria-label="Действия с планом">
           <Button
             size="sm"
@@ -106,7 +117,7 @@ export function EditorScreen({ id }: { id: string }) {
             onClick={() =>
               void run(async () => {
                 await flush();
-                setPreview((v) => !v);
+                setPreview((value) => !value);
               })
             }
           >
@@ -117,57 +128,86 @@ export function EditorScreen({ id }: { id: string }) {
             )}
             {preview ? "Редактировать" : "Предпросмотр"}
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            aria-label="История"
-            disabled={busy}
-            onClick={() => setDialog("history")}
-          >
-            <History data-icon="inline-start" />
-            <span className="toolbar-secondary-label">История</span>
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            aria-label="Сохранить версию"
-            disabled={busy}
-            onClick={() =>
-              void run(async () => {
-                const p = await flush();
-                await saveRevision(p);
-                toast.success("Версия сохранена");
-              })
-            }
-          >
-            <BookmarkPlus data-icon="inline-start" />
-            <span className="toolbar-secondary-label">Сохранить версию</span>
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            aria-label="Импорт"
-            disabled={busy}
-            onClick={() => setDialog("import")}
-          >
-            <Upload data-icon="inline-start" />
-            <span className="toolbar-secondary-label">Импорт</span>
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            aria-label="Экспорт"
-            disabled={busy}
-            onClick={() =>
-              void run(async () => {
-                setExportPlan(toPortable(plan));
-                setDialog("export");
-              })
-            }
-          >
-            <Download data-icon="inline-start" />
-            <span className="toolbar-secondary-label">Экспорт</span>
-          </Button>
+
+          {!preview && (
+            <Button
+              size="sm"
+              variant="ghost"
+              aria-pressed={focusMode}
+              aria-label={focusMode ? "Выйти из режима фокуса" : "Режим фокуса"}
+              onClick={() => setFocusMode((value) => !value)}
+            >
+              {focusMode ? <Minimize2 /> : <Maximize2 />}
+              <span className="toolbar-focus-label">
+                {focusMode ? "Обычный вид" : "Фокус"}
+              </span>
+            </Button>
+          )}
+
+          <details className="editor-more">
+            <summary aria-label="Дополнительные действия">
+              <MoreHorizontal size={18} />
+            </summary>
+            <div className="editor-more-menu" role="menu">
+              <button
+                type="button"
+                role="menuitem"
+                onClick={(e) => {
+                  setDialog("history");
+                  const details = e.currentTarget.closest("details");
+                  if (details) details.open = false;
+                }}
+              >
+                <History size={16} />
+                История
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={busy}
+                onClick={(e) => {
+                  const details = e.currentTarget.closest("details");
+                  if (details) details.open = false;
+                  void run(async () => {
+                    const p = await flush();
+                    await saveRevision(p);
+                    toast.success("Версия сохранена");
+                  });
+                }}
+              >
+                <BookmarkPlus size={16} />
+                Сохранить версию
+              </button>
+              <span className="editor-more-separator" />
+              <button
+                type="button"
+                role="menuitem"
+                onClick={(e) => {
+                  setDialog("import");
+                  const details = e.currentTarget.closest("details");
+                  if (details) details.open = false;
+                }}
+              >
+                <Upload size={16} />
+                Импорт
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={busy}
+                onClick={(e) => {
+                  setExportPlan(toPortable(plan));
+                  setDialog("export");
+                  const details = e.currentTarget.closest("details");
+                  if (details) details.open = false;
+                }}
+              >
+                <Download size={16} />
+                Экспорт
+              </button>
+            </div>
+          </details>
+
           <Button
             size="sm"
             disabled={busy}
@@ -188,7 +228,8 @@ export function EditorScreen({ id }: { id: string }) {
           </Button>
         </nav>
       </header>
-      <main className="editor-stage">
+
+      <main className={`editor-stage${focusMode ? " focus-stage" : ""}`}>
         {error && (
           <Alert variant="destructive">
             <AlertDescription>
@@ -227,9 +268,11 @@ export function EditorScreen({ id }: { id: string }) {
             onWatermarkChange={setWatermark}
             onBlocksChange={changeBlocks}
             onTaskChange={changeTask}
+            focusMode={focusMode && !preview}
           />
         </div>
       </main>
+
       {dialog === "import" && (
         <ImportDialog
           replacing

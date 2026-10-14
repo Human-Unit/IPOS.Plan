@@ -1,8 +1,16 @@
 "use client";
 import Image from "next/image";
-import { Link2, ImageIcon } from "lucide-react";
+import { ExternalLink, Link2, ImageIcon } from "lucide-react";
 import { webUrl, type Block } from "@/lib/schema/plan";
 import { SelectableBlock } from "./selectable-block";
+
+function sourceLabel(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
 
 export function ReferenceContent({ block }: { block: Block }) {
   const {
@@ -10,28 +18,35 @@ export function ReferenceContent({ block }: { block: Block }) {
     title = "",
     note = "",
   } = block.props as Record<string, string>;
+  const valid = webUrl.safeParse(url).success;
+  const source = valid ? sourceLabel(url) : "";
+
   return (
     <SelectableBlock
       id={block.id!}
       label={`Референс: ${title || "Без названия"}`}
       className="brief-reference"
     >
-      <span className="brief-label">
-        <Link2 size={14} aria-hidden="true" /> Референс
+      <span className="brief-reference-icon" aria-hidden="true">
+        <Link2 size={14} />
       </span>
-      {webUrl.safeParse(url).success ? (
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          referrerPolicy="no-referrer"
-        >
-          {title || url}
-        </a>
-      ) : (
-        <strong>{title || "Укажите ссылку в свойствах"}</strong>
-      )}
-      {note && <p>{note}</p>}
+      <div className="brief-reference-content">
+        <span className="brief-reference-source">{source || "Референс"}</span>
+        {valid ? (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            referrerPolicy="no-referrer"
+          >
+            <span>{title || url}</span>
+            <ExternalLink size={13} aria-hidden="true" />
+          </a>
+        ) : (
+          <strong>{title || "Укажите ссылку в свойствах"}</strong>
+        )}
+        {note && <p>{note}</p>}
+      </div>
     </SelectableBlock>
   );
 }

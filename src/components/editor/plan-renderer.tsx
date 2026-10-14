@@ -49,12 +49,15 @@ type Props = {
   onTaskChange?: (task: Task) => void;
   watermark?: boolean;
   onWatermarkChange?: (value: boolean) => void;
+  focusMode?: boolean;
 };
+
 function subscribeWidth(callback: () => void) {
   const query = window.matchMedia("(min-width: 1200px)");
   query.addEventListener("change", callback);
   return () => query.removeEventListener("change", callback);
 }
+
 export default function PlanRenderer({
   plan,
   editable = false,
@@ -64,6 +67,7 @@ export default function PlanRenderer({
   onTaskChange,
   watermark = true,
   onWatermarkChange,
+  focusMode = false,
 }: Props) {
   const editor = useCreateBlockNote({
     schema: editorSchema,
@@ -83,10 +87,16 @@ export default function PlanRenderer({
     () => false,
   );
   const selected = selectedId ? editor.getBlock(selectedId) : undefined;
+  const inspectable = Boolean(
+    selected && ["task", "reference", "image"].includes(selected.type),
+  );
+  const inspectorOpen = editable && wide && !focusMode && inspectable;
+
   const selectBlock = (id: string, openProperties = true) => {
     setSelectedId(id);
     if (!wide && openProperties) setPanel("inspector");
   };
+
   const grouping = useMemo(() => taskCompanions(blocks), [blocks]);
   const context = {
     plan: { ...plan, blocks },
@@ -96,6 +106,7 @@ export default function PlanRenderer({
     selectBlock,
     ...grouping,
   };
+
   useEffect(() => {
     if (!editable) return;
     return editor.onSelectionChange(() => {
@@ -108,6 +119,11 @@ export default function PlanRenderer({
         setSelectedId(editor.getTextCursorPosition().block.id);
     });
   }, [editor, editable]);
+
+  useEffect(() => {
+    if (focusMode) setPanel(undefined);
+  }, [focusMode]);
+
   const locate = (id?: string) => {
     setPanel(undefined);
     setSelectedId(id);
@@ -136,6 +152,7 @@ export default function PlanRenderer({
       editor.focus();
     } else target?.focus({ preventScroll: true });
   };
+
   const add = (type: keyof typeof editorSchema.blockSchema, slash = false) => {
     const partial: PartialBlock<typeof editorSchema.blockSchema> =
       type === "task" ? { type: "task", props: { taskId: uid() } } : { type };
@@ -180,6 +197,7 @@ export default function PlanRenderer({
       });
     }
   };
+
   const items = [
     { title: "Текст", type: "paragraph", icon: Text },
     { title: "Список", type: "bulletListItem", icon: List },
@@ -191,6 +209,7 @@ export default function PlanRenderer({
     { title: "Цитата", type: "quote", icon: Quote },
     ...insertItems,
   ] as const;
+
   const outline = (
     <PlanOutline
       plan={plan}
@@ -202,6 +221,7 @@ export default function PlanRenderer({
       setWatermark={(value) => onWatermarkChange?.(value)}
     />
   );
+
   const inspector = (
     <BlockInspector
       block={selected as Block | undefined}
@@ -219,13 +239,14 @@ export default function PlanRenderer({
       }}
     />
   );
+
   return (
     <PlanContext.Provider value={context}>
       <div
         ref={root}
-        className={`${editable ? "editor-workspace" : "readonly-workspace"}${showCover ? "" : " embedded-document"}`}
+        className={`${editable ? "editor-workspace" : "readonly-workspace"}${showCover ? "" : " embedded-document"}${inspectorOpen ? " inspector-open" : ""}${focusMode ? " focus-mode" : ""}`}
       >
-        {editable && (
+        {editable && !focusMode && (
           <>
             {wide ? (
               <aside className="workspace-outline" aria-label="Навигация плана">
@@ -244,6 +265,7 @@ export default function PlanRenderer({
                 <Button
                   variant="ghost"
                   size="sm"
+                  disabled={!inspectable}
                   onClick={() => setPanel("inspector")}
                 >
                   <SlidersHorizontal size={16} />
@@ -253,6 +275,7 @@ export default function PlanRenderer({
             )}
           </>
         )}
+
         <article className="plan-paper" aria-label="Документ плана">
           {watermark && showCover && (
             <Image
@@ -323,7 +346,8 @@ export default function PlanRenderer({
             </BlockNoteView>
           </div>
         </article>
-        {editable && wide && (
+
+        {inspectorOpen && (
           <aside
             className="workspace-inspector"
             aria-label="Свойства выбранного блока"
@@ -331,7 +355,8 @@ export default function PlanRenderer({
             {inspector}
           </aside>
         )}
-        {editable && !wide && (
+
+        {editable && !wide && !focusMode && (
           <Dialog
             open={Boolean(panel)}
             onOpenChange={(open) => {
