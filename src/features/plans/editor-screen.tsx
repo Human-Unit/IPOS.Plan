@@ -29,7 +29,13 @@ import { ShareDialog } from "@/features/sharing/share-dialog";
 import { HistoryDialog } from "@/features/revisions/history-dialog";
 import { encodeShare } from "@/lib/share/codec";
 import { errorMessage } from "@/lib/labels";
-import { toPortable, type Block, type PortablePlan } from "@/lib/schema/plan";
+import {
+  flattenBlocks,
+  toPortable,
+  type Block,
+  type BlockTypography,
+  type PortablePlan,
+} from "@/lib/schema/plan";
 import type { Task } from "@/lib/schema/task";
 
 export function EditorScreen({ id }: { id: string }) {
@@ -46,12 +52,46 @@ export function EditorScreen({ id }: { id: string }) {
 
   // Keep entities in memory so BlockNote undo can restore a removed task block.
   const changeBlocks = useCallback(
-    (blocks: Block[]) => update((p) => ({ ...p, blocks })),
+    (blocks: Block[]) =>
+      update((p) => {
+        const ids = new Set(
+          flattenBlocks(blocks).flatMap((block) => (block.id ? [block.id] : [])),
+        );
+        const typography = p.typography
+          ? Object.fromEntries(
+              Object.entries(p.typography).filter(([blockId]) => ids.has(blockId)),
+            )
+          : undefined;
+        return {
+          ...p,
+          blocks,
+          typography:
+            typography && Object.keys(typography).length > 0
+              ? typography
+              : undefined,
+        };
+      }),
     [update],
   );
   const changeTask = useCallback(
     (task: Task) =>
       update((p) => ({ ...p, tasks: { ...p.tasks, [task.id]: task } })),
+    [update],
+  );
+  const changeTypography = useCallback(
+    (blockId: string, value: BlockTypography) =>
+      update((p) => {
+        const next = { ...(p.typography ?? {}) };
+        const cleaned = Object.fromEntries(
+          Object.entries(value).filter(([, item]) => item !== undefined && item !== ""),
+        ) as BlockTypography;
+        if (Object.keys(cleaned).length > 0) next[blockId] = cleaned;
+        else delete next[blockId];
+        return {
+          ...p,
+          typography: Object.keys(next).length > 0 ? next : undefined,
+        };
+      }),
     [update],
   );
 
@@ -268,6 +308,7 @@ export function EditorScreen({ id }: { id: string }) {
             onWatermarkChange={setWatermark}
             onBlocksChange={changeBlocks}
             onTaskChange={changeTask}
+            onTypographyChange={changeTypography}
             focusMode={focusMode && !preview}
           />
         </div>
