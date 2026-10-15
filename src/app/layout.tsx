@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./editor-polish.css";
 import "./typography-layout.css";
+import "./watermark.css";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
