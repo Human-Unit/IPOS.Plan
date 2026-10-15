@@ -7,7 +7,12 @@ import {
   ImageContent,
 } from "@/components/editor/media-content";
 import { statusLabels, priorityLabels } from "@/lib/labels";
-import { flattenBlocks } from "@/lib/schema/plan";
+
+function taskTitleParts(title: string) {
+  const match = title.match(/^\s*([^–—-]+?)\s*[–—-]\s*(.+)$/);
+  if (!match) return { kind: title || "Контент", topic: "" };
+  return { kind: match[1].trim(), topic: match[2].trim() };
+}
 
 export function TaskCard({
   taskId,
@@ -19,32 +24,27 @@ export function TaskCard({
   const { plan, companions } = usePlanContext();
   const task = plan.tasks[taskId];
   if (!task) return <p role="alert">Задача недоступна: {taskId}</p>;
+
   const media = companions[blockId] ?? [];
   const images = media.filter((b) => b.type === "image");
   const references = media.filter((b) => b.type === "reference");
   const deadline = task.deadline?.split("-").reverse().join(".");
-  const number =
-    flattenBlocks(plan.blocks)
-      .filter((b) => b.type === "task")
-      .findIndex(
-        (b) => b.id === blockId || (!b.id && b.props.taskId === taskId),
-      ) + 1;
+  const { kind, topic } = taskTitleParts(task.title);
 
   return (
     <SelectableBlock
       id={blockId}
       label={`Задача: ${task.title}`}
-      className="task-brief"
+      className="task-brief docx-brief"
     >
-      <div className="brief-heading">
-        <h3>
-          {number > 0 && (
-            <span className="brief-number" aria-hidden="true">
-              {String(number).padStart(2, "0")}
-            </span>
-          )}
-          {task.title || "Без названия"}
-        </h3>
+      <div className="brief-heading docx-brief-heading">
+        <div className="docx-heading-copy">
+          <p className="docx-line docx-kind-line">
+            <strong>Вид контента – </strong>
+            <span>{kind || "не указан"}</span>
+          </p>
+          {topic && <p className="docx-topic">{topic}</p>}
+        </div>
         <Badge
           variant="secondary"
           className={`brief-status brief-status-${task.status}`}
@@ -54,41 +54,41 @@ export function TaskCard({
       </div>
 
       <div className={`brief-body${images.length ? " has-media" : ""}`}>
-        <div className="brief-copy">
+        <div className="brief-copy docx-copy">
           {task.description && (
-            <div className="brief-description">
-              <span className="brief-label">Описание</span>
-              <p>{task.description}</p>
-            </div>
+            <p className="docx-line docx-description">
+              <strong>Описание – </strong>
+              <span>{task.description}</span>
+            </p>
           )}
 
           {references.length > 0 && (
-            <div className="brief-references">
-              <span className="brief-label">Референсы</span>
+            <div className="brief-references docx-references">
               {references.map((b) => (
                 <ReferenceContent key={b.id} block={b} />
               ))}
             </div>
           )}
 
-          <div className="brief-facts">
-            <div className="brief-fact brief-fact-deadline">
-              <span className="brief-label">Дедлайн</span>
-              <strong>{deadline || "не указан"}</strong>
-            </div>
-            <div className="brief-fact">
-              <span className="brief-label">Ответственные</span>
-              <strong>{task.assignee || "не назначены"}</strong>
-            </div>
-            <div className="brief-fact brief-fact-priority">
-              <span className="brief-label">Приоритет</span>
-              <strong>{priorityLabels[task.priority]}</strong>
-            </div>
-          </div>
+          {deadline && (
+            <p className="docx-deadline">
+              <strong>Дедлайн: Видео должно быть готовым к {deadline}</strong>
+            </p>
+          )}
+
+          <p className="docx-assignee">
+            <strong>
+              Ответственное лицо – {task.assignee || "не назначено"}
+            </strong>
+          </p>
+
+          <p className="docx-priority" aria-label="Приоритет задачи">
+            Приоритет: {priorityLabels[task.priority]}
+          </p>
         </div>
 
         {images.length > 0 && (
-          <div className="brief-media">
+          <div className="brief-media docx-media">
             {images.map((b) => (
               <ImageContent key={b.id} block={b} />
             ))}
