@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type CSSProperties,
 } from "react";
 import Image from "next/image";
 import {
@@ -26,6 +27,7 @@ import {
 import type {
   Block,
   BlockTypography,
+  FontSource,
   PortablePlan,
 } from "@/lib/schema/plan";
 import type { Task } from "@/lib/schema/task";
@@ -36,6 +38,8 @@ import { taskCompanions } from "./document-structure";
 import { PlanCover } from "./plan-cover";
 import { PlanOutline, insertItems, type InsertType } from "./plan-outline";
 import { BlockInspector } from "./block-inspector";
+import { ExternalFontLoader } from "./external-font-loader";
+import { WorkspaceResizeHandle } from "./workspace-resize-handle";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -52,6 +56,7 @@ type Props = {
   onBlocksChange?: (blocks: Block[]) => void;
   onTaskChange?: (task: Task) => void;
   onTypographyChange?: (blockId: string, value: BlockTypography) => void;
+  onFontSourcesChange?: (sources: FontSource[]) => void;
   watermark?: boolean;
   onWatermarkChange?: (value: boolean) => void;
   focusMode?: boolean;
@@ -83,6 +88,7 @@ export default function PlanRenderer({
   onBlocksChange,
   onTaskChange,
   onTypographyChange,
+  onFontSourcesChange,
   watermark = true,
   onWatermarkChange,
   focusMode = false,
@@ -99,6 +105,27 @@ export default function PlanRenderer({
   const [selectedId, setSelectedId] = useState<string>();
   const [panel, setPanel] = useState<"outline" | "inspector">();
   const root = useRef<HTMLDivElement>(null);
+  // Widths are local UI preferences, intentionally not part of shared plan JSON.
+  const [outlineWidth, setOutlineWidth] = useState(210);
+  const [inspectorWidth, setInspectorWidth] = useState(300);
+  const [widthsLoaded, setWidthsLoaded] = useState(false);
+  useEffect(() => {
+    try {
+      const a = Number(localStorage.getItem("ipos:outline-width"));
+      const b = Number(localStorage.getItem("ipos:inspector-width"));
+      if (a >= 160 && a <= 360) setOutlineWidth(a);
+      if (b >= 250 && b <= 460) setInspectorWidth(b);
+    } catch { /* Browser storage may be disabled. */ }
+    setWidthsLoaded(true);
+  }, []);
+  useEffect(() => {
+    if (!widthsLoaded) return;
+    try {
+      localStorage.setItem("ipos:outline-width", String(outlineWidth));
+      localStorage.setItem("ipos:inspector-width", String(inspectorWidth));
+    } catch { /* Keep resizing usable without persistence. */ }
+  }, [outlineWidth, inspectorWidth, widthsLoaded]);
+
   const wide = useSyncExternalStore(
     subscribeWidth,
     () => window.matchMedia("(min-width: 1200px)").matches,
@@ -281,6 +308,8 @@ export default function PlanRenderer({
   const inspector = (
     <BlockInspector
       block={selected as Block | undefined}
+      fontSources={plan.fontSources ?? []}
+      updateFontSources={onFontSourcesChange}
       typography={selectedId ? plan.typography?.[selectedId] : undefined}
       updateTypography={
         selectedId && onTypographyChange
@@ -305,8 +334,13 @@ export default function PlanRenderer({
 
   return (
     <PlanContext.Provider value={context}>
+      <ExternalFontLoader sources={plan.fontSources ?? []} />
       <div
         ref={root}
+        style={{
+          "--ipos-outline-width": `${outlineWidth}px`,
+          "--ipos-inspector-width": `${inspectorWidth}px`,
+        } as CSSProperties}
         className={`${editable ? "editor-workspace" : "readonly-workspace"}${showCover ? "" : " embedded-document"}${inspectorOpen ? " inspector-open" : ""}${focusMode ? " focus-mode" : ""}`}
       >
         {editable && !focusMode && (
@@ -314,6 +348,13 @@ export default function PlanRenderer({
             {wide ? (
               <aside className="workspace-outline" aria-label="Навигация плана">
                 {outline}
+                <WorkspaceResizeHandle
+                  label="Изменить ширину структуры плана"
+                  width={outlineWidth}
+                  min={160}
+                  max={inspectorOpen ? Math.min(360, Math.max(160, window.innerWidth - inspectorWidth - 560)) : 360}
+                  onChange={setOutlineWidth}
+                />
               </aside>
             ) : (
               <div className="workspace-mobile-bar">
@@ -415,6 +456,14 @@ export default function PlanRenderer({
             className="workspace-inspector"
             aria-label="Свойства выбранного блока"
           >
+            <WorkspaceResizeHandle
+              label="Изменить ширину панели свойств"
+              width={inspectorWidth}
+              min={250}
+              max={Math.min(460, Math.max(250, window.innerWidth - outlineWidth - 560))}
+              invert
+              onChange={setInspectorWidth}
+            />
             {inspector}
           </aside>
         )}
