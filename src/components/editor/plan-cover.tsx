@@ -26,14 +26,17 @@ export function PlanCover({
       <div>
         <p className="cover-eyebrow">IPOS · ПЛАН</p>
         {editable ? (
-          <Textarea
-            aria-label="Название плана"
-            maxLength={500}
-            rows={2}
-            value={plan.title}
-            onChange={(e) => onTitleChange?.(e.target.value)}
-            className="cover-title"
-          />
+          <>
+            <Textarea
+              aria-label="Название плана"
+              maxLength={500}
+              rows={2}
+              value={plan.title}
+              onChange={(e) => onTitleChange?.(e.target.value)}
+              className="cover-title"
+            />
+            <h1 className="print-only-cover-title" aria-hidden="true">{plan.title}</h1>
+          </>
         ) : (
           <h1>{plan.title || "Без названия"}</h1>
         )}
