@@ -1,4 +1,5 @@
 /* A4 is 210 × 297 mm at print size; editor retains responsive width on small screens. */
+.print-only-cover-title { display: none; }
 @media screen and (min-width: 1200px) {
   .editor-workspace:not(.focus-mode) {
     display: grid;
@@ -124,6 +125,8 @@
     border-radius: 0 !important;
     overflow: visible !important;
   }
+  .plan-cover .cover-title { display: none !important; }
+  .plan-cover .print-only-cover-title { display: block !important; }
   .plan-cover, .docx-brief, .bn-block-outer,
   .brief-body, .callout-block, .brief-image { break-inside: avoid-page; }
   .plan-watermark { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
