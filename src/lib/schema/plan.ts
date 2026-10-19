@@ -256,6 +256,7 @@ export const planSchema = z
       blocks: plan.blocks,
       tasks: plan.tasks,
       typography: plan.typography,
+      fontSources: plan.fontSources,
     });
     if (!result.success)
       for (const issue of result.error.issues)
