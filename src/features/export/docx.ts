@@ -42,19 +42,6 @@ function paragraph(inner: string, o: ParagraphOptions = {}) {
     (o.border ? '<w:pBdr><w:bottom w:val="single" w:sz="4" w:space="4" w:color="3974C8"/></w:pBdr>' : "");
   return "<w:p><w:pPr>" + pPr + "</w:pPr>" + inner + "</w:p>";
 }
-function styledInline(parts: Inline | undefined, typography?: BlockTypography, defaultSize = 13): string {
-  const family = typography?.fontFamily?.replace(/["']/g, "").split(",")[0].trim() || "Arial";
-  const size = typography?.fontSize ? typography.fontSize * .75 : defaultSize;
-  const forcedBold = typography?.fontWeight ? Number(typography.fontWeight) >= 600 : false;
-  return (parts ?? []).map((item) => {
-    if (item.type === "text") return run(item.text, {
-      family, size, bold: forcedBold || item.styles.bold, italic: item.styles.italic,
-      underline: item.styles.underline, strike: item.styles.strike,
-      color: item.styles.textColor,
-    });
-    return run(item.content.map((p) => p.text).join(""), { color: "132FC1", underline: true, family, size });
-  }).join("");
-}
 function imageRun(rid: string, id: number, extentX: number, extentY: number, title: string) {
   const cx = Math.round(extentX), cy = Math.round(extentY);
   return '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0">' +
@@ -102,6 +89,17 @@ export function buildPlanDocx(plan: PortablePlan, resources: ExportResources = {
     relationships.push('<Relationship Id="' + rid + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="' + attr(url) + '" TargetMode="External"/>');
     return '<w:hyperlink r:id="' + rid + '" w:history="1">' + run(title, { color: "0563C1", underline: true, ...opts }) + '</w:hyperlink>';
   };
+  const richText = (parts: Inline | undefined, typography?: BlockTypography, defaultSize = 13): string => {
+    const family = typography?.fontFamily?.replace(/["']/g, "").split(",")[0].trim() || "Arial";
+    const size = typography?.fontSize ? typography.fontSize * .75 : defaultSize;
+    const bold = typography?.fontWeight ? Number(typography.fontWeight) >= 600 : false;
+    return (parts ?? []).map((part) => {
+      if (part.type === "text") return run(part.text, { family, size, bold: bold || part.styles.bold,
+        italic: part.styles.italic, underline: part.styles.underline,
+        strike: part.styles.strike, color: part.styles.textColor });
+      return link(part.href, part.content.map((item) => item.text).join(""), { family, size });
+    }).join("");
+  };
   const addBlock = (b: Block): string => {
     const typ = b.id ? plan.typography?.[b.id] : undefined;
     const text = "content" in b ? plain(b.content) : "";
@@ -113,13 +111,14 @@ export function buildPlanDocx(plan: PortablePlan, resources: ExportResources = {
     }
     if (b.type === "paragraph" || b.type === "quote" || b.type === "callout") {
       const sz = b.type === "callout" ? 9 : 13;
-      return paragraph(styledInline(b.content, typ, sz), { after: b.type === "callout" ? 70 : 110 });
+      return paragraph(richText(b.content, typ, sz), { after: b.type === "callout" ? 70 : 110 });
     }
     if (b.type === "bulletListItem" || b.type === "numberedListItem") {
-      return paragraph(run(b.type === "bulletListItem" ? "•   " : "–   ", { size: 13 }) + styledInline(b.content, typ, 13), { after: 35, indent: 220 });
+      return paragraph(run(b.type === "bulletListItem" ? "•   " : "–   ", { size: 13 }) + richText(b.content, typ, 13), { after: 35, indent: 220 });
     }
     if (b.type === "reference") {
-      return paragraph(link(b.props.url, b.props.title || "Референс", { size: 13 }), { after: 45 });
+      return paragraph(link(b.props.url, b.props.title || "Референс", { size: 13 }), { after: b.props.note ? 15 : 45 }) +
+        (b.props.note ? paragraph(run(b.props.note, { size: 9.5, color: "666666" }), { after: 40 }) : "");
     }
     if (b.type === "image") {
       const image = b.id ? resources.images?.[b.id] : undefined;
@@ -180,14 +179,20 @@ export function buildPlanDocx(plan: PortablePlan, resources: ExportResources = {
     if (task.description) {
       info += paragraph(run("Описание – ", { bold: true, size: 13 }) + run(task.description, { size: 13 }), { after: 60 });
     }
+    const contactNotes: Block[] = [];
     for (const b of siblings) {
       if (b === primaryPhoto || b.type === "divider") continue;
+      if (b.type === "callout" && /телеграм|telegram|тг|@/i.test(plain(b.content))) {
+        contactNotes.push(b);
+        continue;
+      }
       info += addBlock(b);
     }
     if (task.deadline) {
       const [y, m, d] = task.deadline.split("-");
       info += paragraph(run("Дедлайн: Видео должно быть готовым к " + d + "." + m + "." + y, { bold: true, size: 14, color: "E10000" }), { before: 60, after: 40, keepNext: true });
     }
+    for (const contact of contactNotes) info += addBlock(contact);
     if (task.assignee) info += paragraph(run("Ответственное лицо – " + task.assignee, { bold: true, size: 13.5 }), { before: 45, after: 20 });
     let photoContent = "";
     if (imageRid && primary) {
