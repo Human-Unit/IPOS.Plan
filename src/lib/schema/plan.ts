@@ -62,6 +62,15 @@ export const blockTypographySchema = z
   })
   .strict();
 export type BlockTypography = z.infer<typeof blockTypographySchema>;
+export const fontSourceSchema = z.object({
+  family: z.string().trim().min(1).max(80)
+    .regex(/^[a-zA-Z0-9 _-]+$/, "Используйте простое название семейства шрифта"),
+  url: webUrl.refine((value) => value.startsWith("https://"),
+    "Внешний шрифт должен загружаться по HTTPS"),
+}).strict();
+export type FontSource = z.infer<typeof fontSourceSchema>;
+const fontSourcesSchema = z.array(fontSourceSchema).max(12).optional();
+
 const typographySchema = z
   .record(z.string().min(1).max(100), blockTypographySchema)
   .optional();
@@ -152,6 +161,7 @@ export const portablePlanSchema = z
     blocks: z.array(blockSchema).max(1000),
     tasks: z.record(z.string().min(1).max(100), taskSchema),
     typography: typographySchema,
+    fontSources: fontSourcesSchema,
   })
   .strict()
   .superRefine((plan, ctx) => {
@@ -206,6 +216,15 @@ export const portablePlanSchema = z
           message: "Ключ задачи должен совпадать с её id",
           path: ["tasks", key],
         });
+    if (plan.fontSources) {
+      const families = new Set<string>();
+      for (const source of plan.fontSources) {
+        const name = source.family.toLowerCase();
+        if (families.has(name))
+          ctx.addIssue({ code: "custom", message: "Шрифт добавлен дважды", path: ["fontSources"] });
+        families.add(name);
+      }
+    }
     if (plan.typography)
       for (const blockId of Object.keys(plan.typography))
         if (!ids.has(blockId))
@@ -227,6 +246,7 @@ export const planSchema = z
     blocks: z.array(blockSchema),
     tasks: z.record(z.string(), taskSchema),
     typography: typographySchema,
+    fontSources: fontSourcesSchema,
   })
   .strict()
   .superRefine((plan, ctx) => {
@@ -236,6 +256,7 @@ export const planSchema = z
       blocks: plan.blocks,
       tasks: plan.tasks,
       typography: plan.typography,
+      fontSources: plan.fontSources,
     });
     if (!result.success)
       for (const issue of result.error.issues)
@@ -265,6 +286,7 @@ export function toPortable(plan: PortablePlan): PortablePlan {
     tasks: Object.fromEntries(
       Object.entries(plan.tasks).filter(([id]) => taskIds.has(id)),
     ),
+    fontSources: plan.fontSources,
     typography: plan.typography
       ? Object.fromEntries(
           Object.entries(plan.typography).filter(([id]) => blockIds.has(id)),

@@ -15,7 +15,14 @@ export function taskCompanions(blocks: Block[]) {
 
         for (const next of siblings.slice(index + 1)) {
           if (next.type === "task" || next.type === "divider") break;
-          if (next.type === "reference" || next.type === "image") media.push(next);
+          // A standalone paragraph/quote or another chapter heading starts a
+          // new section. Requirements and list items still belong to the task.
+          if (next.type === "paragraph" || next.type === "quote") break;
+          if (next.type === "heading" &&
+              !/^(требования|референсы|requirements|references)/i.test(blockText(next).trim())) break;
+          // Never reparent blocks with children: hiding them would lose content.
+          if ((next.type === "reference" || next.type === "image") &&
+              (!next.children || next.children.length === 0)) media.push(next);
         }
 
         companions[block.id] = media;

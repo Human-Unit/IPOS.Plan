@@ -9,6 +9,7 @@ import {
   History,
   Upload,
   Download,
+  Printer,
   Share2,
   BookmarkPlus,
   MoreHorizontal,
@@ -34,6 +35,7 @@ import {
   toPortable,
   type Block,
   type BlockTypography,
+  type FontSource,
   type PortablePlan,
 } from "@/lib/schema/plan";
 import type { Task } from "@/lib/schema/task";
@@ -92,6 +94,14 @@ export function EditorScreen({ id }: { id: string }) {
           typography: Object.keys(next).length > 0 ? next : undefined,
         };
       }),
+    [update],
+  );
+
+  const changeFontSources = useCallback(
+    (fontSources: FontSource[]) => update((p) => ({
+      ...p,
+      fontSources: fontSources.length ? fontSources : undefined,
+    })),
     [update],
   );
 
@@ -223,6 +233,22 @@ export function EditorScreen({ id }: { id: string }) {
                 type="button"
                 role="menuitem"
                 onClick={(e) => {
+                  const details = e.currentTarget.closest("details");
+                  if (details) details.open = false;
+                  void run(async () => {
+                    await flush();
+                    await document.fonts.ready;
+                    window.print();
+                  });
+                }}
+              >
+                <Printer size={16} />
+                Печать / PDF (A4)
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={(e) => {
                   setDialog("import");
                   const details = e.currentTarget.closest("details");
                   if (details) details.open = false;
@@ -309,6 +335,7 @@ export function EditorScreen({ id }: { id: string }) {
             onBlocksChange={changeBlocks}
             onTaskChange={changeTask}
             onTypographyChange={changeTypography}
+            onFontSourcesChange={changeFontSources}
             focusMode={focusMode && !preview}
           />
         </div>

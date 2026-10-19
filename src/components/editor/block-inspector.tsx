@@ -1,7 +1,7 @@
 "use client";
-import { useId } from "react";
+import { useId, useState } from "react";
 import { MousePointer2, Trash2, Type, RotateCcw } from "lucide-react";
-import type { Block, BlockTypography } from "@/lib/schema/plan";
+import type { Block, BlockTypography, FontSource } from "@/lib/schema/plan";
 import { webUrl } from "@/lib/schema/plan";
 import { usePlanContext } from "./plan-context";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,15 @@ const suggestedFonts = [
   "Inter",
   "Roboto",
   "Montserrat",
+  "NT Somin",
+  "Golos Text",
+  "Noto Sans",
+  "Noto Serif",
+  "PT Sans",
+  "PT Serif",
+  "Rubik",
+  "Manrope",
+  "Lora",
   "Merriweather",
   "Georgia",
   "Arial",
@@ -39,14 +48,20 @@ export function BlockInspector({
   remove,
   typography,
   updateTypography,
+  fontSources = [],
+  updateFontSources,
 }: {
   block?: Block;
   updateProps: (props: Record<string, string>) => void;
   remove: () => void;
   typography?: BlockTypography;
   updateTypography?: (value: BlockTypography) => void;
+  fontSources?: FontSource[];
+  updateFontSources?: (fonts: FontSource[]) => void;
 }) {
   const id = useId();
+  const [fontUrl, setFontUrl] = useState("");
+  const [fontError, setFontError] = useState("");
   const { plan, updateTask } = usePlanContext();
   const task =
     block?.type === "task" ? plan.tasks[block.props.taskId] : undefined;
@@ -88,6 +103,29 @@ export function BlockInspector({
     </Field>
   );
 
+  const fontName = (typography?.fontFamily ?? "").trim();
+  const savedFont = fontSources.find((font) => font.family.toLowerCase() === fontName.toLowerCase());
+  const registerFont = () => {
+    if (!updateFontSources || !fontName || !/^[a-zA-Z0-9 _-]{1,80}$/.test(fontName)) {
+      setFontError("Сначала укажите простое название семейства, например NT Somin.");
+      return;
+    }
+    if (!webUrl.safeParse(fontUrl).success || !fontUrl.startsWith("https://")) {
+      setFontError("Укажите прямой HTTPS-адрес файла .woff2, .woff, .ttf или .otf.");
+      return;
+    }
+    const pathname = new URL(fontUrl).pathname.toLowerCase();
+    if (!/\\.(woff2?|ttf|otf)$/.test(pathname)) {
+      setFontError("Нужна прямая ссылка на файл шрифта, а не страница скачивания.");
+      return;
+    }
+    updateFontSources([
+      ...fontSources.filter((font) => font.family.toLowerCase() !== fontName.toLowerCase()),
+      { family: fontName, url: fontUrl },
+    ]);
+    setFontUrl("");
+    setFontError("");
+  };
   const typographyControls = isTextBlock && updateTypography && (
     <div className="typography-controls">
       <div className="typography-heading">
@@ -178,6 +216,42 @@ export function BlockInspector({
           </select>
         </Field>
       </FieldGroup>
+      {updateFontSources && (
+        <div className="font-source-editor">
+          <strong>Внешний шрифт</strong>
+          <p className="inspector-hint">
+            Montserrat и другие шрифты Google Fonts загружаются автоматически.
+            Для NT Somin укажите прямую HTTPS-ссылку на файл с разрешённым использованием.
+            Источник должен поддерживать CORS, чтобы шрифт был виден по общей ссылке.
+          </p>
+          {savedFont && (
+            <div className="font-source-saved">
+              <span>Подключён: {savedFont.family}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => updateFontSources(fontSources.filter((item) => item !== savedFont))}
+              >Отключить</Button>
+            </div>
+          )}
+          <Field>
+            <FieldLabel htmlFor={`${id}-external-font`}>Ссылка на .woff2/.woff/.ttf/.otf</FieldLabel>
+            <Input
+              id={`${id}-external-font`}
+              type="url"
+              placeholder="https://example.org/fonts/NT-Somin.woff2"
+              value={fontUrl}
+              onChange={(event) => { setFontUrl(event.target.value); setFontError(""); }}
+              aria-invalid={Boolean(fontError)}
+            />
+          </Field>
+          {fontError && <p role="alert" className="font-source-error">{fontError}</p>}
+          <Button type="button" size="sm" variant="outline" disabled={!fontName} onClick={registerFont}>
+            Подключить к плану
+          </Button>
+        </div>
+      )}
     </div>
   );
 
