@@ -146,7 +146,7 @@ export function buildPlanDocx(plan: PortablePlan, resources: ExportResources = {
   }
 
   const emblemRid = addImage(resources.emblem);
-  const titleLeft = emblemRid ? paragraph(imageRun(emblemRid, picSerial++, 1180 * 635, 1470 * 635, "Эмблема Студсовета")) : "";
+  const titleLeft = emblemRid && resources.emblem ? paragraph(imageRun(emblemRid, picSerial++, 1280 * 635, Math.round(1280 * 635 * resources.emblem.height / resources.emblem.width), "Круглая эмблема МГУ")) : "";
   const titleRight = paragraph(run("Контент-план для сектора СМИ (ИПОС)", { bold: true, size: 17.5 }), { after: 30 }) +
     paragraph(run("студенческого совета филиала МГУ", { bold: true, size: 17.5 }), { after: 30 }) +
     paragraph(run("г. Душанбе", { bold: true, size: 17.5 }), { after: 40 });
@@ -295,7 +295,8 @@ export async function exportPlanDocx(plan: PortablePlan): Promise<DocxExport> {
     if (image) images[id] = image;
     else warnings.push("Некоторые изображения недоступны из браузера. Их URL сохранены как ссылки.");
   }
-  const [emblem, watermark] = await Promise.all([renderLogo(1), renderLogo(.11)]);
+  const [emblem, watermark] = await Promise.all([fetchImage("/msu-university-seal.png"), renderLogo(.11)]);
+  if (!emblem) warnings.push("Не удалось загрузить круглую эмблему МГУ для шапки DOCX.");
   const result = buildPlanDocx(plan, { emblem, watermark, images });
   return { bytes: result.bytes, warnings: [...new Set([...warnings, ...result.warnings])] };
 }
