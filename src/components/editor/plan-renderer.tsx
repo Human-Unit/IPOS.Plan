@@ -110,13 +110,17 @@ export default function PlanRenderer({
   const [inspectorWidth, setInspectorWidth] = useState(300);
   const [widthsLoaded, setWidthsLoaded] = useState(false);
   useEffect(() => {
-    try {
-      const a = Number(localStorage.getItem("ipos:outline-width"));
-      const b = Number(localStorage.getItem("ipos:inspector-width"));
-      if (a >= 160 && a <= 360) setOutlineWidth(a);
-      if (b >= 250 && b <= 460) setInspectorWidth(b);
-    } catch { /* Browser storage may be disabled. */ }
-    setWidthsLoaded(true);
+    // Apply persisted widths after hydration, outside the synchronous effect.
+    const frame = requestAnimationFrame(() => {
+      try {
+        const a = Number(localStorage.getItem("ipos:outline-width"));
+        const b = Number(localStorage.getItem("ipos:inspector-width"));
+        if (a >= 160 && a <= 360) setOutlineWidth(a);
+        if (b >= 250 && b <= 460) setInspectorWidth(b);
+      } catch { /* Browser storage may be disabled. */ }
+      setWidthsLoaded(true);
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
   useEffect(() => {
     if (!widthsLoaded) return;
@@ -164,7 +168,9 @@ export default function PlanRenderer({
   }, [editor, editable]);
 
   useEffect(() => {
-    if (focusMode) setPanel(undefined);
+    if (!focusMode) return;
+    const frame = requestAnimationFrame(() => setPanel(undefined));
+    return () => cancelAnimationFrame(frame);
   }, [focusMode]);
 
   useEffect(() => {
