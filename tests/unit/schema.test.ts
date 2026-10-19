@@ -94,6 +94,23 @@ describe("external schema", () => {
       }).success,
     ).toBe(false);
   });
+  it("roundtrips public external font URLs without binaries", () => {
+    const withFont = {
+      ...demoPlan,
+      fontSources: [{ family: "NT Somin", url: "https://assets.example.org/nt-somin.woff2" }],
+    };
+    expect(portablePlanSchema.safeParse(withFont).success).toBe(true);
+    expect(parseImport(JSON.stringify(toPortable(withFont))).fontSources).toEqual(withFont.fontSources);
+  });
+  it("rejects unsafe remote font definitions", () => {
+    for (const fontSources of [
+      [{ family: "NT Somin", url: "http://assets.example.org/font.woff2" }],
+      [{ family: "Broken", url: "javascript:alert(1)" }],
+      [{ family: "Wrong; CSS", url: "https://assets.example.org/font.woff2" }],
+      [{ family: "NT Somin", url: "https://example.org/a.woff2" },
+       { family: "nt somin", url: "https://example.org/b.woff2" }],
+    ]) expect(portablePlanSchema.safeParse({ ...demoPlan, fontSources }).success).toBe(false);
+  });
   it("imports exported JSON and leaves input unchanged", () => {
     const local = newPlan(demoPlan);
     const before = structuredClone(local);
