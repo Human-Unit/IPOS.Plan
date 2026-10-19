@@ -21,4 +21,19 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - name: Independently validate DOCX archive and OOXML
+        run: |
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          from xml.etree import ElementTree as ET
+          filename = "/tmp/ipos-export-smoke.docx"
+          with ZipFile(filename) as archive:
+              assert archive.testzip() is None, "Corrupted DOCX ZIP contents"
+              required = ["[Content_Types].xml", "_rels/.rels",
+                          "word/document.xml", "word/styles.xml",
+                          "word/header1.xml", "word/_rels/document.xml.rels"]
+              for name in required:
+                  ET.fromstring(archive.read(name))
+              print("DOCX ZIP CRC and all critical OOXML files are valid")
+          PY
       - run: npm run build
