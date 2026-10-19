@@ -14,11 +14,12 @@ responsible people and a slim right-hand image column.
 The document intentionally uses **editable Word elements** (runs, paragraphs,
 tables, hyperlinks and embedded PNG/JPEG images), not a flattened screenshot.
 
-The public `student-council-emblem.svg` is used as the header symbol and pale
-watermark. The original circular university seal from the reference is **not**
-stored in the website repository and is therefore not currently embedded.
-For a pixel-faithful match, add the approved circular seal as a distributable
-asset and update the header conversion.
+The **circular MSU seal** in the top-left cover is read from
+`public/msu-university-seal.png` and embedded in the DOCX with its natural
+aspect ratio. The pale watermark remains the **Student Council emblem** from
+`public/student-council-emblem.svg`, as a separate asset. The uploaded MSU
+seal was optimized for the web; do not apply it as the watermark. The export
+will show a warning if the MSU seal cannot be loaded.
 
 ## Typography
 
