@@ -1,5 +1,8 @@
 "use client";
 import { toast } from "sonner";
+import { useState } from "react";
+import { FileDown } from "lucide-react";
+import { exportPlanDocx, DOCX_TYPE } from "./docx";
 import {
   Dialog,
   DialogContent,
@@ -21,13 +24,34 @@ export function ExportDialog({
   onClose: () => void;
 }) {
   const json = JSON.stringify(toPortable(plan), null, 2);
+  const [exporting, setExporting] = useState(false);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const fileStem = plan.title.replace(/[^\p{L}\p{N}_-]/gu, "_").slice(0, 80) || "IPOS_Plan";
+  const downloadDocx = async () => {
+    setExporting(true);
+    setWarnings([]);
+    try {
+      const output = await exportPlanDocx(toPortable(plan));
+      const copy = new Uint8Array(output.bytes.byteLength);
+      copy.set(output.bytes);
+      const url = URL.createObjectURL(new Blob([copy], { type: DOCX_TYPE }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${fileStem}.docx`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      setWarnings(output.warnings);
+      toast.success("DOCX подготовлен");
+    } catch (error) { toast.error(errorMessage(error)); }
+    finally { setExporting(false); }
+  };
   const download = () => {
     const url = URL.createObjectURL(
       new Blob([json], { type: "application/json" }),
     );
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${plan.title.replace(/[^\p{L}\p{N}_-]/gu, "_").slice(0, 80)}.json`;
+    a.download = `${fileStem}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
@@ -40,18 +64,25 @@ export function ExportDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Экспорт JSON</DialogTitle>
+          <DialogTitle>Экспорт документа</DialogTitle>
           <DialogDescription>
-            Переносимый файл плана. Его можно импортировать в этом приложении на
-            другом устройстве.
+            DOCX - редактируемый документ A4 с оформлением по образцу ИПОС. JSON
+            сохраняет структуру для повторного импорта в IPOS.Plan.
           </DialogDescription>
         </DialogHeader>
+        <div className="rounded-md border p-3 text-sm text-muted-foreground">
+          <strong className="text-foreground">Word (.docx)</strong> - текст, заголовки,
+          требования, ссылки, дедлайны, ответственные и доступные изображения.
+          Шрифты должны быть установлены в Word; внешние изображения без CORS
+          сохраняются ссылками.
+        </div>
         <Textarea
           aria-label="JSON для экспорта"
           value={json}
           readOnly
           rows={12}
         />
+        {warnings.length > 0 && <p role="status" className="text-xs text-amber-700">{warnings.join(" ")}</p>}
         <DialogFooter>
           <Button
             variant="outline"
@@ -64,7 +95,10 @@ export function ExportDialog({
           >
             Копировать JSON
           </Button>
-          <Button onClick={download}>Скачать .json</Button>
+          <Button variant="outline" onClick={download}>Скачать .json</Button>
+          <Button onClick={() => void downloadDocx()} disabled={exporting}>
+            <FileDown size={16} /> {exporting ? "Подготовка..." : "Скачать .docx"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
