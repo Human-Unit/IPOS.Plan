@@ -48,6 +48,9 @@ describe("editable Word export", () => {
     const data = buildPlanDocx(example, { emblem: image, watermark: image, images: { "img-1": image } });
     const parts = localEntries(data.bytes);
     const rels = decoder.decode(parts["word/_rels/document.xml.rels"]);
+    const mainXml = decoder.decode(parts["word/document.xml"]);
+    expect(mainXml).toContain("Круглая эмблема МГУ");
+    expect(mainXml).not.toContain("Эмблема Студсовета");
     expect(rels).toContain('Target="https://www.instagram.com/"');
     expect(rels).toContain('Target="header1.xml"');
     expect(parts["word/media/export-0.png"]).toBeDefined();
