@@ -152,6 +152,9 @@ export function buildPlanDocx(plan: PortablePlan, resources: ExportResources = {
     paragraph(run("студенческого совета филиала МГУ", { bold: true, size: 17.5 }), { after: 30 }) +
     paragraph(run("г. Душанбе", { bold: true, size: 17.5 }), { after: 40 });
   let body = twoColumn(titleLeft, titleRight, 10100, 1500) + paragraph("", { before: 270, after: 180, border: true });
+  if (!normalize(plan.title).startsWith("контент-план для сектора сми")) {
+    body += paragraph(run(plan.title, { bold: true, size: 15, color: "132FC1" }), { before: 80, after: 110 });
+  }
 
   // Preserve non-task introductory information, but never repeat the long
   // cover title already shown in the document heading.
