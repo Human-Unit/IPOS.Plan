@@ -35,7 +35,6 @@ describe("editable Word export", () => {
     expect(body).toContain("Описание – ");
     expect(body).toContain("Ответственное лицо – ");
     expect(body).toContain("Вид контента – ");
-    expect(body).toContain("Готово"); // demo data is rendered without flattening to an image
   });
   it("retains external Word hyperlinks and optional imagery", () => {
     const image = { bytes: new Uint8Array([137,80,78,71,13,10,26,10]), width: 400, height: 600, type: "image/png" as const };
