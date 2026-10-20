@@ -1,0 +1,102 @@
+/* IPOS production briefs: one visual section per task, including its
+   editable requirements, lists and notes. BlockNote document order is intact.
+   This stylesheet is intentionally loaded after the A4 rules. */
+.plan-paper .bn-block-outer[data-ipos-brief-part] {
+  position: relative;
+  box-sizing: border-box;
+  min-width: 0;
+  margin-block: 0;
+  padding-inline: 13px;
+  border-inline: 1px solid #dce3f5;
+  background: #f9faff;
+  box-shadow: inset 3px 0 0 #3a53d1;
+}
+
+.plan-paper .bn-block-outer[data-ipos-brief-part="start"],
+.plan-paper .bn-block-outer[data-ipos-brief-part="single"] {
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid #dce3f5;
+  border-radius: 9px 9px 0 0;
+}
+
+.plan-paper .bn-block-outer[data-ipos-brief-part="end"],
+.plan-paper .bn-block-outer[data-ipos-brief-part="single"] {
+  margin-bottom: 28px;
+  padding-bottom: 21px;
+  border-bottom: 1px solid #dce3f5;
+  border-radius: 0 0 9px 9px;
+}
+
+.plan-paper .bn-block-outer[data-ipos-brief-part="single"] {
+  border-radius: 9px;
+}
+
+/* The brief starts each section; old full-width section rules would double
+   the new separation border. */
+.plan-paper .bn-block-outer[data-ipos-brief-part] .task-brief {
+  margin: 0;
+  padding: 0 0 13px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Requirements and notes are still real editable BlockNote blocks. */
+.plan-paper .bn-block-outer[data-ipos-brief-part="middle"],
+.plan-paper .bn-block-outer[data-ipos-brief-part="end"] {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+.plan-paper .bn-block-outer[data-ipos-brief-part="end"] {
+  padding-bottom: 21px;
+}
+
+.plan-paper .bn-block-outer[data-ipos-brief-part]:focus-within {
+  background: #f5f7ff;
+}
+
+/* At phone widths avoid squeezing an A4-sized paragraph or portrait media. */
+@media (max-width: 767px) {
+  .plan-paper .bn-block-outer[data-ipos-brief-part] {
+    padding-inline: 9px;
+  }
+
+  .plan-paper .bn-block-outer[data-ipos-brief-part="start"],
+  .plan-paper .bn-block-outer[data-ipos-brief-part="single"] {
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+
+  .plan-paper .bn-block-outer[data-ipos-brief-part="end"],
+  .plan-paper .bn-block-outer[data-ipos-brief-part="single"] {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+  }
+}
+
+@media print {
+  /* Keep the source DOCX/Word-like style when printed while retaining a
+     visible boundary between tasks; do not print blue card backgrounds. */
+  .plan-paper .bn-block-outer[data-ipos-brief-part] {
+    background: transparent !important;
+    box-shadow: none !important;
+    border-inline: 0 !important;
+    padding-inline: 0 !important;
+  }
+  .plan-paper .bn-block-outer[data-ipos-brief-part="start"],
+  .plan-paper .bn-block-outer[data-ipos-brief-part="single"] {
+    border-top: 1px solid #b6c2eb !important;
+    border-radius: 0;
+    margin-top: 12pt;
+    padding-top: 10pt;
+  }
+  .plan-paper .bn-block-outer[data-ipos-brief-part="end"],
+  .plan-paper .bn-block-outer[data-ipos-brief-part="single"] {
+    border-bottom: 0 !important;
+    border-radius: 0;
+    margin-bottom: 12pt;
+    padding-bottom: 9pt;
+  }
+}
