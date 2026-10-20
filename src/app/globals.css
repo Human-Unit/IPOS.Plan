@@ -114,9 +114,8 @@ h3 {
   place-items: center;
   width: 34px;
   height: 34px;
-  background: var(--primary);
-  color: white;
-  border-radius: 7px;
+  background: transparent;
+  border-radius: 50%;
 }
 .brand-divider {
   color: #b9babd;
@@ -199,7 +198,7 @@ h3 {
   height: 44px;
   width: 44px;
   border-radius: 7px;
-  background: #f0f2fc;
+  background: transparent;
   flex-shrink: 0;
 }
 .plan-row-content {
@@ -889,9 +888,19 @@ select {
   border-bottom: 1px solid #dfe3f5;
   scroll-margin-top: 88px;
 }
+/* Keep the round seal undistorted at every viewport. */
+.plan-emblem {
+  display: block;
+  object-fit: contain;
+}
+.brand-mark > .plan-emblem { width: 32px; height: 32px; }
+.plan-row-icon > .plan-emblem { width: 40px; height: 40px; }
 .plan-cover > img {
+  width: 56px;
+  height: 56px;
   flex: 0 0 56px;
   margin-top: 4px;
+  object-fit: contain;
 }
 .plan-cover > div {
   flex: 1;
