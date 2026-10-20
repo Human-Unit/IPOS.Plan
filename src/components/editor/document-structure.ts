@@ -48,3 +48,31 @@ export function blockText(block: Block): string {
     )
     .join("");
 }
+
+// Visual-only grouping for the production brief canvas. BlockNote blocks must
+// stay at their original document positions for editing, undo and JSON export.
+// Return only root-level, actually visible IDs; embedded media is already
+// presented inside its task and must not become a fake section boundary.
+export function taskVisualGroups(blocks: Block[], embeddedIds: Set<string>) {
+  const groups: string[][] = [];
+  let active: string[] | undefined;
+
+  for (const block of blocks) {
+    if (block.type === "task") {
+      active = [];
+      groups.push(active);
+    } else if (
+      block.type === "divider" ||
+      (block.type === "heading" && block.props.level <= 2)
+    ) {
+      active = undefined;
+    }
+
+    if (active && block.id && !embeddedIds.has(block.id) &&
+        block.type !== "divider") {
+      active.push(block.id);
+    }
+  }
+
+  return groups.filter((group) => group.length > 0);
+}
