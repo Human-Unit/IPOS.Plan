@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { PlanEmblem } from "@/components/plan/plan-emblem";
 import type { PortablePlan } from "@/lib/schema/plan";
 import { flattenBlocks } from "@/lib/schema/plan";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,7 +22,7 @@ export function PlanCover({
   ).length;
   return (
     <header className="plan-cover" id="plan-cover">
-      <Image src="/icon.svg" width={56} height={56} alt="IPOS Plan" />
+      <PlanEmblem size={56} alt="Эмблема МГУ" />
       <div>
         <p className="cover-eyebrow">IPOS · ПЛАН</p>
         {editable ? (
