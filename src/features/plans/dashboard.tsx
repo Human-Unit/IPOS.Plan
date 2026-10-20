@@ -18,6 +18,7 @@ import { seedDemo } from "./demo";
 import { formatDate, errorMessage } from "@/lib/labels";
 import type { Plan } from "@/lib/schema/plan";
 import { Brand } from "@/components/plan/brand";
+import { PlanEmblem } from "@/components/plan/plan-emblem";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -112,7 +113,7 @@ export function Dashboard() {
             return (
               <article className="plan-row" key={plan.id}>
                 <span className="plan-row-icon" aria-hidden="true">
-                  <FileText size={22} />
+                  <PlanEmblem size={40} />
                 </span>
                 <div className="plan-row-content">
                   <Link className="plan-title" href={`/plan/${plan.id}`}>
