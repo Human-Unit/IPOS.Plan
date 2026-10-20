@@ -37,3 +37,7 @@ jobs:
               print("DOCX ZIP CRC and all critical OOXML files are valid")
           PY
       - run: npm run build
+      - name: Install Chromium for UI validation
+        run: npx playwright install --with-deps chromium
+      - name: Verify grouped briefs in editor and responsive viewer
+        run: npx playwright test tests/e2e/redesign.spec.ts
