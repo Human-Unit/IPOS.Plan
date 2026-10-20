@@ -1,9 +1,9 @@
-import { FileText } from "lucide-react";
+import { PlanEmblem } from "@/components/plan/plan-emblem";
 export function Brand() {
   return (
     <div className="brand">
       <span className="brand-mark" aria-hidden="true">
-        <FileText size={20} />
+        <PlanEmblem size={32} />
       </span>
       <span>
         IPOS<span className="brand-divider">/</span>
