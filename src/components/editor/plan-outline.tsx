@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   Heading,
   CheckSquare,
@@ -9,16 +9,20 @@ import {
   Minus,
   FileText,
   ChevronDown,
-  ChevronRight,
+  Plus,
 } from "lucide-react";
 import type { Block, PortablePlan } from "@/lib/schema/plan";
 import { flattenBlocks } from "@/lib/schema/plan";
-import { blockText } from "./document-structure";
+import {
+  blockText,
+  taskCompanions,
+  duplicateTitleHeading,
+} from "./document-structure";
 import { Button } from "@/components/ui/button";
 
 export const insertItems = [
-  { title: "Заголовок", type: "heading", icon: Heading },
   { title: "Задача", type: "task", icon: CheckSquare },
+  { title: "Заголовок", type: "heading", icon: Heading },
   { title: "Референс", type: "reference", icon: Link2 },
   { title: "Изображение", type: "image", icon: ImageIcon },
   { title: "Заметка", type: "callout", icon: Info },
@@ -26,139 +30,124 @@ export const insertItems = [
 ] as const;
 export type InsertType = (typeof insertItems)[number]["type"];
 
-type TaskBlock = Extract<Block, { type: "task" }>;
-const childTypes = new Set(["heading", "reference", "image", "callout"]);
-
 export function PlanOutline({
   plan,
   blocks,
   selectedId,
   select,
   add,
-  watermark,
-  setWatermark,
 }: {
   plan: PortablePlan;
   blocks: Block[];
   selectedId?: string;
   select: (id?: string) => void;
   add: (type: InsertType) => void;
-  watermark: boolean;
-  setWatermark: (value: boolean) => void;
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
-  const structure = useMemo(() => {
-    const loose: Block[] = [];
-    const groups: { task: TaskBlock; children: Block[] }[] = [];
-    let current: { task: TaskBlock; children: Block[] } | undefined;
-
-    for (const block of flattenBlocks(blocks)) {
-      if (block.type === "task") {
-        current = { task: block, children: [] };
-        groups.push(current);
-        continue;
-      }
-
-      if (!childTypes.has(block.type)) continue;
-      if (current) current.children.push(block);
-      else if (block.type === "heading") loose.push(block);
-    }
-
-    return { loose, groups };
-  }, [blocks]);
-
-  const labelFor = (block: Block) => {
-    const item = insertItems.find((i) => i.type === block.type);
-    if (block.type === "task")
-      return plan.tasks[block.props.taskId]?.title || "Без названия";
-    if (block.type === "reference") return block.props.title || "Референс";
-    if (block.type === "image") return block.props.caption || "Изображение";
-    return blockText(block) || item?.title || "Блок";
+  const { companions, sectionById } = taskCompanions(blocks);
+  const duplicateId = duplicateTitleHeading(blocks, plan.title);
+  const visible = flattenBlocks(blocks).filter(
+    (block) =>
+      insertItems.some((item) => item.type === block.type) &&
+      block.type !== "divider",
+  );
+  const label = (block: Block) =>
+    block.id === duplicateId
+      ? "Заголовок документа"
+      : block.type === "task"
+        ? plan.tasks[block.props.taskId]?.title || "Без названия"
+        : block.type === "reference"
+          ? block.props.title || "Референс"
+          : block.type === "image"
+            ? block.props.caption || "Изображение"
+            : blockText(block) ||
+              insertItems.find((item) => item.type === block.type)?.title ||
+              "Блок";
+  const row = (block: Block, child = false) => {
+    const Icon = insertItems.find((item) => item.type === block.type)!.icon;
+    return (
+      <button
+        key={block.id}
+        className={`outline-item${child ? " outline-child" : ""}`}
+        aria-current={selectedId === block.id ? "location" : undefined}
+        title={label(block)}
+        onClick={() => select(block.id)}
+      >
+        <Icon size={child ? 12 : 15} aria-hidden="true" />
+        <span>{label(block)}</span>
+      </button>
+    );
   };
-
-  const toggle = (id: string) =>
-    setCollapsed((value) => {
-      const next = new Set(value);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-
+  let number = 0;
   return (
     <div className="plan-outline">
-      <p className="panel-eyebrow">СТРУКТУРА ПЛАНА</p>
+      <p className="panel-eyebrow">Структура</p>
       <nav aria-label="Структура документа">
-        <button className="outline-item cover-item" onClick={() => select()}>
+        <button
+          className="outline-item cover-item"
+          onClick={() => select()}
+          aria-current={!selectedId ? "location" : undefined}
+        >
           <FileText size={16} aria-hidden="true" />
           <span>Обложка</span>
         </button>
-
-        {structure.loose.map((block) => (
-          <button
-            key={block.id}
-            className="outline-item outline-loose"
-            aria-current={selectedId === block.id ? "location" : undefined}
-            onClick={() => select(block.id)}
-          >
-            <Heading size={15} aria-hidden="true" />
-            <span>{labelFor(block)}</span>
-          </button>
-        ))}
-
-        {structure.groups.map(({ task, children }, index) => {
-          const taskId = task.id || task.props.taskId;
-          const isCollapsed = collapsed.has(taskId);
-          return (
-            <div className="outline-group" key={taskId}>
-              <div className="outline-task-row">
-                {children.length > 0 ? (
+        {visible
+          .filter((block) => block.type === "task" || !sectionById[block.id!])
+          .map((block) => {
+            if (block.type !== "task") return row(block);
+            const children = visible.filter(
+              (item) =>
+                item.id !== block.id &&
+                companions[block.id!]?.some((member) => member.id === item.id),
+            );
+            const closed = collapsed.has(block.id!);
+            const active =
+              selectedId === block.id ||
+              Boolean(selectedId && sectionById[selectedId] === block.id);
+            return (
+              <div className="outline-task" key={block.id}>
+                <div className="outline-task-row">
                   <button
-                    className="outline-disclosure"
-                    aria-label={isCollapsed ? "Развернуть задачу" : "Свернуть задачу"}
-                    aria-expanded={!isCollapsed}
-                    onClick={() => toggle(taskId)}
+                    className="outline-item outline-task-title"
+                    title={label(block)}
+                    aria-current={active ? "location" : undefined}
+                    onClick={() => select(block.id)}
                   >
-                    {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                    <span className="outline-number">
+                      {String(++number).padStart(2, "0")}
+                    </span>
+                    <span>{label(block)}</span>
                   </button>
-                ) : (
-                  <span className="outline-disclosure-spacer" />
-                )}
-                <button
-                  className="outline-item outline-task"
-                  aria-current={selectedId === task.id ? "location" : undefined}
-                  onClick={() => select(task.id)}
-                >
-                  <span className="outline-number">{String(index + 1).padStart(2, "0")}</span>
-                  <span>{labelFor(task)}</span>
-                </button>
-              </div>
-
-              {!isCollapsed && children.length > 0 && (
-                <div className="outline-children">
-                  {children.map((block) => {
-                    const item = insertItems.find((i) => i.type === block.type);
-                    const Icon = item?.icon ?? Heading;
-                    return (
-                      <button
-                        key={block.id}
-                        className="outline-item outline-child"
-                        aria-current={selectedId === block.id ? "location" : undefined}
-                        onClick={() => select(block.id)}
-                      >
-                        <Icon size={13} aria-hidden="true" />
-                        <span>{labelFor(block)}</span>
-                      </button>
-                    );
-                  })}
+                  {children.length > 0 && (
+                    <button
+                      className="outline-collapse"
+                      aria-label={`${closed ? "Развернуть" : "Свернуть"} ${label(block)}`}
+                      aria-expanded={!closed}
+                      aria-controls={closed ? undefined : `outline-${block.id}`}
+                      onClick={() =>
+                        setCollapsed((previous) => {
+                          const next = new Set(previous);
+                          if (next.has(block.id!)) next.delete(block.id!);
+                          else next.add(block.id!);
+                          return next;
+                        })
+                      }
+                    >
+                      <ChevronDown size={14} aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
+                {children.length > 0 && !closed && (
+                  <div id={`outline-${block.id}`}>
+                    {children.map((item) => row(item, true))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
       </nav>
-
       <div className="quick-insert">
-        <p className="panel-eyebrow">ДОБАВИТЬ БЛОК</p>
+        <p className="panel-eyebrow">Добавить блок</p>
         {insertItems.map((item) => (
           <Button
             key={item.type}
@@ -166,20 +155,12 @@ export function PlanOutline({
             size="sm"
             onClick={() => add(item.type)}
           >
-            <item.icon size={16} />
+            <Plus data-icon="inline-start" />
             {item.title}
           </Button>
         ))}
       </div>
-      <p className="outline-tip">Введите / в документе для вставки блока.</p>
-      <label className="watermark-toggle">
-        <input
-          type="checkbox"
-          checked={watermark}
-          onChange={(e) => setWatermark(e.target.checked)}
-        />
-        Водяной знак
-      </label>
+      <p className="outline-tip">/ — вставка блока в документ</p>
     </div>
   );
 }

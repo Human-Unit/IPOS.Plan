@@ -9,7 +9,15 @@ export default defineConfig({
     trace: "retain-on-failure",
     permissions: ["clipboard-read", "clipboard-write"],
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      name: "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1440, height: 900 },
+      },
+    },
+  ],
   webServer: {
     command: "npm run dev",
     url: "http://127.0.0.1:3105",

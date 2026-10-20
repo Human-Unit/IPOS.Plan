@@ -3,14 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import {
-  Plus,
-  Copy,
-  Trash2,
-  FileText,
-  ArrowUpRight,
-  Upload,
-} from "lucide-react";
+import { Plus, Copy, Trash2, ArrowUpRight, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { db } from "@/lib/db/database";
 import { createPlan, deletePlan, duplicatePlan } from "./repository";
@@ -78,9 +71,10 @@ export function Dashboard() {
       <main className="dashboard">
         <div className="dashboard-heading">
           <div>
-            <p className="eyebrow">МЕДИАСЕКТОР · СТУДЕНЧЕСКИЙ СОВЕТ</p>
             <h1>Контент-планы</h1>
-            <p className="muted">От идеи до публикации — в одном документе.</p>
+            <p className="muted">
+              Планируйте, создавайте и организуйте медиапроекты.
+            </p>
           </div>
           <div className="dashboard-actions">
             <Button
@@ -104,20 +98,23 @@ export function Dashboard() {
         )}
         <section className="plan-list" aria-label="Сохранённые планы">
           <div className="list-label">
-            <span>МОИ ПЛАНЫ</span>
-            <span>{plans?.length ?? "…"}</span>
+            <h2>
+              Все планы <span>{plans?.length ?? "…"}</span>
+            </h2>
+            <span>Обновлены недавно</span>
           </div>
           {!plans && !error && <Skeleton className="h-28 w-full" />}
           {plans?.map((plan) => {
             const tasks = Object.values(plan.tasks);
+            const done = tasks.filter((task) => task.status === "done").length;
             return (
               <article className="plan-row" key={plan.id}>
                 <span className="plan-row-icon" aria-hidden="true">
-                  <PlanEmblem size={40} />
+                  <PlanEmblem size={32} />
                 </span>
                 <div className="plan-row-content">
                   <Link className="plan-title" href={`/plan/${plan.id}`}>
-                    {plan.title}
+                    <span>{plan.title}</span>
                     <ArrowUpRight size={17} aria-hidden="true" />
                   </Link>
                   <div className="plan-row-meta">
@@ -125,9 +122,22 @@ export function Dashboard() {
                       Обновлён {formatDate(plan.updatedAt)}
                     </time>
                     <span>Задач: {tasks.length}</span>
-                    <span>
-                      Готово: {tasks.filter((t) => t.status === "done").length}
-                    </span>
+                    <span>Готово: {done}</span>
+                  </div>
+                  <div
+                    className="plan-progress"
+                    role="progressbar"
+                    aria-label={`Готовность ${plan.title}`}
+                    aria-valuemin={0}
+                    aria-valuemax={Math.max(1, tasks.length)}
+                    aria-valuenow={done}
+                    aria-valuetext={`${done} из ${tasks.length} задач готово`}
+                  >
+                    <span
+                      style={{
+                        width: `${tasks.length ? (done / tasks.length) * 100 : 0}%`,
+                      }}
+                    />
                   </div>
                 </div>
                 <div className="plan-row-actions">
@@ -135,6 +145,7 @@ export function Dashboard() {
                     size="icon"
                     variant="ghost"
                     aria-label={`Дублировать ${plan.title}`}
+                    title="Дублировать план"
                     disabled={busy}
                     onClick={() =>
                       void run(async () => {
@@ -149,6 +160,7 @@ export function Dashboard() {
                     size="icon"
                     variant="ghost"
                     aria-label={`Удалить ${plan.title}`}
+                    title="Удалить план"
                     disabled={busy}
                     onClick={() => setDeleting(plan)}
                   >
@@ -162,7 +174,7 @@ export function Dashboard() {
             <Empty>
               <EmptyHeader>
                 <EmptyMedia variant="icon">
-                  <FileText />
+                  <PlanEmblem size={40} />
                 </EmptyMedia>
                 <EmptyTitle>Начните с первого плана</EmptyTitle>
                 <EmptyDescription>
@@ -184,7 +196,6 @@ export function Dashboard() {
             Планы сохраняются на этом устройстве. Экспортируйте JSON для
             резервной копии.
           </p>
-          <span>P0 · IPOS</span>
         </footer>
       </main>
       {deleting && (
@@ -196,7 +207,10 @@ export function Dashboard() {
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Удалить план?</DialogTitle>
+              <DialogTitle>
+                <Trash2 aria-hidden="true" />
+                Удалить план?
+              </DialogTitle>
               <DialogDescription>
                 «{deleting.title}» и его локальная история будут удалены из
                 этого браузера.

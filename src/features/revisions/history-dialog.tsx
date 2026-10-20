@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { History } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db, type Revision } from "@/lib/db/database";
 import {
@@ -56,7 +57,10 @@ export function HistoryDialog({
     >
       <DialogContent className="wide-dialog">
         <DialogHeader>
-          <DialogTitle>История плана</DialogTitle>
+          <DialogTitle>
+            <History aria-hidden="true" />
+            История плана
+          </DialogTitle>
           <DialogDescription>
             Версии и события хранятся только в этом браузере.
           </DialogDescription>
@@ -85,8 +89,11 @@ export function HistoryDialog({
         {selected && (
           <>
             <div className="revision-preview">
-              <h3>{selected.snapshot.title}</h3>
-              <PlanRenderer key={selected.id} plan={selected.snapshot} />
+              <PlanRenderer
+                key={selected.id}
+                plan={selected.snapshot}
+                showCover
+              />
             </div>
             {confirm ? (
               <div className="confirm-row">

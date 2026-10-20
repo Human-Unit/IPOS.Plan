@@ -1,7 +1,7 @@
 "use client";
 import { toast } from "sonner";
 import { useState } from "react";
-import { FileDown } from "lucide-react";
+import { FileDown, Braces, Download, Copy } from "lucide-react";
 import { exportPlanDocx, DOCX_TYPE } from "./docx";
 import {
   Dialog,
@@ -26,7 +26,8 @@ export function ExportDialog({
   const json = JSON.stringify(toPortable(plan), null, 2);
   const [exporting, setExporting] = useState(false);
   const [warnings, setWarnings] = useState<string[]>([]);
-  const fileStem = plan.title.replace(/[^\p{L}\p{N}_-]/gu, "_").slice(0, 80) || "IPOS_Plan";
+  const fileStem =
+    plan.title.replace(/[^\p{L}\p{N}_-]/gu, "_").slice(0, 80) || "IPOS_Plan";
   const downloadDocx = async () => {
     setExporting(true);
     setWarnings([]);
@@ -42,8 +43,11 @@ export function ExportDialog({
       setTimeout(() => URL.revokeObjectURL(url), 2000);
       setWarnings(output.warnings);
       toast.success("DOCX подготовлен");
-    } catch (error) { toast.error(errorMessage(error)); }
-    finally { setExporting(false); }
+    } catch (error) {
+      toast.error(errorMessage(error));
+    } finally {
+      setExporting(false);
+    }
   };
   const download = () => {
     const url = URL.createObjectURL(
@@ -64,25 +68,51 @@ export function ExportDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Экспорт документа</DialogTitle>
+          <DialogTitle>
+            <FileDown aria-hidden="true" />
+            Экспорт документа
+          </DialogTitle>
           <DialogDescription>
-            DOCX - редактируемый документ A4 с оформлением по образцу ИПОС. JSON
-            сохраняет структуру для повторного импорта в IPOS.Plan.
+            Передайте готовый документ коллегам или сохраните резервную копию
+            плана.
           </DialogDescription>
         </DialogHeader>
-        <div className="rounded-md border p-3 text-sm text-muted-foreground">
-          <strong className="text-foreground">Word (.docx)</strong> - текст, заголовки,
-          требования, ссылки, дедлайны, ответственные и доступные изображения.
-          Шрифты должны быть установлены в Word; внешние изображения без CORS
-          сохраняются ссылками.
-        </div>
-        <Textarea
-          aria-label="JSON для экспорта"
-          value={json}
-          readOnly
-          rows={12}
-        />
-        {warnings.length > 0 && <p role="status" className="text-xs text-amber-700">{warnings.join(" ")}</p>}
+        <section className="export-format" aria-labelledby="word-export-title">
+          <div className="export-format-header">
+            <FileDown aria-hidden="true" />
+            <h3 id="word-export-title">Редактируемый Word</h3>
+          </div>
+          <p>
+            Документ A4 с текстом, ссылками и изображениями. Для точного
+            оформления выбранные шрифты должны быть установлены в Word.
+            Недоступные изображения сохранятся ссылками.
+          </p>
+          <Button onClick={() => void downloadDocx()} disabled={exporting}>
+            <FileDown data-icon="inline-start" />{" "}
+            {exporting ? "Подготовка..." : "Скачать .docx"}
+          </Button>
+        </section>
+        {warnings.length > 0 && (
+          <p role="status" className="export-notice">
+            {warnings.join(" ")}
+          </p>
+        )}
+        <section className="export-format" aria-labelledby="json-export-title">
+          <div className="export-format-header">
+            <Braces aria-hidden="true" />
+            <h3 id="json-export-title">Резервная копия JSON</h3>
+          </div>
+          <p>
+            Сохраняет блоки, задачи и настройки шрифтов для повторного импорта в
+            IPOS.Plan.
+          </p>
+          <Textarea
+            aria-label="JSON для экспорта"
+            value={json}
+            readOnly
+            rows={5}
+          />
+        </section>
         <DialogFooter>
           <Button
             variant="outline"
@@ -93,11 +123,12 @@ export function ExportDialog({
                 .catch((e) => toast.error(errorMessage(e)));
             }}
           >
+            <Copy data-icon="inline-start" />
             Копировать JSON
           </Button>
-          <Button variant="outline" onClick={download}>Скачать .json</Button>
-          <Button onClick={() => void downloadDocx()} disabled={exporting}>
-            <FileDown size={16} /> {exporting ? "Подготовка..." : "Скачать .docx"}
+          <Button variant="outline" onClick={download}>
+            <Download data-icon="inline-start" />
+            Скачать .json
           </Button>
         </DialogFooter>
       </DialogContent>

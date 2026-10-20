@@ -1,4 +1,11 @@
 "use client";
+import {
+  Circle,
+  CircleDot,
+  CircleCheck,
+  CircleX,
+  LoaderCircle,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { usePlanContext } from "@/components/editor/plan-context";
 import { SelectableBlock } from "@/components/editor/selectable-block";
@@ -7,12 +14,15 @@ import {
   ImageContent,
 } from "@/components/editor/media-content";
 import { statusLabels, priorityLabels } from "@/lib/labels";
+import { flattenBlocks } from "@/lib/schema/plan";
 
-function taskTitleParts(title: string) {
-  const match = title.match(/^\s*([^–—-]+?)\s*[–—-]\s*(.+)$/);
-  if (!match) return { kind: title || "Контент", topic: "" };
-  return { kind: match[1].trim(), topic: match[2].trim() };
-}
+const statusIcons = {
+  todo: Circle,
+  in_progress: LoaderCircle,
+  review: CircleDot,
+  done: CircleCheck,
+  cancelled: CircleX,
+};
 
 export function TaskCard({
   taskId,
@@ -21,80 +31,88 @@ export function TaskCard({
   taskId: string;
   blockId: string;
 }) {
-  const { plan, companions } = usePlanContext();
+  const { plan, companions, embeddedIds, editable } = usePlanContext();
   const task = plan.tasks[taskId];
   if (!task) return <p role="alert">Задача недоступна: {taskId}</p>;
-
-  const media = companions[blockId] ?? [];
-  const images = media.filter((b) => b.type === "image");
-  const references = media.filter((b) => b.type === "reference");
+  const media = (companions[blockId] ?? []).filter(
+    (block) => block.id && embeddedIds.has(block.id),
+  );
+  const images = media.filter((block) => block.type === "image");
+  const references = media.filter((block) => block.type === "reference");
+  const number =
+    flattenBlocks(plan.blocks)
+      .filter((block) => block.type === "task")
+      .findIndex(
+        (block) =>
+          block.id === blockId || (!block.id && block.props.taskId === taskId),
+      ) + 1;
+  const StatusIcon = statusIcons[task.status];
   const deadline = task.deadline?.split("-").reverse().join(".");
-  const { kind, topic } = taskTitleParts(task.title);
 
   return (
     <SelectableBlock
       id={blockId}
       label={`Задача: ${task.title}`}
-      className="task-brief docx-brief"
+      className="task-brief"
     >
-      <div className="brief-heading docx-brief-heading">
-        <div className="docx-heading-copy">
-          <p className="docx-line docx-kind-line">
-            <strong>Вид контента – </strong>
-            <span>{kind || "не указан"}</span>
-          </p>
-          {topic && <p className="docx-topic">{topic}</p>}
-        </div>
+      <div className="brief-heading">
+        <h3>
+          {number > 0 && (
+            <span className="brief-number" aria-hidden="true">
+              {String(number).padStart(2, "0")}
+            </span>
+          )}
+          <span>{task.title || "Без названия"}</span>
+        </h3>
         <Badge
           variant="secondary"
-          className={`brief-status brief-status-${task.status}`}
+          className="task-status"
+          data-status={task.status}
         >
+          <StatusIcon aria-hidden="true" />
           {statusLabels[task.status]}
         </Badge>
       </div>
-
       <div className={`brief-body${images.length ? " has-media" : ""}`}>
-        <div className="brief-copy docx-copy">
-          {task.description && (
-            <p className="docx-line docx-description">
-              <strong>Описание – </strong>
-              <span>{task.description}</span>
-            </p>
-          )}
-
-          {references.length > 0 && (
-            <div className="brief-references docx-references">
-              {references.map((b) => (
-                <ReferenceContent key={b.id} block={b} />
-              ))}
+        <div className="brief-copy">
+          {task.description ? (
+            <div className="brief-description">
+              <span className="brief-label">Описание</span>
+              <p>{task.description}</p>
             </div>
-          )}
-
-          {deadline && (
-            <p className="docx-deadline">
-              <strong>Дедлайн: Видео должно быть готовым к {deadline}</strong>
-            </p>
-          )}
-
-          <p className="docx-assignee">
-            <strong>
-              Ответственное лицо – {task.assignee || "не назначено"}
-            </strong>
-          </p>
-
-          <p className="docx-priority" aria-label="Приоритет задачи">
-            Приоритет: {priorityLabels[task.priority]}
-          </p>
+          ) : editable ? (
+            <p className="brief-label">Добавьте описание в свойствах задачи.</p>
+          ) : null}
         </div>
-
         {images.length > 0 && (
-          <div className="brief-media docx-media">
-            {images.map((b) => (
-              <ImageContent key={b.id} block={b} />
+          <div className="brief-media">
+            {images.map((block) => (
+              <ImageContent key={block.id} block={block} />
             ))}
           </div>
         )}
       </div>
+      {references.length > 0 && (
+        <div className="brief-references">
+          <span className="brief-label">Референсы</span>
+          {references.map((block) => (
+            <ReferenceContent key={block.id} block={block} />
+          ))}
+        </div>
+      )}
+      <dl className="brief-facts">
+        <div className="brief-fact-deadline">
+          <dt>Дедлайн</dt>
+          <dd>{deadline || "Не указан"}</dd>
+        </div>
+        <div>
+          <dt>Ответственные</dt>
+          <dd>{task.assignee || "Не назначены"}</dd>
+        </div>
+      </dl>
+      <p className="brief-priority">
+        Приоритет: {priorityLabels[task.priority]}
+      </p>
     </SelectableBlock>
   );
 }

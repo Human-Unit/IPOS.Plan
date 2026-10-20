@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -67,7 +68,10 @@ export function ImportDialog({
     >
       <DialogContent className="wide-dialog">
         <DialogHeader>
-          <DialogTitle>Импорт плана</DialogTitle>
+          <DialogTitle>
+            <Upload aria-hidden="true" />
+            Импорт плана
+          </DialogTitle>
           <DialogDescription>
             {replacing
               ? "После подтверждения текущий документ будет заменён. Перед заменой сохраним его версию."
@@ -75,7 +79,7 @@ export function ImportDialog({
           </DialogDescription>
         </DialogHeader>
         <FieldGroup>
-          <Field>
+          <Field className="file-import">
             <FieldLabel htmlFor="import-file">Файл .json · до 1 МБ</FieldLabel>
             <Input
               id="import-file"
@@ -137,7 +141,7 @@ export function ImportDialog({
               </div>
             </dl>
             <div className="import-preview">
-              <PlanRenderer key={raw} plan={preview} />
+              <PlanRenderer key={raw} plan={preview} showCover />
             </div>
           </>
         )}

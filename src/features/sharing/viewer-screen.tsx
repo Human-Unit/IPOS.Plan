@@ -69,7 +69,7 @@ export function ViewerScreen() {
             </div>
             <PlanRenderer key={state.key} plan={state.plan} showCover />
             <footer className="viewer-footer">
-              IPOS · Общий снимок · Только просмотр
+              IPOS.Plan · Общий снимок · Только просмотр
             </footer>
           </>
         ) : (

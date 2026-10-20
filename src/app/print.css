@@ -1,0 +1,92 @@
+/* Physical A4 pages retain repeated margins, independent of screen fit. */
+@page {
+  size: A4 portrait;
+  margin: 16mm;
+}
+@media print {
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+    background: white !important;
+  }
+  .editor-bar,
+  .preview-bar,
+  .app-bar,
+  .workspace-controls,
+  .workspace-outline,
+  .workspace-inspector,
+  .workspace-resize-handle,
+  .preview-notice,
+  .viewer-footer,
+  [data-sonner-toaster],
+  [data-slot="dialog-content"],
+  [data-slot="dialog-overlay"],
+  .bn-side-menu,
+  .bn-formatting-toolbar,
+  .bn-suggestion-menu,
+  nextjs-portal {
+    display: none !important;
+  }
+  .editor-stage,
+  .viewer-stage,
+  .document-content,
+  .editor-workspace,
+  .readonly-workspace {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    overflow: visible !important;
+  }
+  .plan-paper,
+  .editor-workspace .plan-paper,
+  .readonly-workspace .plan-paper {
+    display: block !important;
+    width: 178mm !important;
+    min-height: 265mm;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  .plan-cover .cover-title {
+    display: none !important;
+  }
+  .plan-cover .print-only-cover-title {
+    display: block !important;
+  }
+  .plan-cover {
+    break-inside: avoid;
+  }
+  .task-brief,
+  .brief-heading,
+  .brief-image,
+  .callout-block {
+    break-inside: avoid;
+  }
+  .brief-heading {
+    break-after: avoid;
+  }
+  .task-brief[data-selected="true"]::before,
+  .brief-reference[data-selected="true"]::before,
+  .brief-image[data-selected="true"]::before {
+    display: none;
+  }
+  .callout-block[data-selected="true"] {
+    outline: 0;
+  }
+  .plan-paper .bn-editor {
+    padding: 0 !important;
+  }
+  .brief-reference,
+  .task-status,
+  .plan-watermark {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

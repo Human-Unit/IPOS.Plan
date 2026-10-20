@@ -1,13 +1,15 @@
-# IPOS Content Plan Builder · P0
+# IPOS.Plan 2.0
 
 Локальный конструктор контент-планов для медиасектора. Next.js, TypeScript, BlockNote, shadcn/ui, Tailwind CSS, Zod и Dexie. Все документы, задачи, события и версии хранятся в IndexedDB браузера. Сервер Next.js обслуживает интерфейс; API для документов отсутствует.
+
+Редизайн 2.0: редакционные строки планов, рабочее пространство «Структура | A4 | Свойства», контекстный инспектор, типографика, мобильные панели и единый дизайн диалогов. [Отчёт, скриншоты до/после и QA](docs/IPOS_PLAN_2.md). Изменения подготовлены в `design/ipos-plan-2` для проверки через Pull Request и Vercel Preview; production обновится после отдельного одобрения и merge в `main`.
 
 ## Запуск
 
 Требуется Node.js 22.12+; проект проверяется на Node.js 24.13 и npm 11.6.
 
 ```powershell
-cd 'D:\Workshop\Studen Council\Plan Builder'
+cd 'D:\Workshop\Student Council\Plan Builder'
 npm ci
 npm run dev
 ```
@@ -54,14 +56,14 @@ Production QA на публичном адресе выполнена 13 окт�
 ## Структура и созданные файлы
 
 ```text
-src/app/                         маршруты, layout, error, icon.svg, globals.css
+src/app/                         маршруты, layout, tokens, surfaces, workspace, document, print CSS
 src/components/ui/               исходники shadcn/ui
 src/components/editor/           BlockNote-схема, контекст и PlanRenderer
 src/components/plan/             динамическая загрузка renderer, Brand
 src/components/task/             TaskCard
 src/features/plans/              dashboard, editor-screen, use-plan, repository, demo
 src/features/import/             диалог проверки и подтверждения JSON
-src/features/export/             копирование и скачивание JSON
+src/features/export/             JSON и редактируемый DOCX
 src/features/sharing/            диалог ссылки и общий viewer
 src/features/revisions/          версии, предпросмотр, восстановление и события
 src/lib/db/                      versioned Dexie database
@@ -69,7 +71,7 @@ src/lib/schema/                  plan.ts, task.ts, import.ts
 src/lib/share/                   gzip/base64url codec
 src/lib/                         labels.ts, utils.ts
 tests/unit/                      схемы, sharing, транзакции IndexedDB
-tests/e2e/                       полный браузерный сценарий P0
+tests/e2e/                       workflow, регрессии, типографика, layout и accessibility
 docs/                            ARCHITECTURE.md, PLAN_SCHEMA.md
 ```
 
@@ -88,19 +90,18 @@ npm run build
 
 Vitest использует `fake-indexeddb` для тестов транзакций; это отдельно от реальной IndexedDB, которая проверяется в Chromium. Playwright создаёт изолированное хранилище на каждый тест и проверяет создание, slash-заголовок, задачу, изменение статуса, перезагрузку, предпросмотр, экспорт, вставку и файл JSON, ссылки-снимки, восстановление, дублирование, удаление и ширины 320–1440 px. Результаты проверок текущего прохода указаны в итоговом отчёте; команды можно повторить.
 
-Проверено 13 октября 2026, Windows / Node.js 24.13 / Chromium 156:
+Редизайн проверен 20 октября 2026, Windows / Node.js 24.13 / Chromium:
 
-| Проверка | Результат |
-| --- | --- |
-| lint | PASS, без предупреждений |
-| typecheck | PASS |
-| Vitest | PASS, 24 теста / 3 файла |
-| Playwright на dev | PASS, 5 сценариев |
-| production build | PASS |
-| Playwright на `npm start` | PASS, те же 5 сценариев |
-| desktop и mobile layout | PASS, 320/390/768/1024/1440 px, без горизонтального overflow |
-| отдельная production-проверка со скриншотами | PASS, desktop 1440×1000, mobile 390×844; 0 ошибок и предупреждений консоли |
-| read-only viewer | PASS, 0 input/select/textarea/contenteditable controls |
+| Проверка                                            | Результат                                                                 |
+| --------------------------------------------------- | ------------------------------------------------------------------------- |
+| lint                                                | PASS, без предупреждений                                                  |
+| typecheck                                           | PASS                                                                      |
+| Vitest                                              | PASS, 32 теста / 5 файлов                                                 |
+| production build                                    | PASS                                                                      |
+| Playwright на `npm start`                           | PASS, 10 сценариев                                                        |
+| desktop, laptop, tablet и mobile layout             | PASS, 1920×1080, 1440×900, 1280×800, 1024×768, 768×1024, 390×844, 320×700 |
+| отдельная проверка production-сборки со скриншотами | PASS, 52 проверки, 0 ошибок и предупреждений консоли                      |
+| read-only viewer                                    | PASS, 0 input/select/textarea/contenteditable controls                    |
 
 Дополнительно проверены конфликт вкладок с экспортом несохранённой копии, удаление/undo задачи после autosave, rich-text clipboard пользовательских блоков и все типы slash-блоков. Browser skill отсутствовал, поэтому использован Playwright. Проверки мобильного вида выполнялись размером viewport Chromium; Safari, Firefox и физические устройства не проверялись. Скриншоты текущего запуска сохранены отдельно от исходников и приложены к итоговому ответу.
 
@@ -117,6 +118,6 @@ Vitest использует `fake-indexeddb` для тестов транзак�
 - При закрытии процесса браузера до окончания debounce последние изменения могут потеряться. Дождитесь «Сохранено локально». Сервис-воркер и гарантированный офлайн-запуск не входят в P0.
 - Автоснимки на каждом autosave, диффы, комментарии, уведомления, календарь, Kanban, авторизация, backend, AI и P1 не реализованы.
 
-Далее: проверить этот фундамент на реальном контент-плане медиасектора, затем отдельно уточнить UX, тексты и визуальные детали без расширения P0.
+Проверка 2.0 использует отдельный реалистичный план с четырьмя задачами, ссылками, требованиями и доступным портретным изображением из исходного Word. Эти материалы не добавляются в demo seed и не заменяют пользовательские данные.
 
 Проверка зависимостей: `npm audit --omit=dev` сообщает 0 уязвимостей. Полный `npm audit` сообщает 5 high в цепочке lint-зависимостей `eslint-config-next → fast-glob → micromatch → braces`; предложенный npm автоматический fix понижает Next ESLint config до другой major-версии, поэтому он не применялся. Это зависимости инструментов разработки, не браузерного приложения.

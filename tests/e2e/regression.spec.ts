@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { demoPlan } from "../../src/features/plans/demo";
+import { planAction } from "./actions";
 async function saved(page: Page) {
   await expect(
     page.getByRole("status").filter({ hasText: "Сохранено локально" }),
@@ -25,7 +26,7 @@ test("stale tab never overwrites and can export its unsaved copy", async ({
   await expect(
     other.getByRole("alert").filter({ hasText: "другой вкладке" }),
   ).toBeVisible();
-  await other.getByRole("button", { name: "Экспорт", exact: true }).click();
+  await planAction(other, "Экспорт");
   expect(
     JSON.parse(await other.getByLabel("JSON для экспорта").inputValue()).title,
   ).toBe("Копия второй вкладки");

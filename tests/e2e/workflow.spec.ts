@@ -1,16 +1,28 @@
 import { expect, test, type Page } from "@playwright/test";
 import { demoPlan } from "../../src/features/plans/demo";
+import { planAction } from "./actions";
 async function saved(page: Page) {
   await expect(
     page.getByRole("status").filter({ hasText: "Сохранено локально" }),
   ).toBeVisible();
 }
 async function noOverflow(page: Page) {
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBe(true);
+  const layout = await page.evaluate(() => ({
+    width: innerWidth,
+    scroll: document.documentElement.scrollWidth,
+    overflow: [...document.querySelectorAll("body *")]
+      .filter((el) => {
+        const r = el.getBoundingClientRect();
+        return r.width > 0 && r.right > innerWidth + 1;
+      })
+      .slice(0, 8)
+      .map((el) => ({
+        tag: el.tagName,
+        class: el.className,
+        right: el.getBoundingClientRect().right,
+      })),
+  }));
+  expect(layout.scroll <= layout.width, JSON.stringify(layout)).toBe(true);
 }
 test("create, slash heading, tasks, persistence, JSON, snapshot and restore", async ({
   page,
@@ -53,9 +65,7 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
   await expect(
     page.getByRole("heading", { name: "Наше событие" }),
   ).toBeVisible();
-  await page
-    .getByRole("button", { name: "Сохранить версию", exact: true })
-    .click();
+  await planAction(page, "Сохранить версию");
   await expect(
     page.getByText("Версия сохранена", { exact: true }),
   ).toBeVisible();
@@ -66,7 +76,7 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
   await expect(page.getByLabel("Название задачи")).toHaveCount(0);
   expect(await page.locator('[contenteditable="true"]').count()).toBe(0);
   await noOverflow(page);
-  await page.getByRole("button", { name: "Экспорт", exact: true }).click();
+  await planAction(page, "Экспорт");
   const portable = JSON.parse(
     await page.getByLabel("JSON для экспорта").inputValue(),
   );
@@ -119,7 +129,7 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
     viewer.getByRole("heading", { name: "Тестовый план" }),
   ).toBeVisible();
   await expect(viewer.getByText("В работе", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Импорт", exact: true }).click();
+  await planAction(page, "Импорт");
   await page.getByLabel("JSON плана", { exact: true }).fill("{bad");
   await page.getByRole("button", { name: "Проверить и посмотреть" }).click();
   await expect(
@@ -131,20 +141,22 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
   await page.getByRole("button", { name: "Проверить и посмотреть" }).click();
   await expect(
     page
-      .getByRole("dialog")
+      .locator(".import-summary")
       .getByText("Импортированная копия", { exact: true }),
   ).toBeVisible();
+  await expect(page.locator(".import-preview .plan-cover")).toHaveCount(1);
   await page.getByRole("button", { name: "Подтвердить импорт" }).click();
   await expect(page.getByLabel("Название плана", { exact: true })).toHaveValue(
     "Импортированная копия",
   );
-  await page.getByRole("button", { name: "История", exact: true }).click();
+  await planAction(page, "История");
   await page.getByRole("button", { name: /Сохранённая версия/ }).click();
   await expect(
     page
       .getByRole("dialog")
       .getByRole("heading", { name: "Тестовый план", exact: true }),
   ).toBeVisible();
+  await expect(page.locator(".revision-preview .plan-cover")).toHaveCount(1);
   await page.getByRole("button", { name: "Восстановить эту версию" }).click();
   await page
     .getByRole("button", { name: "Подтвердить восстановление" })
