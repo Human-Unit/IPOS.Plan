@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { taskCompanions } from "../../src/components/editor/document-structure";
+import { taskCompanions, taskVisualGroups } from "../../src/components/editor/document-structure";
 import type { Block } from "../../src/lib/schema/plan";
 
 describe("editorial presentation preserves document structure", () => {
@@ -33,6 +33,45 @@ describe("editorial presentation preserves document structure", () => {
     expect(JSON.stringify(blocks)).toBe(before);
     expect(taskCompanions(blocks.slice(1)).embeddedIds.size).toBe(0);
   });
+  it("gives each task a complete visible section, including requirements and notes", () => {
+    const blocks: Block[] = [
+      { id: "title", type: "heading", props: { level: 1 }, content: [{ type: "text", text: "План СМИ", styles: {} }] },
+      { id: "first", type: "task", props: { taskId: "t1" } },
+      { id: "requirements", type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Требования", styles: {} }] },
+      { id: "bullet", type: "bulletListItem", content: [{ type: "text", text: "Снять вертикально", styles: {} }] },
+      { id: "ref", type: "reference", props: { url: "https://example.org", title: "Видео", note: "" } },
+      { id: "note", type: "callout", content: [{ type: "text", text: "Контакт", styles: {} }] },
+      { id: "second", type: "task", props: { taskId: "t2" } },
+      { id: "second-req", type: "heading", props: { level: 3 }, content: [{ type: "text", text: "Сценарий", styles: {} }] },
+      { id: "separator", type: "divider" },
+      { id: "free", type: "paragraph", content: [{ type: "text", text: "Обычная заметка", styles: {} }] },
+      { id: "third", type: "task", props: { taskId: "t3" } },
+      { id: "new-chapter", type: "heading", props: { level: 2 }, content: [{ type: "text", text: "Другое направление", styles: {} }] },
+    ];
+    const before = JSON.stringify(blocks);
+    const embedded = taskCompanions(blocks).embeddedIds;
+    expect(embedded.has("ref")).toBe(true);
+    expect(taskVisualGroups(blocks, embedded)).toEqual([
+      ["first", "requirements", "bullet", "note"],
+      ["second", "second-req"],
+      ["third"],
+    ]);
+    expect(JSON.stringify(blocks)).toBe(before);
+  });
+
+  it("ignores nested tasks when marking top-level production briefs", () => {
+    const blocks: Block[] = [
+      {
+        id: "outer",
+        type: "paragraph",
+        content: [],
+        children: [{ id: "inner", type: "task", props: { taskId: "nested" } }],
+      },
+      { id: "root-task", type: "task", props: { taskId: "root" } },
+    ];
+    expect(taskVisualGroups(blocks, new Set())).toEqual([["root-task"]]);
+  });
+
   it("keeps media with nested text visible, and handles tasks in nested groups", () => {
     const blocks: Block[] = [
       {
