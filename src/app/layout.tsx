@@ -4,6 +4,7 @@ import "./editor-polish.css";
 import "./typography-layout.css";
 import "./watermark.css";
 import "./a4-workspace.css";
+import "./task-sections.css";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
