@@ -128,6 +128,19 @@ test("content-heavy workspace fits every viewport, panels resize and collapse, f
     if (message.type() === "error") errors.push(message.text());
   });
   await importBrief(page);
+  const firstTask = page.locator('.bn-block-outer[data-id="reel"]');
+  const requirements = page.locator('.bn-block-outer[data-id="requirements"]');
+  const lastNote = page.locator('.bn-block-outer[data-id="callout"]');
+  const nextTask = page.locator('.bn-block-outer[data-id="carousel"]');
+  await expect(firstTask).toHaveCSS("background-color", "rgb(249, 250, 255)");
+  await expect(requirements).toHaveCSS("background-color", "rgb(249, 250, 255)");
+  await expect(lastNote).toHaveCSS("border-bottom-style", "solid");
+  await expect(nextTask).toHaveCSS("border-top-style", "solid");
+  const positions = await Promise.all([lastNote, nextTask].map(async (node) => {
+    const bounds = await node.boundingBox();
+    return bounds!;
+  }));
+  expect(positions[1].y).toBeGreaterThan(positions[0].y + positions[0].height);
   for (const [width, height] of sizes) {
     await page.setViewportSize({ width, height });
     await expect

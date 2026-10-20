@@ -140,10 +140,45 @@ export default function PlanRenderer({
     const scope = `[data-document-renderer="${CSS.escape(rendererId)}"]`;
     const selector = (id: string) =>
       `${scope} .bn-block-outer[data-id="${CSS.escape(id)}"]`;
-    const rules = [...grouping.endIds].map(
-      (id) =>
-        `${selector(id)}{border-bottom:1px solid var(--border);padding-bottom:24px;margin-bottom:24px}`,
-    );
+    const rules: string[] = [];
+    // Every task and the following requirements/notes are one visual brief.
+    // All blocks stay in their original BlockNote positions and remain editable;
+    // only scoped presentation CSS changes, including in preview and viewer.
+    for (const [id, owner] of Object.entries(grouping.sectionById)) {
+      if (grouping.embeddedIds.has(id)) continue; // media already in task brief
+      const start = id === owner;
+      const end = grouping.endIds.has(id);
+      const properties = [
+        "box-sizing:border-box",
+        "min-width:0",
+        "background:#f9faff",
+        "border-left:1px solid #dce3f6",
+        "border-right:1px solid #dce3f6",
+        "box-shadow:inset 3px 0 0 var(--primary)",
+        "padding:3px 12px",
+        ...(start ? [
+          "margin-top:18px",
+          "padding-top:19px",
+          "border-top:1px solid #dce3f6",
+          "border-top-left-radius:8px",
+          "border-top-right-radius:8px",
+        ] : []),
+        ...(end ? [
+          "margin-bottom:18px",
+          "padding-bottom:18px",
+          "border-bottom:1px solid #dce3f6",
+          "border-bottom-left-radius:8px",
+          "border-bottom-right-radius:8px",
+        ] : []),
+      ];
+      rules.push(`${selector(id)}{${properties.join(";")}}`);
+      rules.push(
+        `@media(max-width:767px){${selector(id)}{padding-left:8px;padding-right:8px}}`,
+      );
+      rules.push(
+        `@media print{${selector(id)}{background:transparent!important;box-shadow:none!important;border-left:0!important;border-right:0!important;padding-left:0!important;padding-right:0!important}}`,
+      );
+    }
     for (const [id, owner] of Object.entries(grouping.sectionById)) {
       if (id === owner) continue;
       rules.push(
