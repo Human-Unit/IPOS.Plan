@@ -34,7 +34,7 @@ import type { Task } from "@/lib/schema/task";
 import { uid } from "@/features/plans/repository";
 import { PlanContext } from "./plan-context";
 import { editorSchema } from "./schema";
-import { taskCompanions } from "./document-structure";
+import { taskCompanions, taskVisualGroups } from "./document-structure";
 import { PlanCover } from "./plan-cover";
 import { PlanOutline, insertItems, type InsertType } from "./plan-outline";
 import { BlockInspector } from "./block-inspector";
@@ -145,6 +145,51 @@ export default function PlanRenderer({
   };
 
   const grouping = useMemo(() => taskCompanions(blocks), [blocks]);
+  const visualGroups = useMemo(
+    () => taskVisualGroups(blocks, grouping.embeddedIds),
+    [blocks, grouping],
+  );
+
+  // Annotate the existing BlockNote DOM rather than wrapping/moving its nodes.
+  // Every task + its free-form requirements reads as one visual brief, while
+  // selection, editing, history, JSON and the shared renderer stay unchanged.
+  useEffect(() => {
+    const content = root.current?.querySelector<HTMLElement>(".paper-content");
+    if (!content) return;
+
+    let frame = 0;
+    const decorate = () => {
+      content
+        .querySelectorAll<HTMLElement>('.bn-block-outer[data-ipos-brief-part]')
+        .forEach((node) => node.removeAttribute("data-ipos-brief-part"));
+
+      for (const group of visualGroups) {
+        for (let i = 0; i < group.length; i += 1) {
+          const node = content.querySelector<HTMLElement>(
+            `.bn-block-outer[data-id="${CSS.escape(group[i])}"]`,
+          );
+          if (!node) continue;
+          node.dataset.iposBriefPart =
+            group.length === 1 ? "single" :
+            i === 0 ? "start" :
+            i === group.length - 1 ? "end" : "middle";
+        }
+      }
+    };
+    const schedule = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(decorate);
+    };
+    // BlockNote may independently refresh its node views after a document edit.
+    // Observe children only to avoid retriggering on our data attributes.
+    const observer = new MutationObserver(schedule);
+    observer.observe(content, { childList: true, subtree: true });
+    schedule();
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, [visualGroups]);
   const context = {
     plan: { ...plan, blocks },
     editable,
