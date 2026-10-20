@@ -2,9 +2,9 @@ name: IPOS.Plan checks
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, design/ipos-plan-2, design/ipos-2-task-sections-2026-10-20]
   push:
-    branches: [main]
+    branches: [main, design/ipos-plan-2, design/ipos-2-task-sections-2026-10-20]
 
 jobs:
   validate:
