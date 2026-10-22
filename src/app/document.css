@@ -1,0 +1,509 @@
+/* One document treatment shared by editor, preview, import, history and viewer. */
+.plan-paper {
+  position: relative;
+  isolation: isolate;
+  width: min(100%, 210mm);
+  min-width: 0;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 44px 48px 56px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  box-shadow: var(--page-shadow);
+}
+.plan-cover,
+.paper-content {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+.plan-cover {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--primary);
+}
+.plan-cover .plan-emblem {
+  width: 56px;
+  height: 56px;
+  margin-top: 3px;
+}
+.cover-eyebrow {
+  font: 500 11px/1.5 var(--font-ui);
+  color: var(--muted-foreground);
+  margin-bottom: 6px;
+}
+.plan-cover h1,
+.plan-cover .cover-title {
+  font: 650 var(--document-title)/1.28 var(--font-heading);
+  letter-spacing: -0.035em;
+  color: var(--foreground);
+}
+.plan-cover .cover-title {
+  display: block;
+  field-sizing: content;
+  width: 100%;
+  min-height: 40px;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  resize: none;
+  box-shadow: none;
+  overflow: hidden;
+}
+.plan-cover .cover-title:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 5px;
+}
+.cover-meta {
+  font: 400 12px/1.6 var(--font-ui);
+  color: var(--muted-foreground);
+  margin-top: 10px;
+}
+.print-only-cover-title {
+  display: none;
+}
+.plan-watermark {
+  position: absolute;
+  top: 48px;
+  right: 24px;
+  left: auto;
+  width: 220px;
+  opacity: 0.018;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+.plan-paper .bn-container {
+  min-width: 0;
+  color: var(--foreground);
+  font-family: var(--font-document);
+}
+.plan-paper .bn-editor {
+  padding: 0;
+  min-width: 0;
+  background: transparent;
+  font: 400 var(--document-body)/1.65 var(--font-document);
+  color: var(--foreground);
+}
+.plan-paper .bn-block-content {
+  padding: 3px 0;
+  min-width: 0;
+}
+.plan-paper .bn-inline-content {
+  overflow-wrap: anywhere;
+}
+.plan-paper .bn-editor h1,
+.plan-paper .bn-editor h2,
+.plan-paper .bn-editor h3 {
+  font-family: var(--font-heading);
+  font-weight: 650;
+  line-height: 1.4;
+  letter-spacing: -0.025em;
+}
+.plan-paper .bn-editor h1 {
+  font-size: 30px;
+}
+.plan-paper .bn-editor h2 {
+  font-size: 25px;
+}
+.plan-paper .bn-editor h3 {
+  font-size: 21px;
+}
+.plan-paper .bn-block-content[data-content-type="heading"] {
+  padding-block: 12px 5px;
+}
+.plan-paper .bn-block-content[data-content-type="bulletListItem"],
+.plan-paper .bn-block-content[data-content-type="numberedListItem"] {
+  padding-block: 2px;
+}
+.plan-paper .bn-block-content[data-content-type="quote"] {
+  border-left: 2px solid var(--border);
+  padding-left: 16px;
+  color: var(--muted-foreground);
+}
+.plan-paper .bn-inline-content a {
+  color: var(--primary);
+  text-underline-offset: 3px;
+}
+.task-brief {
+  position: relative;
+  padding: 8px 0 0;
+  font-family: var(--font-document);
+  min-width: 0;
+}
+.brief-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.plan-paper .brief-heading h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font: 650 var(--document-task)/1.4 var(--font-heading);
+  letter-spacing: -0.03em;
+  min-width: 0;
+}
+.brief-heading h3 > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.brief-number {
+  font: 600 18px/1.4 var(--font-heading);
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.task-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 4px;
+  padding: 3px 7px;
+  border: 1px solid #d9dce3;
+  border-radius: 3px;
+  background: #f6f7f9;
+  color: #606875;
+  font: 500 10px/1.5 var(--font-ui);
+}
+.plan-paper .bn-editor .task-status svg {
+  width: 12px;
+  height: 12px;
+}
+.task-status[data-status="in_progress"] {
+  color: var(--primary);
+  background: #f2f4ff;
+  border-color: #d8def8;
+}
+.task-status[data-status="review"] {
+  color: #805619;
+  background: #fffaf0;
+  border-color: #eadfca;
+}
+.task-status[data-status="done"] {
+  color: #32694f;
+  background: #f2f8f4;
+  border-color: #d7e6dc;
+}
+.task-status[data-status="cancelled"] {
+  color: #775e65;
+  background: #f7f3f4;
+  border-color: #e6dce0;
+}
+.brief-body {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.brief-body.has-media {
+  grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr);
+}
+.brief-copy,
+.brief-media {
+  min-width: 0;
+}
+.brief-description {
+  display: grid;
+  gap: 6px;
+}
+.brief-label {
+  display: block;
+  color: var(--muted-foreground);
+  font: 500 12px/1.5 var(--font-ui);
+}
+.brief-description p {
+  white-space: pre-wrap;
+  font-size: 16px;
+  line-height: 1.65;
+}
+.brief-references {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+.brief-reference {
+  display: flex;
+  align-items: start;
+  gap: 10px;
+  position: relative;
+  padding: 12px;
+  border: 1px solid #e6e8ed;
+  background: #f8f9fb;
+  border-radius: 4px;
+  min-width: 0;
+  font-family: var(--font-ui);
+}
+.reference-symbol {
+  display: grid;
+  place-items: center;
+  flex: 0 0 28px;
+  width: 28px;
+  min-height: 30px;
+  color: var(--primary);
+}
+.reference-thumbnail {
+  display: block;
+  width: 28px;
+  height: 30px;
+  object-fit: cover;
+  border-radius: 2px;
+}
+.reference-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+.reference-copy a {
+  display: inline;
+  color: var(--primary);
+  font: 600 13px/1.5 var(--font-ui);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.reference-copy a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.reference-copy a > svg {
+  display: inline-block;
+  margin-left: 6px;
+  vertical-align: -2px;
+}
+.reference-domain {
+  font: 400 11px/1.5 var(--font-ui);
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+}
+.reference-copy p {
+  font: 400 12px/1.6 var(--font-ui);
+  color: var(--muted-foreground);
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+.reference-copy strong {
+  font-size: 13px;
+}
+.brief-facts {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.8fr) minmax(0, 1.2fr);
+  gap: 16px;
+  margin: 20px 0 0;
+}
+.brief-facts dt {
+  font: 400 12px/1.5 var(--font-ui);
+  color: var(--muted-foreground);
+  margin-bottom: 5px;
+}
+.brief-facts dd {
+  margin: 0;
+  font: 600 14px/1.6 var(--font-ui);
+  overflow-wrap: anywhere;
+}
+.brief-fact-deadline dd {
+  color: var(--brand-red);
+}
+.plan-paper .brief-priority {
+  margin-top: 10px;
+  color: var(--muted-foreground);
+  font: 400 12px/1.5 var(--font-ui);
+}
+.brief-image {
+  position: relative;
+  min-width: 0;
+}
+.brief-image figure {
+  margin: 0;
+}
+.brief-image img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 300px;
+  object-fit: contain;
+  object-position: left top;
+  border-radius: 3px;
+}
+.brief-image figcaption {
+  margin-top: 8px;
+  color: var(--muted-foreground);
+  font: 400 11px/1.6 var(--font-ui);
+  overflow-wrap: anywhere;
+}
+.image-placeholder {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  min-height: 160px;
+  padding: 20px;
+  border: 1px dashed var(--input);
+  border-radius: 3px;
+  background: #f7f8fa;
+  color: var(--muted-foreground);
+  text-align: center;
+  font: 400 12px/1.6 var(--font-ui);
+}
+.image-placeholder svg {
+  width: 24px;
+  height: 24px;
+}
+.callout-block {
+  border: 0;
+  border-left: 2px solid #bfc8e9;
+  border-radius: 2px;
+  background: #f5f6fa;
+  padding: 12px 14px;
+  margin-block: 10px;
+  color: #50596d;
+  font: 400 13px/1.65 var(--font-ui);
+}
+.divider-block {
+  padding: 20px 0;
+}
+.divider-block [data-slot="separator"] {
+  background: var(--border);
+}
+.task-brief[data-selected="true"]::before,
+.brief-reference[data-selected="true"]::before,
+.brief-image[data-selected="true"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -12px;
+  width: 2px;
+  background: var(--primary);
+}
+.callout-block[data-selected="true"] {
+  outline: 1px solid var(--primary);
+  outline-offset: 3px;
+}
+.plan-paper .bn-editor .bn-react-node-view-renderer.ProseMirror-selectednode,
+.plan-paper
+  .bn-editor
+  .bn-react-node-view-renderer.ProseMirror-selectednode
+  > .bn-block-content {
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+}
+.plan-paper
+  .bn-react-node-view-renderer.ProseMirror-selectednode
+  > .bn-block-content
+  > [data-plan-block]::after {
+  display: none;
+}
+.embedded-placeholder {
+  display: none;
+}
+.bn-block-outer:has(> .bn-block > .bn-block-content .embedded-placeholder) {
+  display: none;
+}
+.embedded-document .plan-paper {
+  width: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.embedded-document .brief-heading h3 {
+  font-size: 20px;
+}
+.readonly-workspace .bn-side-menu,
+.readonly-workspace .bn-formatting-toolbar,
+.readonly-workspace .bn-suggestion-menu {
+  display: none;
+}
+@media (max-width: 767px) {
+  .plan-paper {
+    padding: 24px 18px 36px;
+    min-height: 0;
+    border-radius: 2px;
+  }
+  .plan-cover {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 12px;
+    padding-bottom: 20px;
+    margin-bottom: 20px;
+  }
+  .plan-cover .plan-emblem {
+    width: 40px;
+    height: 40px;
+  }
+  .cover-eyebrow {
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+  .cover-meta {
+    font-size: 12px;
+  }
+  .plan-watermark {
+    top: 40px;
+    right: 8px;
+    opacity: 0.012;
+  }
+  .brief-heading {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .brief-heading h3 {
+    gap: 10px;
+  }
+  .brief-number {
+    font-size: 15px;
+  }
+  .task-status {
+    justify-self: start;
+    margin-left: 30px;
+    margin-top: 0;
+    font-size: 11px;
+  }
+  .brief-body.has-media {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .brief-description p {
+    font-size: 16px;
+    line-height: 1.65;
+  }
+  .brief-facts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    margin-top: 16px;
+  }
+  .brief-media {
+    max-width: 240px;
+  }
+  .brief-image img {
+    max-height: 320px;
+  }
+  .brief-reference {
+    padding: 10px;
+    gap: 6px;
+  }
+  .reference-copy a {
+    font-size: 12px;
+  }
+  .plan-paper .bn-editor h1 {
+    font-size: 26px;
+  }
+  .plan-paper .bn-editor h2 {
+    font-size: 23px;
+  }
+  .plan-paper .bn-editor h3 {
+    font-size: 20px;
+  }
+}

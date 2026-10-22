@@ -1,5 +1,7 @@
 "use client";
 import { toast } from "sonner";
+import { Link2, LockKeyhole, ArrowUpRight, Copy } from "lucide-react";
+import { Field, FieldLabel } from "@/components/ui/field";
 import {
   Dialog,
   DialogContent,
@@ -28,20 +30,26 @@ export function ShareDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Поделиться снимком</DialogTitle>
+          <DialogTitle>
+            <Link2 aria-hidden="true" />
+            Поделиться снимком
+          </DialogTitle>
           <DialogDescription>
-            Ссылка содержит текущую копию плана. Дальнейшие изменения не обновят
-            этот снимок. Получатель сможет только просматривать его.
+            Ссылка содержит эту версию плана. Дальнейшие изменения не обновят
+            снимок.
           </DialogDescription>
         </DialogHeader>
-        <Alert>
+        <Alert className="snapshot-note">
+          <LockKeyhole aria-hidden="true" />
           <AlertDescription>
-            Любой, у кого есть ссылка, сможет открыть снимок. Данные плана
-            находятся во фрагменте URL и не отправляются на сервер приложения.
-            Изображения загружаются по указанным URL.
+            Получатель сможет только просматривать документ. Снимок доступен
+            всем, кому вы передадите ссылку.
           </AlertDescription>
         </Alert>
-        <Textarea aria-label="Ссылка на снимок" value={url} readOnly rows={4} />
+        <Field>
+          <FieldLabel htmlFor="share-url">Ссылка на снимок</FieldLabel>
+          <Textarea id="share-url" value={url} readOnly rows={3} />
+        </Field>
         {url.length > 8000 && (
           <p className="muted">
             Длинную ссылку может обрезать мессенджер. Для надёжной передачи
@@ -51,6 +59,7 @@ export function ShareDialog({
         <DialogFooter>
           <Button variant="outline" asChild>
             <a href={url} target="_blank" rel="noopener noreferrer">
+              <ArrowUpRight data-icon="inline-start" />
               Открыть снимок
             </a>
           </Button>
@@ -62,6 +71,7 @@ export function ShareDialog({
                 .catch((e) => toast.error(errorMessage(e)));
             }}
           >
+            <Copy data-icon="inline-start" />
             Копировать ссылку
           </Button>
         </DialogFooter>

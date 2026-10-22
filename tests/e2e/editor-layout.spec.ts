@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import type { PortablePlan } from "../../src/lib/schema/plan";
+import { planAction } from "./actions";
 
 const brief: PortablePlan = {
   schemaVersion: 1,
@@ -73,11 +74,12 @@ test("editorial brief, responsive inspectors and unchanged portable data", async
   await task.waitFor();
   for (const width of [1440, 1920, 1024, 768, 390]) {
     await page.setViewportSize({ width, height: 1000 });
+    await expect(task.locator(".brief-fact-deadline dd")).toHaveText(
+      "15.10.2026",
+    );
+    await expect(task.locator(".brief-fact-deadline dd")).toBeVisible();
     await expect(
-      page.getByText("Дедлайн — 15.10.2026", { exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByText("Ответственные — Редактор, монтажёр", { exact: true }),
+      task.getByText("Редактор, монтажёр", { exact: true }),
     ).toBeVisible();
     await expect(
       task.getByRole("img", { name: "Портретный референс", exact: true }),
@@ -106,7 +108,7 @@ test("editorial brief, responsive inspectors and unchanged portable data", async
     await expect(
       page.locator('.task-brief[data-plan-block="brief-task"]'),
     ).toHaveAttribute("data-selected", "true");
-    if (width < 1200) {
+    if (width < 1440) {
       const sheet = page.getByRole("dialog");
       await expect(sheet).toBeVisible();
       const bounds = await sheet.boundingBox();
@@ -152,7 +154,7 @@ test("editorial brief, responsive inspectors and unchanged portable data", async
   await expect(
     task.getByRole("img", { name: "Обновлённая подпись", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Экспорт", exact: true }).click();
+  await planAction(page, "Экспорт");
   const exported = JSON.parse(
     await page.getByLabel("JSON для экспорта").inputValue(),
   ) as PortablePlan;
@@ -173,7 +175,7 @@ test("editorial brief, responsive inspectors and unchanged portable data", async
     await page
       .locator(".plan-paper")
       .evaluate((el) => el.getBoundingClientRect().width),
-  ).toBe(1160);
+  ).toBeCloseTo((210 * 96) / 25.4, 1);
   await expect(
     task.getByRole("img", { name: "Обновлённая подпись", exact: true }),
   ).toBeVisible();

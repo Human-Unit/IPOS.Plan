@@ -6,13 +6,7 @@ import {
   ArrowLeft,
   Eye,
   Pencil,
-  History,
-  Upload,
-  Download,
-  Printer,
   Share2,
-  BookmarkPlus,
-  MoreHorizontal,
   Maximize2,
   Minimize2,
 } from "lucide-react";
@@ -22,6 +16,7 @@ import { db } from "@/lib/db/database";
 import { event, saveRevision } from "./repository";
 import { PlanRenderer } from "@/components/plan/renderer";
 import { Button } from "@/components/ui/button";
+import { PlanActionsMenu } from "@/components/editor/plan-actions-menu";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImportDialog } from "@/features/import/import-dialog";
@@ -39,7 +34,6 @@ import {
   type PortablePlan,
 } from "@/lib/schema/plan";
 import type { Task } from "@/lib/schema/task";
-
 export function EditorScreen({ id }: { id: string }) {
   const { plan, loaded, status, error, update, flush, replace, generation } =
     usePlan(id);
@@ -51,17 +45,20 @@ export function EditorScreen({ id }: { id: string }) {
   const [exportPlan, setExportPlan] = useState<PortablePlan>();
   const [shareUrl, setShareUrl] = useState("");
   const [busy, setBusy] = useState(false);
-
   // Keep entities in memory so BlockNote undo can restore a removed task block.
   const changeBlocks = useCallback(
     (blocks: Block[]) =>
       update((p) => {
         const ids = new Set(
-          flattenBlocks(blocks).flatMap((block) => (block.id ? [block.id] : [])),
+          flattenBlocks(blocks).flatMap((block) =>
+            block.id ? [block.id] : [],
+          ),
         );
         const typography = p.typography
           ? Object.fromEntries(
-              Object.entries(p.typography).filter(([blockId]) => ids.has(blockId)),
+              Object.entries(p.typography).filter(([blockId]) =>
+                ids.has(blockId),
+              ),
             )
           : undefined;
         return {
@@ -85,7 +82,9 @@ export function EditorScreen({ id }: { id: string }) {
       update((p) => {
         const next = { ...(p.typography ?? {}) };
         const cleaned = Object.fromEntries(
-          Object.entries(value).filter(([, item]) => item !== undefined && item !== ""),
+          Object.entries(value).filter(
+            ([, item]) => item !== undefined && item !== "",
+          ),
         ) as BlockTypography;
         if (Object.keys(cleaned).length > 0) next[blockId] = cleaned;
         else delete next[blockId];
@@ -96,15 +95,14 @@ export function EditorScreen({ id }: { id: string }) {
       }),
     [update],
   );
-
   const changeFontSources = useCallback(
-    (fontSources: FontSource[]) => update((p) => ({
-      ...p,
-      fontSources: fontSources.length ? fontSources : undefined,
-    })),
+    (fontSources: FontSource[]) =>
+      update((p) => ({
+        ...p,
+        fontSources: fontSources.length ? fontSources : undefined,
+      })),
     [update],
   );
-
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     try {
@@ -115,7 +113,6 @@ export function EditorScreen({ id }: { id: string }) {
       setBusy(false);
     }
   };
-
   if (!loaded)
     return (
       <main className="document-shell">
@@ -123,7 +120,6 @@ export function EditorScreen({ id }: { id: string }) {
         <Skeleton className="h-48 w-full" />
       </main>
     );
-
   if (!plan)
     return (
       <main className="document-shell">
@@ -134,10 +130,11 @@ export function EditorScreen({ id }: { id: string }) {
         </Button>
       </main>
     );
-
   return (
     <>
-      <header className={`editor-bar${focusMode ? " is-focus" : ""}`}>
+      <header
+        className={`${preview ? "preview-bar" : "editor-bar"}${focusMode ? " is-focus" : ""}`}
+      >
         <div className="editor-identity">
           <Button
             size="icon"
@@ -153,21 +150,36 @@ export function EditorScreen({ id }: { id: string }) {
           >
             <ArrowLeft />
           </Button>
-          <span className="editor-plan-name">{plan.title}</span>
-          <span className="save-status" role="status">
+          <span className="editor-plan-name">IPOS.Plan</span>
+          <span
+            className="save-status"
+            role="status"
+            data-state={
+              error
+                ? "error"
+                : status === "Сохранено локально"
+                  ? "saved"
+                  : "pending"
+            }
+          >
             {status}
           </span>
         </div>
-
         <nav className="editor-actions" aria-label="Действия с планом">
           <Button
             size="sm"
-            variant="ghost"
+            variant="outline"
+            aria-label={preview ? "Редактировать" : "Предпросмотр"}
             disabled={busy}
+            title={
+              preview
+                ? "Вернуться к редактированию"
+                : "Посмотреть документ без инструментов"
+            }
             onClick={() =>
               void run(async () => {
                 await flush();
-                setPreview((value) => !value);
+                setPreview((v) => !v);
               })
             }
           >
@@ -176,15 +188,24 @@ export function EditorScreen({ id }: { id: string }) {
             ) : (
               <Eye data-icon="inline-start" />
             )}
-            {preview ? "Редактировать" : "Предпросмотр"}
+            <span className="toolbar-desktop-label">
+              {preview ? "Редактировать" : "Предпросмотр"}
+            </span>
+            <span className="toolbar-mobile-label" aria-hidden="true">
+              {preview ? "Редактировать" : "Просмотр"}
+            </span>
           </Button>
-
           {!preview && (
             <Button
               size="sm"
               variant="ghost"
               aria-pressed={focusMode}
               aria-label={focusMode ? "Выйти из режима фокуса" : "Режим фокуса"}
+              title={
+                focusMode
+                  ? "Выйти из режима фокуса"
+                  : "Скрыть панели и сосредоточиться на документе"
+              }
               onClick={() => setFocusMode((value) => !value)}
             >
               {focusMode ? <Minimize2 /> : <Maximize2 />}
@@ -193,87 +214,32 @@ export function EditorScreen({ id }: { id: string }) {
               </span>
             </Button>
           )}
-
-          <details className="editor-more">
-            <summary aria-label="Дополнительные действия">
-              <MoreHorizontal size={18} />
-            </summary>
-            <div className="editor-more-menu" role="menu">
-              <button
-                type="button"
-                role="menuitem"
-                onClick={(e) => {
-                  setDialog("history");
-                  const details = e.currentTarget.closest("details");
-                  if (details) details.open = false;
-                }}
-              >
-                <History size={16} />
-                История
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                disabled={busy}
-                onClick={(e) => {
-                  const details = e.currentTarget.closest("details");
-                  if (details) details.open = false;
-                  void run(async () => {
-                    const p = await flush();
-                    await saveRevision(p);
-                    toast.success("Версия сохранена");
-                  });
-                }}
-              >
-                <BookmarkPlus size={16} />
-                Сохранить версию
-              </button>
-              <span className="editor-more-separator" />
-              <button
-                type="button"
-                role="menuitem"
-                onClick={(e) => {
-                  const details = e.currentTarget.closest("details");
-                  if (details) details.open = false;
-                  void run(async () => {
-                    await flush();
-                    await document.fonts.ready;
-                    window.print();
-                  });
-                }}
-              >
-                <Printer size={16} />
-                Печать / PDF (A4)
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={(e) => {
-                  setDialog("import");
-                  const details = e.currentTarget.closest("details");
-                  if (details) details.open = false;
-                }}
-              >
-                <Upload size={16} />
-                Импорт
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                disabled={busy}
-                onClick={(e) => {
-                  setExportPlan(toPortable(plan));
-                  setDialog("export");
-                  const details = e.currentTarget.closest("details");
-                  if (details) details.open = false;
-                }}
-              >
-                <Download size={16} />
-                Экспорт
-              </button>
-            </div>
-          </details>
-
+          <PlanActionsMenu
+            disabled={busy}
+            readonly={preview}
+            onPrint={() =>
+              void run(async () => {
+                await flush();
+                await document.fonts.ready;
+                window.print();
+              })
+            }
+            onHistory={() => setDialog("history")}
+            onSave={() =>
+              void run(async () => {
+                const p = await flush();
+                await saveRevision(p);
+                toast.success("Версия сохранена");
+              })
+            }
+            onImport={() => setDialog("import")}
+            onExport={() =>
+              void run(async () => {
+                setExportPlan(toPortable(plan));
+                setDialog("export");
+              })
+            }
+          />
           <Button
             size="sm"
             disabled={busy}
@@ -294,7 +260,6 @@ export function EditorScreen({ id }: { id: string }) {
           </Button>
         </nav>
       </header>
-
       <main className={`editor-stage${focusMode ? " focus-stage" : ""}`}>
         {error && (
           <Alert variant="destructive">
@@ -340,7 +305,6 @@ export function EditorScreen({ id }: { id: string }) {
           />
         </div>
       </main>
-
       {dialog === "import" && (
         <ImportDialog
           replacing

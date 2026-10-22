@@ -24,18 +24,20 @@ export function PlanCover({
     <header className="plan-cover" id="plan-cover">
       <PlanEmblem size={56} alt="Эмблема МГУ" />
       <div>
-        <p className="cover-eyebrow">IPOS · ПЛАН</p>
+        <p className="cover-eyebrow">Медиасектор ИПОС</p>
         {editable ? (
           <>
             <Textarea
               aria-label="Название плана"
               maxLength={500}
-              rows={2}
+              rows={1}
               value={plan.title}
               onChange={(e) => onTitleChange?.(e.target.value)}
               className="cover-title"
             />
-            <h1 className="print-only-cover-title" aria-hidden="true">{plan.title}</h1>
+            <h1 className="print-only-cover-title" aria-hidden="true">
+              {plan.title}
+            </h1>
           </>
         ) : (
           <h1>{plan.title || "Без названия"}</h1>

@@ -1,0 +1,2 @@
+# Keep official Figma exports byte-for-byte across Windows and Linux checkouts.
+public/brand/*.svg -text

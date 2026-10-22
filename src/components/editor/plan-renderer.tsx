@@ -1,13 +1,14 @@
 "use client";
 import {
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
   useSyncExternalStore,
   type CSSProperties,
 } from "react";
-import Image from "next/image";
+import { OfficialBrand } from "@/components/plan/official-brand";
 import {
   filterSuggestionItems,
   insertOrUpdateBlockForSlashMenu,
@@ -23,6 +24,7 @@ import {
   Quote,
   PanelLeft,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 import type {
   Block,
@@ -32,9 +34,10 @@ import type {
 } from "@/lib/schema/plan";
 import type { Task } from "@/lib/schema/task";
 import { uid } from "@/features/plans/repository";
+import { cn } from "@/lib/utils";
 import { PlanContext } from "./plan-context";
 import { editorSchema } from "./schema";
-import { taskCompanions } from "./document-structure";
+import { taskCompanions, duplicateTitleHeading } from "./document-structure";
 import { PlanCover } from "./plan-cover";
 import { PlanOutline, insertItems, type InsertType } from "./plan-outline";
 import { BlockInspector } from "./block-inspector";
@@ -61,25 +64,11 @@ type Props = {
   onWatermarkChange?: (value: boolean) => void;
   focusMode?: boolean;
 };
-
-const inspectableTypes = new Set([
-  "task",
-  "reference",
-  "image",
-  "paragraph",
-  "heading",
-  "quote",
-  "bulletListItem",
-  "numberedListItem",
-  "callout",
-]);
-
 function subscribeWidth(callback: () => void) {
-  const query = window.matchMedia("(min-width: 1200px)");
+  const query = window.matchMedia("(min-width: 1440px)");
   query.addEventListener("change", callback);
   return () => query.removeEventListener("change", callback);
 }
-
 export default function PlanRenderer({
   plan,
   editable = false,
@@ -104,20 +93,22 @@ export default function PlanRenderer({
   const [blocks, setBlocks] = useState(() => editor.document as Block[]);
   const [selectedId, setSelectedId] = useState<string>();
   const [panel, setPanel] = useState<"outline" | "inspector">();
+  const [outlineVisible, setOutlineVisible] = useState(true);
+  const [inspectorVisible, setInspectorVisible] = useState(false);
   const root = useRef<HTMLDivElement>(null);
-  // Widths are local UI preferences, intentionally not part of shared plan JSON.
-  const [outlineWidth, setOutlineWidth] = useState(210);
-  const [inspectorWidth, setInspectorWidth] = useState(300);
+  const [outlineWidth, setOutlineWidth] = useState(208);
+  const [inspectorWidth, setInspectorWidth] = useState(280);
   const [widthsLoaded, setWidthsLoaded] = useState(false);
   useEffect(() => {
-    // Apply persisted widths after hydration, outside the synchronous effect.
     const frame = requestAnimationFrame(() => {
       try {
-        const a = Number(localStorage.getItem("ipos:outline-width"));
-        const b = Number(localStorage.getItem("ipos:inspector-width"));
-        if (a >= 160 && a <= 360) setOutlineWidth(a);
-        if (b >= 250 && b <= 460) setInspectorWidth(b);
-      } catch { /* Browser storage may be disabled. */ }
+        const outline = Number(localStorage.getItem("ipos:outline-width"));
+        const inspector = Number(localStorage.getItem("ipos:inspector-width"));
+        if (outline >= 160 && outline <= 320) setOutlineWidth(outline);
+        if (inspector >= 260 && inspector <= 400) setInspectorWidth(inspector);
+      } catch {
+        // Resizing remains available when browser storage is disabled.
+      }
       setWidthsLoaded(true);
     });
     return () => cancelAnimationFrame(frame);
@@ -127,24 +118,109 @@ export default function PlanRenderer({
     try {
       localStorage.setItem("ipos:outline-width", String(outlineWidth));
       localStorage.setItem("ipos:inspector-width", String(inspectorWidth));
-    } catch { /* Keep resizing usable without persistence. */ }
+    } catch {
+      // Keep the current width even when it cannot be persisted.
+    }
   }, [outlineWidth, inspectorWidth, widthsLoaded]);
-
+  const rendererId = useId();
   const wide = useSyncExternalStore(
     subscribeWidth,
-    () => window.matchMedia("(min-width: 1200px)").matches,
+    () => window.matchMedia("(min-width: 1440px)").matches,
     () => false,
   );
   const selected = selectedId ? editor.getBlock(selectedId) : undefined;
-  const inspectable = Boolean(selected && inspectableTypes.has(selected.type));
-  const inspectorOpen = editable && wide && !focusMode && inspectable;
-
   const selectBlock = (id: string, openProperties = true) => {
     setSelectedId(id);
+    if (openProperties) setInspectorVisible(true);
     if (!wide && openProperties) setPanel("inspector");
   };
-
   const grouping = useMemo(() => taskCompanions(blocks), [blocks]);
+  const duplicateId = duplicateTitleHeading(blocks, plan.title);
+  const presentationStyle = useMemo(() => {
+    const scope = `[data-document-renderer="${CSS.escape(rendererId)}"]`;
+    const selector = (id: string) =>
+      `${scope} .bn-block-outer[data-id="${CSS.escape(id)}"]`;
+    const rules: string[] = [];
+    // Every task and the following requirements/notes are one visual brief.
+    // All blocks stay in their original BlockNote positions and remain editable;
+    // only scoped presentation CSS changes, including in preview and viewer.
+    for (const [id, owner] of Object.entries(grouping.sectionById)) {
+      if (grouping.embeddedIds.has(id)) continue; // media already in task brief
+      const start = id === owner;
+      const end = grouping.endIds.has(id);
+      const properties = [
+        "box-sizing:border-box",
+        "min-width:0",
+        "background:#f9faff",
+        "border-left:1px solid #dce3f6",
+        "border-right:1px solid #dce3f6",
+        "box-shadow:inset 3px 0 0 var(--primary)",
+        "padding:3px 12px",
+        ...(start ? [
+          "margin-top:18px",
+          "padding-top:19px",
+          "border-top:1px solid #dce3f6",
+          "border-top-left-radius:8px",
+          "border-top-right-radius:8px",
+        ] : []),
+        ...(end ? [
+          "margin-bottom:18px",
+          "padding-bottom:18px",
+          "border-bottom:1px solid #dce3f6",
+          "border-bottom-left-radius:8px",
+          "border-bottom-right-radius:8px",
+        ] : []),
+      ];
+      rules.push(`${selector(id)}{${properties.join(";")}}`);
+      rules.push(
+        `@media(max-width:767px){${selector(id)}{padding-left:8px;padding-right:8px}}`,
+      );
+      rules.push(
+        `@media print{${selector(id)}{background:transparent!important;box-shadow:none!important;border-left:0!important;border-right:0!important;padding-left:0!important;padding-right:0!important}}`,
+      );
+    }
+    for (const [id, owner] of Object.entries(grouping.sectionById)) {
+      if (id === owner) continue;
+      rules.push(
+        `${selector(id)} > .bn-block > .bn-block-content[data-content-type="heading"]{--level:17px;font-size:17px;padding-top:12px}`,
+      );
+      rules.push(
+        `${selector(id)} > .bn-block > .bn-block-content[data-content-type="heading"] .bn-inline-content{font-size:17px}`,
+      );
+    }
+    for (const [id, style] of Object.entries(plan.typography ?? {})) {
+      const declarations = [
+        style.fontFamily &&
+          CSS.supports("font-family", style.fontFamily) &&
+          `font-family:${style.fontFamily} !important`,
+        style.fontSize && `font-size:${style.fontSize}px !important`,
+        style.fontWeight && `font-weight:${style.fontWeight} !important`,
+      ].filter(Boolean);
+      if (declarations.length)
+        rules.push(
+          `${selector(id)} .bn-inline-content{${declarations.join(";")}}`,
+        );
+    }
+    if (duplicateId && showCover)
+      rules.push(
+        editable && selectedId === duplicateId
+          ? `${selector(duplicateId)} > .bn-block > .bn-block-content{--level:17px;font-size:17px;font-weight:500;padding:2px 0 16px;color:var(--muted-foreground)}\n${selector(duplicateId)} > .bn-block > .bn-block-content .bn-inline-content{font-size:17px}`
+          : editable
+            ? `${selector(duplicateId)}{max-height:0;overflow:hidden;margin:0;padding:0;opacity:0}`
+            : `${selector(duplicateId)}{display:none}`,
+      );
+    if (duplicateId && showCover)
+      rules.push(`@media print{${selector(duplicateId)}{display:none}}`);
+    return rules.join("\n");
+  }, [
+    grouping,
+    duplicateId,
+    rendererId,
+    editable,
+    showCover,
+    plan.typography,
+    selectedId,
+  ]);
   const context = {
     plan: { ...plan, blocks },
     editable,
@@ -153,7 +229,6 @@ export default function PlanRenderer({
     selectBlock,
     ...grouping,
   };
-
   useEffect(() => {
     if (!editable) return;
     return editor.onSelectionChange(() => {
@@ -166,56 +241,10 @@ export default function PlanRenderer({
         setSelectedId(editor.getTextCursorPosition().block.id);
     });
   }, [editor, editable]);
-
-  useEffect(() => {
-    if (!focusMode) return;
-    const frame = requestAnimationFrame(() => setPanel(undefined));
-    return () => cancelAnimationFrame(frame);
-  }, [focusMode]);
-
-  useEffect(() => {
-    const scope = root.current;
-    if (!scope) return;
-
-    scope
-      .querySelectorAll<HTMLElement>('[data-ipos-typography="true"]')
-      .forEach((element) => {
-        element.removeAttribute("data-ipos-typography");
-        element.style.removeProperty("--ipos-block-font-family");
-        element.style.removeProperty("--ipos-block-font-size");
-        element.style.removeProperty("--ipos-block-font-weight");
-      });
-
-    for (const [blockId, style] of Object.entries(plan.typography ?? {})) {
-      const escaped = CSS.escape(blockId);
-      scope
-        .querySelectorAll<HTMLElement>(
-          `.bn-block-outer[data-id="${escaped}"], [data-plan-block="${escaped}"]`,
-        )
-        .forEach((element) => {
-          element.dataset.iposTypography = "true";
-          if (style.fontFamily)
-            element.style.setProperty(
-              "--ipos-block-font-family",
-              style.fontFamily,
-            );
-          if (style.fontSize)
-            element.style.setProperty(
-              "--ipos-block-font-size",
-              `${style.fontSize}px`,
-            );
-          if (style.fontWeight)
-            element.style.setProperty(
-              "--ipos-block-font-weight",
-              style.fontWeight,
-            );
-        });
-    }
-  }, [plan.typography, blocks]);
-
   const locate = (id?: string) => {
     setPanel(undefined);
     setSelectedId(id);
+    if (wide) setInspectorVisible(Boolean(id));
     if (!id) {
       root.current
         ?.querySelector(".plan-cover")
@@ -241,7 +270,6 @@ export default function PlanRenderer({
       editor.focus();
     } else target?.focus({ preventScroll: true });
   };
-
   const add = (type: keyof typeof editorSchema.blockSchema, slash = false) => {
     const partial: PartialBlock<typeof editorSchema.blockSchema> =
       type === "task" ? { type: "task", props: { taskId: uid() } } : { type };
@@ -286,7 +314,6 @@ export default function PlanRenderer({
       });
     }
   };
-
   const items = [
     { title: "Текст", type: "paragraph", icon: Text },
     { title: "Список", type: "bulletListItem", icon: List },
@@ -298,7 +325,6 @@ export default function PlanRenderer({
     { title: "Цитата", type: "quote", icon: Quote },
     ...insertItems,
   ] as const;
-
   const outline = (
     <PlanOutline
       plan={plan}
@@ -306,16 +332,16 @@ export default function PlanRenderer({
       selectedId={selectedId}
       select={locate}
       add={(type: InsertType) => add(type)}
-      watermark={watermark}
-      setWatermark={(value) => onWatermarkChange?.(value)}
     />
   );
-
   const inspector = (
     <BlockInspector
       block={selected as Block | undefined}
       fontSources={plan.fontSources ?? []}
       updateFontSources={onFontSourcesChange}
+      onTitleChange={onTitleChange}
+      watermark={watermark}
+      setWatermark={onWatermarkChange}
       typography={selectedId ? plan.typography?.[selectedId] : undefined}
       updateTypography={
         selectedId && onTypographyChange
@@ -328,6 +354,23 @@ export default function PlanRenderer({
           (selected.type === "reference" || selected.type === "image")
         )
           editor.updateBlock(selected, { props });
+        else if (
+          selected &&
+          props.textAlignment &&
+          [
+            "paragraph",
+            "heading",
+            "quote",
+            "bulletListItem",
+            "numberedListItem",
+          ].includes(selected.type)
+        )
+          editor.updateBlock(selected, {
+            props: {
+              textAlignment: props.textAlignment as
+                "left" | "center" | "right" | "justify",
+            },
+          });
       }}
       remove={() => {
         if (selected) editor.removeBlocks([selected]);
@@ -337,65 +380,82 @@ export default function PlanRenderer({
       }}
     />
   );
-
   return (
     <PlanContext.Provider value={context}>
       <ExternalFontLoader sources={plan.fontSources ?? []} />
       <div
         ref={root}
-        style={{
-          "--ipos-outline-width": `${outlineWidth}px`,
-          "--ipos-inspector-width": `${inspectorWidth}px`,
-        } as CSSProperties}
-        className={`${editable ? "editor-workspace" : "readonly-workspace"}${showCover ? "" : " embedded-document"}${inspectorOpen ? " inspector-open" : ""}${focusMode ? " focus-mode" : ""}`}
+        style={
+          {
+            "--ipos-outline-width": `${outlineWidth}px`,
+            "--ipos-inspector-width": `${inspectorWidth}px`,
+          } as CSSProperties
+        }
+        data-document-renderer={rendererId}
+        className={cn(
+          editable ? "editor-workspace" : "readonly-workspace",
+          !showCover && "embedded-document",
+          focusMode && "focus-mode",
+          editable && outlineVisible && "outline-open",
+          editable && inspectorVisible && "inspector-open",
+        )}
       >
+        <style>{presentationStyle}</style>
         {editable && !focusMode && (
           <>
-            {wide ? (
+            <div className="workspace-controls workspace-mobile-bar">
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-pressed={wide ? outlineVisible : panel === "outline"}
+                onClick={() =>
+                  wide
+                    ? setOutlineVisible((value) => !value)
+                    : setPanel("outline")
+                }
+              >
+                <PanelLeft data-icon="inline-start" />
+                Структура
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-pressed={wide ? inspectorVisible : panel === "inspector"}
+                onClick={() =>
+                  wide
+                    ? setInspectorVisible((value) => !value)
+                    : setPanel("inspector")
+                }
+              >
+                <SlidersHorizontal data-icon="inline-start" />
+                Свойства
+              </Button>
+            </div>
+            {wide && outlineVisible && (
               <aside className="workspace-outline" aria-label="Навигация плана">
                 {outline}
                 <WorkspaceResizeHandle
                   label="Изменить ширину структуры плана"
                   width={outlineWidth}
                   min={160}
-                  max={inspectorOpen ? Math.min(360, Math.max(160, window.innerWidth - inspectorWidth - 560)) : 360}
+                  max={Math.min(
+                    320,
+                    Math.max(
+                      160,
+                      window.innerWidth -
+                        (inspectorVisible ? inspectorWidth : 0) -
+                        720,
+                    ),
+                  )}
                   onChange={setOutlineWidth}
                 />
               </aside>
-            ) : (
-              <div className="workspace-mobile-bar">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPanel("outline")}
-                >
-                  <PanelLeft size={16} />
-                  Структура
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={!inspectable}
-                  onClick={() => setPanel("inspector")}
-                >
-                  <SlidersHorizontal size={16} />
-                  Свойства
-                </Button>
-              </div>
             )}
           </>
         )}
-
         <article className="plan-paper" aria-label="Документ плана">
           {watermark && showCover && (
-            <Image
-              className="plan-watermark"
-              src="/icon.svg"
-              width={480}
-              height={480}
-              alt=""
-              aria-hidden="true"
-            />
+            <OfficialBrand className="plan-watermark" width={220} decorative />
           )}
           {showCover && (
             <PlanCover
@@ -414,7 +474,10 @@ export default function PlanRenderer({
                     const id = target.closest<HTMLElement>(
                       ".bn-block-outer[data-id]",
                     )?.dataset.id;
-                    if (id) setSelectedId(id);
+                    if (id) {
+                      setSelectedId(id);
+                      setInspectorVisible(true);
+                    }
                   }
                 : undefined
             }
@@ -456,8 +519,7 @@ export default function PlanRenderer({
             </BlockNoteView>
           </div>
         </article>
-
-        {inspectorOpen && (
+        {editable && wide && inspectorVisible && !focusMode && (
           <aside
             className="workspace-inspector"
             aria-label="Свойства выбранного блока"
@@ -465,15 +527,31 @@ export default function PlanRenderer({
             <WorkspaceResizeHandle
               label="Изменить ширину панели свойств"
               width={inspectorWidth}
-              min={250}
-              max={Math.min(460, Math.max(250, window.innerWidth - outlineWidth - 560))}
+              min={260}
+              max={Math.min(
+                400,
+                Math.max(
+                  260,
+                  window.innerWidth - (outlineVisible ? outlineWidth : 0) - 720,
+                ),
+              )}
               invert
               onChange={setInspectorWidth}
             />
+            <div className="inspector-panel-header">
+              <span>Свойства</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Закрыть свойства"
+                onClick={() => setInspectorVisible(false)}
+              >
+                <X />
+              </Button>
+            </div>
             {inspector}
           </aside>
         )}
-
         {editable && !wide && !focusMode && (
           <Dialog
             open={Boolean(panel)}
@@ -482,9 +560,12 @@ export default function PlanRenderer({
             }}
           >
             <DialogContent
-              className={`workspace-drawer translate-x-0 translate-y-0 ${panel === "outline" ? "outline-drawer" : "inspector-drawer"}`}
+              className={cn(
+                "workspace-drawer",
+                panel === "outline" ? "outline-drawer" : "inspector-drawer",
+              )}
             >
-              <DialogTitle className="sr-only">
+              <DialogTitle>
                 {panel === "outline" ? "Структура плана" : "Свойства блока"}
               </DialogTitle>
               <DialogDescription className="sr-only">
