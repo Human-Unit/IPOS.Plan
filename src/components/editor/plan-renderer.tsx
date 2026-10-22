@@ -20,7 +20,7 @@ import {
 } from "./brief-document";
 import { prepareImage } from "./prepare-image";
 import { toPortable, flattenBlocks } from "@/lib/schema/plan";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications";
 import { errorMessage } from "@/lib/labels";
 import { OfficialBrand } from "@/components/plan/official-brand";
 import {
@@ -215,6 +215,7 @@ export default function PlanRenderer({
       }
       toast.success(
         "Добавлена уменьшенная копия до 64 КБ. Она сохранится в JSON и снимке; оригинал храните отдельно.",
+        { duration: 6000 },
       );
     } catch (error) {
       toast.error(errorMessage(error));

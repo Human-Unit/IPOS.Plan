@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -10,7 +10,7 @@ import {
   Maximize2,
   Minimize2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications";
 import { usePlan } from "./use-plan";
 import { db } from "@/lib/db/database";
 import { event, saveRevision } from "./repository";
@@ -51,6 +51,37 @@ export function EditorScreen({ id }: { id: string }) {
   const [exportPlan, setExportPlan] = useState<PortablePlan>();
   const [shareUrl, setShareUrl] = useState("");
   const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!focusMode || preview) return;
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.isComposing || dialog || shareUrl)
+        return;
+      // Window bubble runs after native editor/Radix handlers. Visible overlays
+      // also own Escape when their close handler does not cancel the event.
+      const overlays = document.querySelectorAll<HTMLElement>(
+        '[role="dialog"],[role="alertdialog"],[role="menu"],[role="listbox"],[data-radix-popper-content-wrapper],.bn-suggestion-menu',
+      );
+      if ([...overlays].some((element) => element.getClientRects().length > 0))
+        return;
+      if (
+        (event.target as HTMLElement | null)?.closest("[data-sonner-toaster]")
+      )
+        return;
+      if (event.defaultPrevented) {
+        // BlockNote 0.55's OverrideEscape always consumes Escape to blur plain
+        // text. In focus mode that specific blur should exit focus, preserving
+        // the DOM selection. Other consumed events still belong to their UI.
+        const editor = (
+          event.target as HTMLElement | null
+        )?.closest<HTMLElement>(".bn-editor");
+        if (!editor || document.activeElement !== document.body) return;
+        editor.focus({ preventScroll: true });
+      }
+      setFocusMode(false);
+    };
+    window.addEventListener("keydown", onEscape);
+    return () => window.removeEventListener("keydown", onEscape);
+  }, [focusMode, preview, dialog, shareUrl]);
   // Keep entities in memory so BlockNote undo can restore a removed task block.
   const changeBlocks = useCallback(
     (blocks: Block[]) =>
@@ -253,7 +284,12 @@ export function EditorScreen({ id }: { id: string }) {
                 window.print();
               })
             }
-            onHistory={() => setDialog("history")}
+            onHistory={() =>
+              void run(async () => {
+                await flush();
+                setDialog("history");
+              })
+            }
             onSave={() =>
               void run(async () => {
                 const p = await flush();

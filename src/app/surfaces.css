@@ -621,3 +621,46 @@
     text-align: left;
   }
 }
+.toaster[data-sonner-toaster] {
+  pointer-events: auto;
+}
+.toaster[data-sonner-toaster] [data-sonner-toast] {
+  font: 400 13px/1.45 var(--font-ui);
+  padding: 10px 12px;
+  gap: 8px;
+  border-radius: 5px;
+}
+.toaster [data-sonner-toast]:has([data-close-button]) {
+  padding-right: 46px;
+}
+.toaster[data-sonner-toaster] [data-sonner-toast] [data-close-button] {
+  left: auto;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+}
+.toaster [data-sonner-toast][data-visible="false"] {
+  visibility: hidden;
+  pointer-events: none;
+}
+@media (max-width: 767px) {
+  /* A reserved bottom strip keeps notification text off modal controls. */
+  body:has(
+      .toaster
+        [data-sonner-toast][data-visible="true"]:not([data-removed="true"])
+    )
+    .dialog-panel:not(.workspace-drawer) {
+    max-height: calc(100dvh - 108px);
+    top: calc(50% - 30px);
+  }
+  body:has(
+      .toaster
+        [data-sonner-toast][data-visible="true"]:not([data-removed="true"])
+    )
+    .workspace-drawer.inspector-drawer {
+    bottom: max(72px, calc(env(safe-area-inset-bottom) + 60px));
+    max-height: calc(82dvh - 72px);
+  }
+}

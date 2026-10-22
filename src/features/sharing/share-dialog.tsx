@@ -1,5 +1,5 @@
 "use client";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications";
 import { Link2, LockKeyhole, ArrowUpRight, Copy } from "lucide-react";
 import { Field, FieldLabel } from "@/components/ui/field";
 import {

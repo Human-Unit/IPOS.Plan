@@ -12,6 +12,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { statuses, priorities, type Task } from "@/lib/schema/task";
 import { statusLabels, priorityLabels } from "@/lib/labels";
 import { PlanInspector } from "./plan-inspector";
+import { DeadlinePicker } from "./deadline-picker";
 
 const textBlockTypes = new Set([
   "paragraph",
@@ -405,13 +406,7 @@ export function BlockInspector({
                   (value) => change({ assignee: value || undefined }),
                   { max: 200 },
                 )}
-                {field(
-                  "deadline",
-                  "Дедлайн",
-                  task.deadline ?? "",
-                  (value) => change({ deadline: value || undefined }),
-                  { type: "date" },
-                )}
+                <DeadlinePicker id={`${id}-deadline`} value={task.deadline} onChange={(deadline) => change({ deadline })} />
                 {field(
                   "description",
                   "Описание",

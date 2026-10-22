@@ -1,11 +1,6 @@
 import { db, type Activity, type Revision } from "@/lib/db/database";
-import { statusLabels } from "@/lib/labels";
-import {
-  toPortable,
-  type Plan,
-  type PortablePlan,
-  flattenBlocks,
-} from "@/lib/schema/plan";
+import { activityChanges } from "./activity-changes";
+import { toPortable, type Plan, type PortablePlan } from "@/lib/schema/plan";
 export const uid = () => crypto.randomUUID();
 export const now = () => new Date().toISOString();
 export function newPlan(data?: PortablePlan): Plan {
@@ -63,48 +58,12 @@ export async function savePlan(plan: Plan): Promise<Plan> {
       version: plan.version + 1,
       updatedAt: now(),
     };
-    const events: Activity[] = [];
-    if (previous.title !== plan.title)
-      events.push(event(plan.id, "PLAN_RENAMED", `Название: ${plan.title}`));
-    for (const task of Object.values(portable.tasks)) {
-      const old = previous.tasks[task.id];
-      if (!old)
-        events.push(
-          event(plan.id, "TASK_CREATED", `Создана задача: ${task.title}`),
-        );
-      else {
-        if (old.status !== task.status)
-          events.push(
-            event(
-              plan.id,
-              "TASK_STATUS_CHANGED",
-              `Статус задачи «${task.title}»: ${statusLabels[task.status]}`,
-            ),
-          );
-        if (old.assignee !== task.assignee)
-          events.push(
-            event(
-              plan.id,
-              "TASK_ASSIGNED",
-              `Исполнитель «${task.title}»: ${task.assignee || "не указан"}`,
-            ),
-          );
-      }
-    }
-    const oldRefs = new Set(
-      flattenBlocks(previous.blocks)
-        .filter((b) => b.type === "reference")
-        .map((b) => b.id),
+    const events = activityChanges(toPortable(previous), portable).map(
+      ({ type, message, metadata }) => ({
+        ...event(plan.id, type, message),
+        metadata,
+      }),
     );
-    for (const b of flattenBlocks(plan.blocks))
-      if (b.type === "reference" && !oldRefs.has(b.id))
-        events.push(
-          event(
-            plan.id,
-            "REFERENCE_ADDED",
-            `Референс: ${b.props.title || b.props.url || "без названия"}`,
-          ),
-        );
     await db.plans.put(saved);
     if (events.length) await db.activity.bulkAdd(events);
     return saved;

@@ -48,7 +48,26 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
   await page.getByRole("button", { name: "Задача", exact: true }).click();
   await page.getByLabel("Название задачи").fill("Подготовить анонс");
   await page.getByLabel("Ответственные", { exact: true }).fill("Редактор");
-  await page.getByLabel("Дедлайн", { exact: true }).fill("2026-10-25");
+  await page
+    .getByRole("button", { name: "Выбрать дедлайн", exact: true })
+    .click();
+  const calendar = page.getByRole("dialog", {
+    name: "Календарь дедлайна",
+    exact: true,
+  });
+  const today = new Date();
+  const months = (today.getFullYear() - 2026) * 12 + today.getMonth() - 9;
+  for (let i = 0; i < Math.abs(months); i++)
+    await calendar
+      .getByRole("button", {
+        name:
+          months > 0
+            ? "Перейти к предыдущему месяцу"
+            : "Перейти к следующему месяцу",
+        exact: true,
+      })
+      .click();
+  await calendar.getByRole("button", { name: /25 октября 2026/ }).click();
   await page.getByLabel("Статус", { exact: true }).selectOption("in_progress");
   await saved(page);
   const editorUrl = page.url();
@@ -60,6 +79,9 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
   await expect(page.getByLabel("Название задачи")).toHaveValue(
     "Подготовить анонс",
   );
+  await expect(
+    page.getByRole("button", { name: "Выбрать дедлайн", exact: true }),
+  ).toContainText("25.10.2026");
   await expect(page.getByLabel("Статус", { exact: true })).toHaveValue(
     "in_progress",
   );
