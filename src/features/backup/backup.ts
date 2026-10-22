@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ACTIVIST_PREFIX, activistEntrySchema, activistNameKey, directoryNames } from "@/features/activists/directory";
 import {
   db,
   type Activity,
@@ -29,6 +30,10 @@ const settingSchema = z.union([
       value: templateValueSchema,
     })
     .strict(),
+  z.object({
+    key: z.string().regex(/^activist:[a-zA-Z0-9-]{1,100}$/),
+    value: activistEntrySchema,
+  }).strict(),
 ]);
 const revisionSchema = z
   .object({
@@ -60,7 +65,7 @@ const backupSchema = z
     plans: z.array(planSchema).max(1000),
     revisions: z.array(revisionSchema).max(10000),
     activity: z.array(activitySchema).max(50000),
-    settings: z.array(settingSchema).max(501),
+    settings: z.array(settingSchema).max(1001),
   })
   .strict();
 export type LibraryBackup = z.infer<typeof backupSchema>;
@@ -112,6 +117,12 @@ export function parseBackup(raw: string): LibraryBackup {
     new Set(backup.settings.map((s) => s.key)).size !== backup.settings.length
   )
     throw new Error("Повторяющиеся настройки.");
+  const rosterNames = backup.settings
+    .filter((s) => s.key.startsWith(ACTIVIST_PREFIX))
+    .map((s) => activistNameKey((s.value as z.infer<typeof activistEntrySchema>).name));
+  if (new Set(rosterNames).size !== rosterNames.length)
+    throw new Error("Повторяющиеся имена в справочнике.");
+
   const plans = new Set(backup.plans.map((p) => p.id));
   for (const p of [
     ...backup.plans,
@@ -160,7 +171,7 @@ export async function exportLibrary(): Promise<LibraryBackup> {
       revisions: await db.revisions.toArray(),
       activity: await db.activity.toArray(),
       settings: (await db.settings.toArray()).filter(
-        (s) => s.key === "demo-seeded-v1" || s.key.startsWith("task-template:"),
+        (s) => s.key === "demo-seeded-v1" || s.key.startsWith("task-template:") || s.key.startsWith(ACTIVIST_PREFIX),
       ),
     }),
   );
@@ -210,11 +221,22 @@ export async function restoreLibrary(
           planId: mapping.get(a.planId)!,
         }));
       const settings: Setting[] = [];
+      const knownNames = new Set(directoryNames(
+        await db.settings.filter((row) => row.key.startsWith(ACTIVIST_PREFIX)).toArray(),
+      ).map(activistNameKey));
       for (const s of backup.settings) {
+        if (s.key.startsWith(ACTIVIST_PREFIX)) {
+          const name = (s.value as z.infer<typeof activistEntrySchema>).name;
+          const normalized = activistNameKey(name);
+          if (knownNames.has(normalized) || knownNames.size >= 500) continue;
+          knownNames.add(normalized);
+        }
         const key =
           strategy === "copies" && s.key.startsWith("task-template:")
             ? `task-template:${crypto.randomUUID()}`
-            : s.key;
+            : strategy === "copies" && s.key.startsWith(ACTIVIST_PREFIX)
+              ? `${ACTIVIST_PREFIX}${crypto.randomUUID()}`
+              : s.key;
         if (!(await db.settings.get(key))) settings.push({ ...s, key });
       }
       await db.plans.bulkAdd(plans);
