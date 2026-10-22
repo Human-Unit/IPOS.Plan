@@ -110,6 +110,7 @@ export function TaskCard({
 
         {images.length > 0 && (
           <div className="brief-media">
+            <span className="brief-label">Визуальный референс</span>
             {images.map((block) => (
               <ImageContent key={block.id} block={block} />
             ))}
