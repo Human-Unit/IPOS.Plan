@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/lib/db/database";
 import { createPlan } from "@/features/plans/repository";
-import { exportLibrary, restoreLibrary } from "@/features/backup/backup";
+import { exportLibrary, restoreLibrary, parseBackup } from "@/features/backup/backup";
 import {
   ACTIVIST_PREFIX, assigneeNames, directoryNames,
   rememberAssignees, syncDirectoryFromPlans,
@@ -66,8 +66,6 @@ describe("reusable local assignment names", () => {
       ...backup,
       settings: [{ key: "activist:bad", value: { name: "", createdAt: new Date().toISOString(), source: "assignment" } }],
     };
-    expect(() => import("@/features/backup/backup")).toBeTruthy();
-    const { parseBackup } = await import("@/features/backup/backup");
     expect(() => parseBackup(JSON.stringify(invalid))).toThrow();
     expect(await roster()).toEqual([]);
   });
