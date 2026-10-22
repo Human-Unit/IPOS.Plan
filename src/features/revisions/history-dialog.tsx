@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { PlanRenderer } from "@/components/plan/renderer";
 import { formatDate, errorMessage } from "@/lib/labels";
 import type { PortablePlan } from "@/lib/schema/plan";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications";
 export function HistoryDialog({
   planId,
   onClose,

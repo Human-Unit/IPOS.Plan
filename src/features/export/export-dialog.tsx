@@ -1,5 +1,5 @@
 "use client";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications";
 import { useState } from "react";
 import { FileDown, Braces, Download, Copy } from "lucide-react";
 import { exportPlanDocx, DOCX_TYPE } from "./docx";

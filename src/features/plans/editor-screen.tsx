@@ -10,7 +10,7 @@ import {
   Maximize2,
   Minimize2,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications";
 import { usePlan } from "./use-plan";
 import { db } from "@/lib/db/database";
 import { event, saveRevision } from "./repository";

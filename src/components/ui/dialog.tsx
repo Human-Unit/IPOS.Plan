@@ -76,6 +76,17 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn("dialog-panel", className)}
         {...props}
+        onInteractOutside={(event) => {
+          // Sonner notifications remain operable while this modal is open.
+          // Closing a notification is not a request to dismiss the document dialog.
+          if (
+            (event.target as HTMLElement | null)?.closest(
+              "[data-sonner-toaster]",
+            )
+          )
+            event.preventDefault();
+          props.onInteractOutside?.(event);
+        }}
         onCloseAutoFocus={(event) => {
           onCloseAutoFocus?.(event);
           if (!event.defaultPrevented && returnFocus?.isConnected) {

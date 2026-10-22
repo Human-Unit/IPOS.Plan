@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Plus, Copy, Trash2, ArrowUpRight, Upload } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/notifications";
 import { db } from "@/lib/db/database";
 import { createPlan, deletePlan, duplicatePlan } from "./repository";
 import { seedDemo } from "./demo";
