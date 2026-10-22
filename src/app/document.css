@@ -143,7 +143,7 @@
   align-items: start;
   justify-content: space-between;
   gap: 14px;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 .plan-paper .brief-heading h3 {
   display: flex;
@@ -202,15 +202,27 @@
 }
 .brief-body {
   display: grid;
-  gap: 20px;
+  align-items: start;
+  gap: 16px;
   min-width: 0;
 }
 .brief-body.has-media {
-  grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 190px);
 }
 .brief-copy,
 .brief-media {
   min-width: 0;
+}
+.brief-copy {
+  display: grid;
+  align-content: start;
+}
+.brief-media {
+  display: grid;
+  align-content: start;
+  align-self: start;
+  justify-self: stretch;
+  gap: 8px;
 }
 .brief-description {
   display: grid;
@@ -236,7 +248,7 @@
   align-items: start;
   gap: 10px;
   position: relative;
-  padding: 12px;
+  padding: 10px 11px;
   border: 1px solid #e6e8ed;
   background: #f8f9fb;
   border-radius: 4px;
@@ -298,7 +310,7 @@
   display: grid;
   grid-template-columns: minmax(100px, 0.8fr) minmax(0, 1.2fr);
   gap: 16px;
-  margin: 20px 0 0;
+  margin: 17px 0 0;
 }
 .brief-facts dt {
   font: 400 12px/1.5 var(--font-ui);
@@ -370,7 +382,7 @@
   font: 400 13px/1.65 var(--font-ui);
 }
 .divider-block {
-  padding: 20px 0;
+  padding: 11px 0;
 }
 .divider-block [data-slot="separator"] {
   background: var(--border);
@@ -458,7 +470,7 @@
   .brief-heading {
     display: grid;
     gap: 8px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
   .brief-heading h3 {
     gap: 10px;

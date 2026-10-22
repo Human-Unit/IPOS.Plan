@@ -128,6 +128,23 @@ test("content-heavy workspace fits every viewport, panels resize and collapse, f
     if (message.type() === "error") errors.push(message.text());
   });
   await importBrief(page);
+  // Brief's text, references and task metadata share one readable column.
+  // The optional image is the second column rather than causing a large blank
+  // region between the description and its references.
+  const taskCard = page.locator('.task-brief[data-plan-block="reel"]');
+  const description = await taskCard.locator(".brief-description").boundingBox();
+  const references = await taskCard.locator(".brief-references").boundingBox();
+  const facts = await taskCard.locator(".brief-facts").boundingBox();
+  const media = await taskCard.locator(".brief-media").boundingBox();
+  expect(description).toBeTruthy();
+  expect(references).toBeTruthy();
+  expect(facts).toBeTruthy();
+  expect(media).toBeTruthy();
+  expect(Math.abs(references!.x - description!.x)).toBeLessThan(2);
+  expect(Math.abs(facts!.x - description!.x)).toBeLessThan(2);
+  expect(media!.x).toBeGreaterThan(description!.x + description!.width + 8);
+  expect(references!.x + references!.width).toBeLessThan(media!.x - 8);
+  expect(references!.y - (description!.y + description!.height)).toBeLessThan(42);
   const firstTask = page.locator('.bn-block-outer[data-id="reel"]');
   const requirements = page.locator('.bn-block-outer[data-id="requirements"]');
   const lastNote = page.locator('.bn-block-outer[data-id="callout"]');
@@ -148,6 +165,11 @@ test("content-heavy workspace fits every viewport, panels resize and collapse, f
         page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
       )
       .toBe(true);
+    if (width < 768) {
+      const copy = await page.locator('.task-brief[data-plan-block="reel"] .brief-copy').boundingBox();
+      const image = await page.locator('.task-brief[data-plan-block="reel"] .brief-media').boundingBox();
+      expect(image!.y).toBeGreaterThanOrEqual(copy!.y + copy!.height - 1);
+    }
     const paper = page.locator(".plan-paper");
     const geometry = await paper.boundingBox();
     expect(geometry!.x).toBeGreaterThanOrEqual(0);
