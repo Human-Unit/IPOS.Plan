@@ -73,7 +73,7 @@
   .print-task-status {
     display: inline-flex !important;
   }
-  .brief-body[hidden] {
+  .brief-body[data-collapsed="true"] {
     display: grid !important;
   }
   :root {

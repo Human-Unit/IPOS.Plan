@@ -73,7 +73,7 @@
 .print-only-cover-title,
 .print-task-title,
 .print-task-description,
-.print-task-status {
+.task-status.print-task-status {
   display: none;
 }
 .mode-workspace .plan-cover {
@@ -196,6 +196,10 @@
 .bn-block:has(> .node-mediaStrip) > .bn-block-group > .bn-block-outer {
   min-width: 0;
 }
+.bn-block:is(:has(> .node-brief), :has(> .node-briefChildren), :has(> .node-mediaStrip))
+  > .bn-block-group > .bn-block-outer::before {
+  display: none;
+}
 .task-brief {
   position: relative;
   min-width: 0;
@@ -295,7 +299,7 @@
   gap: 14px;
   min-width: 0;
 }
-.brief-body[hidden] {
+.brief-body[data-collapsed="true"] {
   display: none;
 }
 .task-description-input {

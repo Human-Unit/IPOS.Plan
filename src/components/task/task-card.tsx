@@ -184,7 +184,7 @@ export function TaskCard({
         )}
       </div>
       {
-        <div className="brief-body" hidden={collapsed}>
+        <div className="brief-body" data-collapsed={collapsed || undefined}>
           {editable ? (
             <>
               <textarea

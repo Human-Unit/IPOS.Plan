@@ -36,7 +36,8 @@ export function ShareDialog({
           </DialogTitle>
           <DialogDescription>
             Ссылка содержит эту версию плана. Дальнейшие изменения не обновят
-            снимок.
+            снимок. Встроенные изображения включены; изображения по внешним
+            ссылкам зависят от источника.
           </DialogDescription>
         </DialogHeader>
         <Alert className="snapshot-note">
