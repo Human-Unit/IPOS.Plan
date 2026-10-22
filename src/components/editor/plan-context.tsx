@@ -10,6 +10,17 @@ export const PlanContext = createContext<{
   selectBlock?: (id: string, openProperties?: boolean) => void;
   companions: Record<string, Block[]>;
   embeddedIds: Set<string>;
+  collapsedIds?: ReadonlySet<string>;
+  toggleBrief?: (id: string) => void;
+  addToBrief?: (
+    id: string,
+    type: "requirement" | "reference" | "image" | "file",
+  ) => void;
+  duplicateBrief?: (id: string) => void;
+  moveBrief?: (id: string, direction: "up" | "down") => void;
+  removeBrief?: (id: string) => void;
+  taskOrder?: ReadonlyMap<string,number>;
+  replaceImage?: (id: string) => void;
 } | null>(null);
 export function usePlanContext() {
   const value = useContext(PlanContext);

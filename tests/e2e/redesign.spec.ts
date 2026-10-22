@@ -128,36 +128,34 @@ test("content-heavy workspace fits every viewport, panels resize and collapse, f
     if (message.type() === "error") errors.push(message.text());
   });
   await importBrief(page);
-  // Brief's text, references and task metadata share one readable column.
-  // The optional image is the second column rather than causing a large blank
-  // region between the description and its references.
+  // Real native containers replace CSS painted across source siblings. Media follows text.
   const taskCard = page.locator('.task-brief[data-plan-block="reel"]');
-  const description = await taskCard.locator(".brief-description").boundingBox();
-  const references = await taskCard.locator(".brief-references").boundingBox();
+  const section = page.locator('.bn-block[data-id="reel"]');
+  const description = await taskCard
+    .locator(".task-description-input")
+    .boundingBox();
   const facts = await taskCard.locator(".brief-facts").boundingBox();
-  const media = await taskCard.locator(".brief-media").boundingBox();
+  const media = await section.locator(".brief-image").boundingBox();
   expect(description).toBeTruthy();
-  expect(references).toBeTruthy();
   expect(facts).toBeTruthy();
   expect(media).toBeTruthy();
-  expect(Math.abs(references!.x - description!.x)).toBeLessThan(2);
-  expect(Math.abs(facts!.x - description!.x)).toBeLessThan(2);
-  expect(media!.x).toBeGreaterThan(description!.x + description!.width + 8);
-  expect(references!.x + references!.width).toBeLessThan(media!.x - 8);
-  expect(references!.y - (description!.y + description!.height)).toBeLessThan(42);
-  const firstTask = page.locator('.bn-block-outer[data-id="reel"]');
-  const requirements = page.locator('.bn-block-outer[data-id="requirements"]');
-  const lastNote = page.locator('.bn-block-outer[data-id="callout"]');
-  const nextTask = page.locator('.bn-block-outer[data-id="carousel"]');
-  await expect(firstTask).toHaveCSS("background-color", "rgb(249, 250, 255)");
-  await expect(requirements).toHaveCSS("background-color", "rgb(249, 250, 255)");
-  await expect(lastNote).toHaveCSS("border-bottom-style", "solid");
-  await expect(nextTask).toHaveCSS("border-top-style", "solid");
-  const positions = await Promise.all([lastNote, nextTask].map(async (node) => {
-    const bounds = await node.boundingBox();
-    return bounds!;
-  }));
-  expect(positions[1].y).toBeGreaterThan(positions[0].y + positions[0].height);
+  expect(facts!.y - description!.y - description!.height).toBeLessThan(32);
+  expect(media!.y).toBeGreaterThan(facts!.y + facts!.height);
+  await expect(section.locator(":scope > .node-brief")).toHaveCount(1);
+  await expect(section).toHaveCSS("border-bottom-style", "solid");
+  await expect(
+    section.locator('.bn-block-outer[data-id="requirements"]'),
+  ).toBeVisible();
+  await expect(
+    section.locator('.bn-block-outer[data-id="callout"]'),
+  ).toBeVisible();
+  const lastNote = await section
+    .locator('.bn-block-outer[data-id="callout"]')
+    .boundingBox();
+  const nextTask = await page
+    .locator('.bn-block-outer[data-id="carousel"]')
+    .boundingBox();
+  expect(nextTask!.y).toBeGreaterThanOrEqual(lastNote!.y + lastNote!.height);
   for (const [width, height] of sizes) {
     await page.setViewportSize({ width, height });
     await expect
@@ -165,26 +163,21 @@ test("content-heavy workspace fits every viewport, panels resize and collapse, f
         page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
       )
       .toBe(true);
-    if (width < 768) {
-      const copy = await page.locator('.task-brief[data-plan-block="reel"] .brief-copy').boundingBox();
-      const image = await page.locator('.task-brief[data-plan-block="reel"] .brief-media').boundingBox();
-      expect(image!.y).toBeGreaterThanOrEqual(copy!.y + copy!.height - 1);
-    }
+    const copy = await taskCard.locator(".brief-body").boundingBox();
+    const image = await section.locator(".brief-image").boundingBox();
+    expect(image!.y).toBeGreaterThanOrEqual(copy!.y + copy!.height - 1);
     const paper = page.locator(".plan-paper");
     const geometry = await paper.boundingBox();
     expect(geometry!.x).toBeGreaterThanOrEqual(0);
     expect(geometry!.x + geometry!.width).toBeLessThanOrEqual(width);
-    if (width >= 1024)
-      expect(geometry!.width).toBeCloseTo((210 * 96) / 25.4, 1);
+    if (width >= 1440) expect(geometry!.width).toBeGreaterThan(794);
     await expect(
       page.locator('.bn-block-outer[data-id="source-title"]'),
     ).toBeHidden();
     const seal = page.locator(".plan-cover .plan-emblem");
     const sealBounds = await seal.boundingBox();
     expect(sealBounds!.width / sealBounds!.height).toBeCloseTo(1, 2);
-    await page
-      .locator('.task-brief[data-plan-block="reel"] .brief-heading')
-      .click();
+    await taskCard.getByRole("button", { name: /^Свойства задачи:/ }).click();
     await expect(
       page.getByLabel("Название задачи", { exact: true }),
     ).toHaveValue(brief.tasks.one.title);

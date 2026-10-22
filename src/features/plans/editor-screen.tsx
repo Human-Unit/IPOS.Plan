@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -15,6 +15,7 @@ import { usePlan } from "./use-plan";
 import { db } from "@/lib/db/database";
 import { event, saveRevision } from "./repository";
 import { PlanRenderer } from "@/components/plan/renderer";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { PlanActionsMenu } from "@/components/editor/plan-actions-menu";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -38,7 +39,12 @@ export function EditorScreen({ id }: { id: string }) {
   const { plan, loaded, status, error, update, flush, replace, generation } =
     usePlan(id);
   const router = useRouter();
+  const typographyUndo = useRef<{
+    generation: number;
+    styles: Record<string, BlockTypography>;
+  }>({ generation, styles: {} });
   const [preview, setPreview] = useState(false);
+  const [mode, setMode] = useState<"workspace" | "document">("workspace");
   const [focusMode, setFocusMode] = useState(false);
   const [watermark, setWatermark] = useState(true);
   const [dialog, setDialog] = useState<"import" | "export" | "history">();
@@ -49,15 +55,18 @@ export function EditorScreen({ id }: { id: string }) {
   const changeBlocks = useCallback(
     (blocks: Block[]) =>
       update((p) => {
+        if (typographyUndo.current.generation !== generation)
+          typographyUndo.current = { generation, styles: {} };
+        Object.assign(typographyUndo.current.styles, p.typography);
         const ids = new Set(
           flattenBlocks(blocks).flatMap((block) =>
             block.id ? [block.id] : [],
           ),
         );
-        const typography = p.typography
+        const typography = Object.keys(typographyUndo.current.styles).length
           ? Object.fromEntries(
-              Object.entries(p.typography).filter(([blockId]) =>
-                ids.has(blockId),
+              Object.entries(typographyUndo.current.styles).filter(
+                ([blockId]) => ids.has(blockId),
               ),
             )
           : undefined;
@@ -70,7 +79,7 @@ export function EditorScreen({ id }: { id: string }) {
               : undefined,
         };
       }),
-    [update],
+    [update, generation],
   );
   const changeTask = useCallback(
     (task: Task) =>
@@ -88,6 +97,9 @@ export function EditorScreen({ id }: { id: string }) {
         ) as BlockTypography;
         if (Object.keys(cleaned).length > 0) next[blockId] = cleaned;
         else delete next[blockId];
+        if (Object.keys(cleaned).length)
+          typographyUndo.current.styles[blockId] = cleaned;
+        else delete typographyUndo.current.styles[blockId];
         return {
           ...p,
           typography: Object.keys(next).length > 0 ? next : undefined,
@@ -165,6 +177,23 @@ export function EditorScreen({ id }: { id: string }) {
             {status}
           </span>
         </div>
+        <ToggleGroup
+          type="single"
+          value={preview ? "document" : mode}
+          className="experience-switch"
+          aria-label="Режим плана"
+          onValueChange={(value) => {
+            if (value)
+              void run(async () => {
+                await flush();
+                setMode(value as "workspace" | "document");
+                setPreview(false);
+              });
+          }}
+        >
+          <ToggleGroupItem value="workspace">Рабочий стол</ToggleGroupItem>
+          <ToggleGroupItem value="document">Документ</ToggleGroupItem>
+        </ToggleGroup>
         <nav className="editor-actions" aria-label="Действия с планом">
           <Button
             size="sm"
@@ -290,9 +319,13 @@ export function EditorScreen({ id }: { id: string }) {
           inert={busy || dialog !== undefined || Boolean(shareUrl)}
         >
           <PlanRenderer
-            key={`${generation}-${preview}`}
+            key={generation}
             plan={plan}
-            editable={!preview}
+            editable={!preview && mode === "workspace"}
+            mode={preview ? "document" : mode}
+            onPlanChange={(next) =>
+              update((current) => ({ ...current, ...next }))
+            }
             showCover
             onTitleChange={(title) => update((p) => ({ ...p, title }))}
             watermark={watermark}

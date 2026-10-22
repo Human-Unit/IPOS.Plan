@@ -57,6 +57,48 @@
   .plan-cover .cover-title {
     display: none !important;
   }
+  .brief-quick-controls,
+  .image-expand,
+  .brief-insert,
+  .task-title-input,
+  .task-description-input,
+  select.task-status {
+    display: none !important;
+  }
+  .print-task-title,
+  .print-task-description {
+    display: block !important;
+    white-space: pre-wrap;
+  }
+  .print-task-status {
+    display: inline-flex !important;
+  }
+  .brief-body[hidden] {
+    display: grid !important;
+  }
+  :root {
+    --document-title: 32px;
+  }
+  .mode-workspace .cover-eyebrow {
+    display: block !important;
+  }
+  .mode-workspace .plan-cover .plan-emblem {
+    width: 48px;
+    height: 48px;
+  }
+  .plan-paper .brief-heading h3 {
+    font-size: 23px !important;
+  }
+  .mode-workspace .plan-cover .plan-emblem {
+    display: block;
+  }
+  .mode-workspace .plan-cover {
+    grid-template-columns: 48px minmax(0, 1fr);
+    border-bottom: 2px solid var(--primary);
+  }
+  .bn-block:has(> .node-brief) > .bn-block-group {
+    display: block !important;
+  }
   .plan-cover .print-only-cover-title {
     display: block !important;
   }

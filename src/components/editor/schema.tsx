@@ -21,6 +21,34 @@ const task = createReactBlockSpec(
     ),
   },
 )();
+// Internal editing containers; serializeBriefs removes them at every data boundary.
+const brief = createReactBlockSpec(
+  {
+    type: "brief",
+    propSchema: { taskId: { default: "" }, sourceChildren: { default: false } },
+    content: "none",
+  },
+  {
+    render: ({ block }) => (
+      <TaskCard taskId={block.props.taskId} blockId={block.id} />
+    ),
+    toExternalHTML: () => (
+      <p>Задача · используйте экспорт JSON для переноса всех полей</p>
+    ),
+  },
+)();
+const briefChildren = createReactBlockSpec(
+  { type: "briefChildren", propSchema: {}, content: "none" },
+  {
+    render: () => <span className="brief-children-marker" aria-hidden="true" />,
+  },
+)();
+const mediaStrip = createReactBlockSpec(
+  { type: "mediaStrip", propSchema: {}, content: "none" },
+  {
+    render: () => <span className="brief-children-marker" aria-hidden="true" />,
+  },
+)();
 const reference = createReactBlockSpec(
   {
     type: "reference",
@@ -43,12 +71,7 @@ const reference = createReactBlockSpec(
       </div>
     ),
     render: function Reference({ block }) {
-      const { embeddedIds } = usePlanContext();
-      return embeddedIds.has(block.id) ? (
-        <div className="embedded-placeholder" contentEditable={false} />
-      ) : (
-        <ReferenceContent block={block} />
-      );
+      return <ReferenceContent block={block} />;
     },
   },
 )();
@@ -116,12 +139,7 @@ const image = createReactBlockSpec(
       </div>
     ),
     render: function ImageBlock({ block }) {
-      const { embeddedIds } = usePlanContext();
-      return embeddedIds.has(block.id) ? (
-        <div className="embedded-placeholder" contentEditable={false} />
-      ) : (
-        <ImageContent block={block} />
-      );
+      return <ImageContent block={block} />;
     },
   },
 )();
@@ -133,6 +151,9 @@ export const editorSchema = BlockNoteSchema.create({
     numberedListItem: defaultBlockSpecs.numberedListItem,
     quote: defaultBlockSpecs.quote,
     task,
+    brief,
+    briefChildren,
+    mediaStrip,
     reference,
     callout,
     divider,

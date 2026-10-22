@@ -48,7 +48,10 @@ test("references and slash blocks persist; deleted task supports undo", async ({
       exact: true,
     })
     .waitFor();
-  await page.getByRole("button", { name: "Референс", exact: true }).click();
+  await page
+    .getByRole("complementary", { name: "Навигация плана" })
+    .getByRole("button", { name: "Референс", exact: true })
+    .click();
   await page
     .getByLabel("Ссылка", { exact: true })
     .last()
@@ -78,7 +81,7 @@ test("references and slash blocks persist; deleted task supports undo", async ({
   await slash("Изображение");
   await page
     .getByLabel("URL изображения")
-    .fill("http://127.0.0.1:3105/icon.svg");
+    .fill(new URL("/icon.svg", page.url()).href);
   await page.getByLabel("Подпись изображения").fill("Знак плана");
   await saved(page);
   await page.reload();
@@ -126,7 +129,7 @@ test("references and slash blocks persist; deleted task supports undo", async ({
     .click();
   await page.keyboard.press("Control+z");
   await expect(page.locator(".task-brief")).toHaveCount(3);
-  await taskCard.click();
+  await taskCard.getByRole("button", { name: /^Свойства задачи:/ }).click();
   await expect(page.getByLabel("Название задачи").first()).toHaveValue(
     "Подготовить текст анонса",
   );

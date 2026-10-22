@@ -129,7 +129,7 @@ test("brand hierarchy and outline preserve native blocks and portable content", 
   ).toBe(17);
   expect(
     await page
-      .locator('.bn-block-outer[data-id="contact"]')
+      .locator('.bn-block[data-id="task-one"]')
       .evaluate((el) => getComputedStyle(el).borderBottomStyle),
   ).toBe("solid");
   const outline = page.getByRole("navigation", { name: "Структура документа" });
