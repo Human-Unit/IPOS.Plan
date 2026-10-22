@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ImportDialog } from "@/features/import/import-dialog";
+import { BackupMenu } from "@/features/backup/backup-menu";
 export function Dashboard() {
   const router = useRouter();
   const plans = useLiveQuery(() =>
@@ -77,6 +78,7 @@ export function Dashboard() {
             </p>
           </div>
           <div className="dashboard-actions">
+            <BackupMenu />
             <Button
               variant="outline"
               disabled={busy}
@@ -194,8 +196,7 @@ export function Dashboard() {
         </section>
         <footer className="dashboard-footer">
           <p>
-            Планы сохраняются на этом устройстве. Экспортируйте JSON для
-            резервной копии.
+            Планы сохраняются в этом браузере. «Резервная копия» скачивает всю библиотеку с историей. Перед копированием дождитесь сохранения в открытых вкладках.
           </p>
         </footer>
       </main>
