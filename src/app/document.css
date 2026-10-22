@@ -218,8 +218,11 @@
   align-content: start;
 }
 .brief-media {
+  display: grid;
+  align-content: start;
   align-self: start;
   justify-self: stretch;
+  gap: 8px;
 }
 .brief-description {
   display: grid;
