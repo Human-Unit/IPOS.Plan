@@ -39,6 +39,8 @@ import {
   Text,
   Quote,
   PanelLeft,
+  ChevronLeft,
+  ChevronRight,
   SlidersHorizontal,
   X,
 } from "lucide-react";
@@ -545,6 +547,17 @@ export default function PlanRenderer({
     setPanel(undefined);
     selectBlock(nodes[0].id!, false);
   };
+  const jumpIds = flattenBlocks(blocks)
+    .filter((item) => item.type === "task" && Boolean(item.id))
+    .map((item) => item.id!);
+  const activeJumpId = selectedId
+    ? (taskOrder.has(selectedId) ? selectedId : grouping.sectionById[selectedId])
+    : undefined;
+  const jumpIndex = jumpIds.indexOf(activeJumpId ?? "");
+  const jumpTo = (direction: -1 | 1) => {
+    const index = direction === 1 ? jumpIndex + 1 : jumpIndex - 1;
+    if (index >= 0 && index < jumpIds.length) locate(jumpIds[index]);
+  };
   const outline = (
     <PlanOutline
       plan={plan}
@@ -676,6 +689,16 @@ export default function PlanRenderer({
         {editable && !focusMode && (
           <>
             <div className="workspace-controls workspace-mobile-bar">
+              <div className="task-jump" role="group" aria-label="Перемещение по задачам">
+                <Button type="button" size="icon" variant="ghost" disabled={jumpIndex <= 0}
+                  aria-label="Предыдущая задача" title="Предыдущая задача"
+                  onClick={() => jumpTo(-1)}><ChevronLeft aria-hidden="true" /></Button>
+                <span aria-live="polite">{jumpIds.length ? `${Math.max(0, jumpIndex + 1)} / ${jumpIds.length}` : "Нет задач"}</span>
+                <Button type="button" size="icon" variant="ghost"
+                  disabled={!jumpIds.length || jumpIndex >= jumpIds.length - 1}
+                  aria-label="Следующая задача" title="Следующая задача"
+                  onClick={() => jumpTo(1)}><ChevronRight aria-hidden="true" /></Button>
+              </div>
               <Button variant="ghost" size="sm" onClick={() => { setPanel(undefined); setTemplatesOpen(true); }}>Шаблоны</Button>
               <Button variant="ghost" size="sm" onClick={() => { setOutlineVisible(true); if (!wide) setPanel("outline"); setFocusSearch(n => n + 1); }}>Поиск задач</Button>
               <Button
