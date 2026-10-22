@@ -33,6 +33,9 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ImportDialog } from "@/features/import/import-dialog";
 import { BackupMenu } from "@/features/backup/backup-menu";
+import { Input } from "@/components/ui/input";
+import { matchesPlan, taskStats, type PlanFilter } from "./productivity";
+import { useLocalDate } from "./use-local-date";
 export function Dashboard() {
   const router = useRouter();
   const plans = useLiveQuery(() =>
@@ -42,6 +45,11 @@ export function Dashboard() {
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState<Plan>();
   const [importing, setImporting] = useState(false);
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<PlanFilter>("all");
+  const today = useLocalDate();
+  const visiblePlans = plans?.filter(plan => matchesPlan(plan, query, filter, today));
+  const stats = taskStats((plans ?? []).flatMap(p => Object.values(p.tasks)), today);
   useEffect(() => {
     void seedDemo().catch((e) => setError(errorMessage(e)));
   }, []);
@@ -98,15 +106,28 @@ export function Dashboard() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
+        <div className="library-stats" aria-label="Задачи во всей библиотеке">
+          <span>Не завершено <strong>{stats.unfinished}</strong></span>
+          <span data-warning={stats.overdue > 0 || undefined}>Просрочено <strong>{stats.overdue}</strong></span>
+          <span>В ближайшие 7 дней <strong>{stats.upcoming}</strong></span>
+          <span>Готово <strong>{stats.completed}</strong></span>
+        </div>
+        <div className="library-search" role="search" aria-label="Поиск по библиотеке">
+          <Input type="search" aria-label="Поиск планов" placeholder="План, задача или ответственный…" value={query} onChange={e => setQuery(e.target.value)} />
+          <select aria-label="Фильтр планов" value={filter} onChange={e => setFilter(e.target.value as PlanFilter)}>
+            <option value="all">Все планы</option><option value="unfinished">С незавершёнными задачами</option><option value="overdue">С просроченными задачами</option><option value="recent">Изменены за 7 дней</option>
+          </select>
+          {(query || filter !== "all") && <Button variant="ghost" onClick={() => { setQuery(""); setFilter("all"); }}>Сбросить поиск</Button>}
+        </div>
         <section className="plan-list" aria-label="Сохранённые планы">
           <div className="list-label">
             <h2>
-              Все планы <span>{plans?.length ?? "…"}</span>
+              Найдено планов <span role="status">{visiblePlans?.length ?? "…"} / {plans?.length ?? "…"}</span>
             </h2>
             <span>Обновлены недавно</span>
           </div>
           {!plans && !error && <Skeleton className="h-28 w-full" />}
-          {plans?.map((plan) => {
+          {visiblePlans?.map((plan) => {
             const tasks = Object.values(plan.tasks);
             const done = tasks.filter((task) => task.status === "done").length;
             return (
@@ -173,6 +194,7 @@ export function Dashboard() {
               </article>
             );
           })}
+          {Boolean(plans?.length) && visiblePlans?.length === 0 && <div className="search-empty" role="status"><p>Планы не найдены. Измените запрос или фильтр.</p><Button variant="ghost" onClick={() => { setQuery(""); setFilter("all"); }}>Сбросить поиск</Button></div>}
           {plans?.length === 0 && (
             <Empty>
               <EmptyHeader>

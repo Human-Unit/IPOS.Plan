@@ -132,6 +132,7 @@ export default function PlanRenderer({
   );
   const [selectedId, setSelectedId] = useState<string>();
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [focusSearch, setFocusSearch] = useState(0);
   const [templateSource, setTemplateSource] = useState<PortablePlan>();
   useEffect(() => {
     if (!editable) return;
@@ -551,6 +552,7 @@ export default function PlanRenderer({
       selectedId={selectedId}
       select={locate}
       add={(type: InsertType) => add(type)}
+      focusSearch={focusSearch}
     />
   );
   const inspector = (
@@ -675,6 +677,7 @@ export default function PlanRenderer({
           <>
             <div className="workspace-controls workspace-mobile-bar">
               <Button variant="ghost" size="sm" onClick={() => { setPanel(undefined); setTemplatesOpen(true); }}>Шаблоны</Button>
+              <Button variant="ghost" size="sm" onClick={() => { setOutlineVisible(true); if (!wide) setPanel("outline"); setFocusSearch(n => n + 1); }}>Поиск задач</Button>
               <Button
                 variant="ghost"
                 size="sm"

@@ -20,6 +20,7 @@ import {
 } from "./document-structure";
 import { Button } from "@/components/ui/button";
 import { statusLabels } from "@/lib/labels";
+import { TaskSearch } from "@/features/plans/task-search";
 
 export const insertItems = [
   { title: "Задача", type: "task", icon: CheckSquare },
@@ -37,12 +38,14 @@ export function PlanOutline({
   selectedId,
   select,
   add,
+  focusSearch = 0,
 }: {
   plan: PortablePlan;
   blocks: Block[];
   selectedId?: string;
   select: (id?: string) => void;
   add: (type: InsertType) => void;
+  focusSearch?: number;
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const { companions, sectionById } = taskCompanions(blocks);
@@ -82,6 +85,7 @@ export function PlanOutline({
   let number = 0;
   return (
     <div className="plan-outline">
+      <TaskSearch plan={{ ...plan, blocks }} select={select} focusRequest={focusSearch} />
       <p className="panel-eyebrow">Структура</p>
       <nav aria-label="Структура документа">
         <button

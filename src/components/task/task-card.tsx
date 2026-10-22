@@ -19,6 +19,8 @@ import { SelectableBlock } from "@/components/editor/selectable-block";
 import { statusLabels, priorityLabels } from "@/lib/labels";
 import { statuses, type Task } from "@/lib/schema/task";
 import { flattenBlocks } from "@/lib/schema/plan";
+import { deadlineInfo } from "@/features/plans/productivity";
+import { useLocalDate } from "@/features/plans/use-local-date";
 
 export function TaskCard({
   taskId,
@@ -28,6 +30,7 @@ export function TaskCard({
   blockId: string;
 }) {
   const context = usePlanContext();
+  const today = useLocalDate();
   const {
     plan,
     editable,
@@ -40,6 +43,7 @@ export function TaskCard({
   const task = plan.tasks[taskId];
   if (!task) return <p role="alert">Задача недоступна: {taskId}</p>;
   const collapsed = editable && Boolean(collapsedIds?.has(blockId));
+  const deadline = deadlineInfo(task, today);
   const number =
     context.taskOrder?.get(blockId) ??
     flattenBlocks(plan.blocks)
@@ -210,10 +214,11 @@ export function TaskCard({
             <p className="brief-description-text">{task.description}</p>
           ) : null}
           <dl className="brief-facts">
-            <div className="brief-fact-deadline">
+            <div className="brief-fact-deadline" data-deadline={editable ? deadline.kind : undefined}>
               <dt>Дедлайн</dt>
               <dd>
                 {task.deadline?.split("-").reverse().join(".") || "Не указан"}
+                {editable && deadline.days !== undefined && <small className="deadline-hint">{deadline.label}</small>}
               </dd>
             </div>
             <div>
