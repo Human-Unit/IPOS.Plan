@@ -19,6 +19,8 @@ import {
   type EditorNode,
 } from "./brief-document";
 import { prepareImage } from "./prepare-image";
+import { TemplateDialog, SaveTemplateDialog } from "@/features/templates/template-dialog";
+import { extractTemplate } from "@/features/templates/templates";
 import { toPortable, flattenBlocks } from "@/lib/schema/plan";
 import { toast } from "@/lib/notifications";
 import { errorMessage } from "@/lib/labels";
@@ -129,6 +131,8 @@ export default function PlanRenderer({
     () => new Set(),
   );
   const [selectedId, setSelectedId] = useState<string>();
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [templateSource, setTemplateSource] = useState<PortablePlan>();
   useEffect(() => {
     if (!editable) return;
     const undo = (event: KeyboardEvent) => {
@@ -335,6 +339,10 @@ export default function PlanRenderer({
     },
     collapsedIds,
     taskOrder,
+    saveTemplate: (id: string) => {
+      const current = { ...plan, blocks: serializeWithSource(editor.document as unknown as EditorNode[], plan.blocks) };
+      setTemplateSource(extractTemplate(current, id, true));
+    },
     toggleBrief: (id: string) =>
       setCollapsedIds((previous) => {
         const next = new Set(previous);
@@ -522,6 +530,20 @@ export default function PlanRenderer({
     { title: "Цитата", type: "quote", icon: Quote },
     ...insertItems,
   ] as const;
+  const insertTemplate = (template: PortablePlan) => {
+    const current = { ...plan, blocks: serializeWithSource(editor.document as unknown as EditorNode[], plan.blocks) };
+    const families = new Set((current.fontSources ?? []).map(f => f.family.toLowerCase()));
+    const next = toPortable({ ...current,
+      blocks: [...current.blocks, ...template.blocks], tasks: { ...current.tasks, ...template.tasks },
+      typography: { ...current.typography, ...template.typography },
+      fontSources: [...(current.fontSources ?? []), ...(template.fontSources ?? []).filter(f => !families.has(f.family.toLowerCase()))],
+    });
+    onPlanChange?.(next);
+    const nodes = projectBriefs(template.blocks);
+    editor.insertBlocks(nodes as PartialBlock<typeof editorSchema.blockSchema>[], editor.document.at(-1)!, "after");
+    setPanel(undefined);
+    selectBlock(nodes[0].id!, false);
+  };
   const outline = (
     <PlanOutline
       plan={plan}
@@ -652,6 +674,7 @@ export default function PlanRenderer({
         {editable && !focusMode && (
           <>
             <div className="workspace-controls workspace-mobile-bar">
+              <Button variant="ghost" size="sm" onClick={() => { setPanel(undefined); setTemplatesOpen(true); }}>Шаблоны</Button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -849,6 +872,8 @@ export default function PlanRenderer({
           </Dialog>
         )}
       </div>
+      {editable && templatesOpen && <TemplateDialog onClose={() => setTemplatesOpen(false)} onInsert={insertTemplate} />}
+      {editable && templateSource && <SaveTemplateDialog source={templateSource} onClose={() => setTemplateSource(undefined)} />}
     </PlanContext.Provider>
   );
 }

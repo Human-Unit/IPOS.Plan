@@ -152,6 +152,12 @@ export function TaskCard({
                       Дублировать задачу
                     </DropdownMenu.Item>
                     <DropdownMenu.Item
+                      onSelect={() => context.saveTemplate?.(blockId)}
+                    >
+                      <Copy />
+                      Сохранить как шаблон
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item
                       disabled={number <= 1}
                       onSelect={() => context.moveBrief?.(blockId, "up")}
                     >

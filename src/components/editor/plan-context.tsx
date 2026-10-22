@@ -17,6 +17,7 @@ export const PlanContext = createContext<{
     type: "requirement" | "reference" | "image" | "file",
   ) => void;
   duplicateBrief?: (id: string) => void;
+  saveTemplate?: (id: string) => void;
   moveBrief?: (id: string, direction: "up" | "down") => void;
   removeBrief?: (id: string) => void;
   taskOrder?: ReadonlyMap<string,number>;

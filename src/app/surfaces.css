@@ -73,6 +73,14 @@
 .restore-strategies legend { margin-bottom: 10px; font-weight: 600; }
 .restore-strategies label { display: flex; align-items: flex-start; gap: 8px; line-height: 1.5; }
 .restore-strategies input { margin-top: 3px; accent-color: var(--primary); }
+.template-dialog { width: min(780px, calc(100vw - 32px)); }
+.template-field { display: grid; gap: 8px; font-size: 13px; font-weight: 600; }
+.template-field select { width: 100%; min-width: 0; border: 1px solid var(--border); border-radius: 4px; padding: 10px; background: white; font-weight: 400; }
+.template-personal { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.6; }
+.template-personal input { margin-top: 4px; accent-color: var(--primary); }
+.template-preview { max-height: 42vh; overflow: auto; border: 1px solid var(--border); border-radius: 4px; }
+.template-preview .plan-paper { width: 100%; min-height: 0; padding: 24px; box-shadow: none; }
+.template-preview .readonly-workspace { padding: 0; }
 .dashboard-actions [data-slot="button"] {
   height: 40px;
   padding-inline: 16px;
