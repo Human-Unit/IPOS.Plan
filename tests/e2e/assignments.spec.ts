@@ -26,6 +26,10 @@ test("assignments panel jumps between tasks and names survive into the local lib
   await field.fill("Ислом, Маруф");
   await field.press("Tab");
   await expect(page.locator(".task-brief").nth(3)).toContainText("Ислом, Маруф");
+  // The inspector is a modal sheet below 1440px. Close it before using
+  // the top-level navigation, which is intentionally inert behind the dialog.
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Свойства блока" })).toBeHidden();
   await page.getByRole("button", { name: "К планам" }).click();
   const directory = page.locator(".activist-directory");
   await directory.locator("summary").click();
