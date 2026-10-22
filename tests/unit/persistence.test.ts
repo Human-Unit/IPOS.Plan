@@ -48,6 +48,221 @@ describe("IndexedDB repository", () => {
       ]),
     );
   });
+  it("records task fields once per persisted save and preserves historical messages", async () => {
+    const p = await createPlan(demoPlan);
+    const historical = await db.activity.toArray();
+    const old = p.tasks["demo-photo"];
+    const saved = await savePlan({
+      ...p,
+      tasks: {
+        ...p.tasks,
+        [old.id]: {
+          ...old,
+          title: "UX audit task",
+          description: "Private description that must not appear in activity",
+          status: "review",
+          deadline: "2026-11-01",
+          priority: "high",
+          assignee: "Новый редактор",
+        },
+      },
+    });
+    const events = await db.activity.toArray();
+    expect(events.map((e) => e.type)).toEqual(
+      expect.arrayContaining([
+        "TASK_RENAMED",
+        "TASK_DESCRIPTION_CHANGED",
+        "TASK_STATUS_CHANGED",
+        "TASK_DEADLINE_CHANGED",
+        "TASK_PRIORITY_CHANGED",
+        "TASK_ASSIGNED",
+      ]),
+    );
+    expect(events.find((e) => e.type === "TASK_RENAMED")?.message).toBe(
+      `Задача переименована: «${old.title}» → «UX audit task»`,
+    );
+    expect(
+      events.find((e) => e.type === "TASK_DESCRIPTION_CHANGED")?.message,
+    ).toBe("Изменено описание задачи «UX audit task»");
+    expect(JSON.stringify(events)).not.toContain("Private description");
+    expect(events.filter((e) => historical.some((h) => h.id === e.id))).toEqual(
+      historical,
+    );
+    await savePlan(await savePlan(saved));
+    expect(await db.activity.count()).toBe(events.length);
+  });
+  it("records deletion of referenced task entities even if editor undo retains them in memory", async () => {
+    const p = await createPlan(demoPlan);
+    const task = p.tasks["demo-photo"];
+    const saved = await savePlan({
+      ...p,
+      blocks: p.blocks.filter(
+        (b) => b.type !== "task" || b.props.taskId !== task.id,
+      ),
+    });
+    expect(saved.tasks[task.id]).toBeUndefined();
+    expect(
+      await db.activity.filter((e) => e.type === "TASK_DELETED").count(),
+    ).toBe(1);
+    const repeated = await savePlan(saved);
+    expect(
+      await db.activity.filter((e) => e.type === "TASK_DELETED").count(),
+    ).toBe(1);
+    const restored = await savePlan({
+      ...repeated,
+      blocks: p.blocks,
+      tasks: p.tasks,
+    });
+    expect(restored.tasks[task.id]).toEqual(task);
+    expect(
+      await db.activity.filter((e) => e.type === "TASK_CREATED").count(),
+    ).toBe(1);
+  });
+  it("records nested reference creation, rename, URL, notes and deletion at save boundaries", async () => {
+    const p = await createPlan(demoPlan);
+    const block = {
+      id: "nested-reference",
+      type: "reference" as const,
+      props: { title: "", url: "", note: "" },
+    };
+    const created = await savePlan({
+      ...p,
+      blocks: [
+        ...p.blocks,
+        { id: "parent", type: "paragraph", content: [], children: [block] },
+      ],
+    });
+    expect(
+      await db.activity.filter((e) => e.type === "REFERENCE_ADDED").count(),
+    ).toBe(1);
+    const before = await db.activity.toArray();
+    const renamed = await savePlan({
+      ...created,
+      blocks: [
+        ...p.blocks,
+        {
+          id: "parent",
+          type: "paragraph",
+          content: [],
+          children: [
+            {
+              ...block,
+              props: { ...block.props, title: "Название референса" },
+            },
+          ],
+        },
+      ],
+    });
+    const renamedEvent = (await db.activity.toArray()).find(
+      (e) => e.type === "REFERENCE_CHANGED",
+    )!;
+    expect(renamedEvent.message).toBe(
+      "Изменён референс: «без названия» → «Название референса»",
+    );
+    expect(renamedEvent.metadata?.changedFields).toEqual(["title"]);
+    const updated = await savePlan({
+      ...renamed,
+      blocks: [
+        ...p.blocks,
+        {
+          id: "parent",
+          type: "paragraph",
+          content: [],
+          children: [
+            {
+              ...block,
+              props: {
+                title: "Название референса",
+                url: "https://example.org/reference",
+                note: "Private notes",
+              },
+            },
+          ],
+        },
+      ],
+    });
+    const edits = await db.activity
+      .filter((e) => e.type === "REFERENCE_CHANGED")
+      .toArray();
+    expect(edits).toHaveLength(2);
+    expect(
+      edits.find((e) => e.metadata?.changedFields?.toString() === "url,note")
+        ?.message,
+    ).toBe("Изменён референс «Название референса»");
+    expect(JSON.stringify(edits)).not.toContain("Private notes");
+    const repeated = await savePlan(updated);
+    expect(
+      await db.activity.filter((e) => e.type === "REFERENCE_CHANGED").count(),
+    ).toBe(2);
+    await savePlan({ ...repeated, blocks: p.blocks });
+    expect(
+      await db.activity.filter((e) => e.type === "REFERENCE_REMOVED").count(),
+    ).toBe(1);
+    for (const entry of before)
+      expect(await db.activity.get(entry.id)).toEqual(entry);
+  });
+  it("clears optional task fields without text spam", async () => {
+    const p = await createPlan(demoPlan);
+    const task = p.tasks["demo-photo"];
+    const initial = await savePlan({
+      ...p,
+      tasks: {
+        ...p.tasks,
+        [task.id]: {
+          ...task,
+          description: "text",
+          deadline: "2026-10-23",
+          assignee: "Редактор",
+        },
+      },
+    });
+    await db.activity.clear();
+    await savePlan({
+      ...initial,
+      tasks: {
+        ...initial.tasks,
+        [task.id]: {
+          ...initial.tasks[task.id],
+          description: undefined,
+          deadline: undefined,
+          assignee: undefined,
+        },
+      },
+    });
+    expect((await db.activity.toArray()).map((e) => e.type).sort()).toEqual([
+      "TASK_ASSIGNED",
+      "TASK_DEADLINE_CHANGED",
+      "TASK_DESCRIPTION_CHANGED",
+    ]);
+  });
+  it("rolls back plan and all activity on autosave failure", async () => {
+    const p = await createPlan(demoPlan);
+    const before = await db.activity.toArray();
+    const hook = () => {
+      throw new Error("simulated activity failure");
+    };
+    db.activity.hook("creating", hook);
+    try {
+      await expect(
+        savePlan({
+          ...p,
+          title: "Must not persist",
+          tasks: {
+            ...p.tasks,
+            "demo-photo": {
+              ...p.tasks["demo-photo"],
+              title: "Failed name",
+              description: "Failed edit",
+            },
+          },
+        }),
+      ).rejects.toThrow("simulated activity failure");
+    } finally {
+      db.activity.hook("creating").unsubscribe(hook);
+    }
+    expect(await db.plans.get(p.id)).toEqual(p);
+    expect(await db.activity.toArray()).toEqual(before);
+  });
   it("rejects stale tab saves without overwriting", async () => {
     const p = await createPlan(demoPlan);
     await savePlan({ ...p, title: "First" });

@@ -253,7 +253,12 @@ export function EditorScreen({ id }: { id: string }) {
                 window.print();
               })
             }
-            onHistory={() => setDialog("history")}
+            onHistory={() =>
+              void run(async () => {
+                await flush();
+                setDialog("history");
+              })
+            }
             onSave={() =>
               void run(async () => {
                 const p = await flush();

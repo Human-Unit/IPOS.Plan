@@ -62,7 +62,9 @@ export function HistoryDialog({
             История плана
           </DialogTitle>
           <DialogDescription>
-            Версии и события хранятся только в этом браузере.
+            Сохранённые версии — полные снимки для восстановления. События —
+            журнал изменений, без возможности восстановления. Всё хранится
+            только в этом браузере.
           </DialogDescription>
         </DialogHeader>
         <h3>Сохранённые версии</h3>
@@ -117,6 +119,10 @@ export function HistoryDialog({
           </>
         )}
         <h3>Локальные события</h3>
+        <p className="muted">
+          Названия указаны на момент события. Изменения объединяются при
+          сохранении.
+        </p>
         <ol className="activity-list">
           {activity?.slice(0, 50).map((a) => (
             <li key={a.id}>
