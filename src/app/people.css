@@ -26,6 +26,22 @@
 .person-specializations legend { margin-bottom: 10px; font-weight: 500; }
 .person-specializations label { display: flex; align-items: center; gap: 6px; }
 .person-error { color: #a82d32; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; margin-bottom: 16px; }
+.people-picker { display: grid; gap: 12px; min-width: 0; }
+.person-picker-list { max-height: 220px; overflow-y: auto; border-block: 1px solid var(--border); }
+.person-picker-row { display: flex; gap: 8px; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.person-picker-row:last-child { border-bottom: 0; }
+.person-picker-row label { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
+.person-picker-row label > input { margin-top: 3px; flex-shrink: 0; accent-color: var(--primary); }
+.person-picker-row span { min-width: 0; overflow-wrap: anywhere; }
+.person-picker-row small { display: block; color: var(--muted-foreground); margin-top: 3px; font-size: 10px; }
+.person-picker-row > a { flex-shrink: 0; color: var(--primary); padding: 4px; }
+.person-keep-text { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.person-keep-text input { margin-top: 3px; flex-shrink: 0; }
+.inline-person-form { border-top: 1px solid var(--border); padding-top: 16px; }
+.assigned-people a { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.print-assigned-people { display: none; }
+.assignment-profile-links { padding: 0 10px 10px 36px; font-size: 11px; line-height: 1.7; overflow-wrap: anywhere; }
+@media print { .assigned-people { display: none; } .print-assigned-people { display: inline; } }
 @media(max-width:767px) {
   .people-page { padding: 28px 16px; }
   .people-page h1 { font-size: 25px; }

@@ -14,6 +14,7 @@ import { statusLabels, priorityLabels } from "@/lib/labels";
 import { PlanInspector } from "./plan-inspector";
 import { DeadlinePicker } from "./deadline-picker";
 import { AssigneePicker } from "@/features/activists/assignee-picker";
+import { confirmedAssignment } from "@/features/activists/task-assignments";
 
 const textBlockTypes = new Set([
   "paragraph",
@@ -73,7 +74,7 @@ export function BlockInspector({
   const [fontUrl, setFontUrl] = useState("");
   const [fontError, setFontError] = useState("");
   const [failedImage, setFailedImage] = useState("");
-  const { plan, updateTask, replaceImage } = usePlanContext();
+  const { plan, updateTask, replaceImage, updateAssignment, openPerson } = usePlanContext();
   const task =
     block?.type === "task" ? plan.tasks[block.props.taskId] : undefined;
   const isTextBlock = Boolean(block && textBlockTypes.has(block.type));
@@ -401,8 +402,12 @@ export function BlockInspector({
                   </Field>
                 </FieldGroup>
                 <AssigneePicker
+                  key={task.id}
                   value={task.assignee ?? ""}
                   onChange={(value) => change({ assignee: value || undefined })}
+                  assignment={confirmedAssignment(plan, task.id)}
+                  onApply={updateAssignment ? (value, text) => updateAssignment(task.id, value, text) : undefined}
+                  onOpenPerson={openPerson}
                 />
                 <DeadlinePicker id={`${id}-deadline`} value={task.deadline} onChange={(deadline) => change({ deadline })} />
                 {field(
