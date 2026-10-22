@@ -50,6 +50,14 @@ describe("IndexedDB repository", () => {
   });
   it("records task fields once per persisted save and preserves historical messages", async () => {
     const p = await createPlan(demoPlan);
+    await db.activity.add({
+      id: "legacy-event",
+      planId: p.id,
+      type: "OLD_CUSTOM_EVENT",
+      message: "Историческая запись без нового формата",
+      createdAt: "2020-01-01T00:00:00Z",
+      metadata: { original: true },
+    });
     const historical = await db.activity.toArray();
     const old = p.tasks["demo-photo"];
     const saved = await savePlan({

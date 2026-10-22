@@ -72,6 +72,8 @@ test("editorial brief, responsive inspectors and unchanged portable data", async
     exact: true,
   });
   await task.waitFor();
+  // Measure the resting panel geometry after the transient import confirmation.
+  await expect(page.locator("[data-sonner-toast]")).toHaveCount(0);
   const section = page.locator('.bn-block[data-id="brief-task"]');
   for (const width of [1440, 1920, 1024, 768, 390]) {
     await page.setViewportSize({ width, height: 1000 });

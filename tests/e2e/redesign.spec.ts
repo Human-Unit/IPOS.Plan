@@ -128,6 +128,7 @@ test("content-heavy workspace fits every viewport, panels resize and collapse, f
     if (message.type() === "error") errors.push(message.text());
   });
   await importBrief(page);
+  await expect(page.locator("[data-sonner-toast]")).toHaveCount(0);
   // Real native containers replace CSS painted across source siblings. Media follows text.
   const taskCard = page.locator('.task-brief[data-plan-block="reel"]');
   const section = page.locator('.bn-block[data-id="reel"]');
