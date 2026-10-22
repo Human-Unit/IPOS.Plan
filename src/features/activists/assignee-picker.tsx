@@ -32,7 +32,9 @@ export function AssigneePicker({
   const addPerson = (name: string) => {
     const existing = assigneeNames(value);
     if (!existing.some((person) => activistNameKey(person) === activistNameKey(name))) {
-      onChange([...existing.filter((part) => activistNameKey(part) !== activistNameKey(tail)), name].join(", "));
+      const next = [...existing.filter((part) => activistNameKey(part) !== activistNameKey(tail)), name].join(", ");
+      onChange(next);
+      void rememberAssignees(next).catch(() => setError("Не удалось сохранить имя в справочник."));
     }
     setError("");
   };
@@ -46,7 +48,8 @@ export function AssigneePicker({
         maxLength={200}
         placeholder="Например: Ислом, Амина"
         onChange={(event) => { onChange(event.target.value); setError(""); }}
-        onBlur={() => {
+        onBlur={(event) => {
+          if (event.relatedTarget instanceof Element && event.relatedTarget.closest(".assignee-people")) return;
           void rememberAssignees(value).catch(() =>
             setError("Не удалось сохранить имена в справочник. Назначение остаётся в плане."),
           );
