@@ -136,3 +136,79 @@ test("explicit multi-person assignment preserves legacy text until confirmation 
   expect(json).not.toContain("assignments");
   expect(errors).toEqual([]);
 });
+
+test("four people, shared work in two plans, completion, workload filters and profile-to-brief navigation", async ({
+  page,
+}) => {
+  test.setTimeout(120000);
+  await page.clock.setFixedTime(new Date("2026-10-22T07:00:00Z"));
+  const islam = await createPersonUI(page, "Ислом", true);
+  const amina = await createPersonUI(page, "Амина", true);
+  const maruf = await createPersonUI(page, "Маруф");
+  const aziz = await createPersonUI(page, "Азиз");
+  const first = await importAssignmentPlan(page, "Неделя первая", "");
+  await assignUI(page, "Рилс — История кампуса", ["Ислом", "Маруф"]);
+  await assignUI(page, "Карусель — Советы первокурсникам", ["Амина"]);
+  const second = await importAssignmentPlan(page, "Неделя вторая", "");
+  await assignUI(page, "Рилс — История кампуса", ["Ислом"]);
+  await page
+    .getByRole("combobox", {
+      name: "Статус задачи: Рилс — История кампуса",
+      exact: true,
+    })
+    .selectOption("done");
+  await expect(page.locator('.save-status[data-state="saved"]')).toBeVisible();
+  await page.goto(islam);
+  const summary = page.getByLabel("Сводка всех заданий профиля");
+  for (const [label, value] of [
+    ["Всего", "2"],
+    ["Готово", "1"],
+    ["В работе", "1"],
+    ["Просрочено", "1"],
+  ]) {
+    await expect(
+      summary
+        .locator("div")
+        .filter({ has: page.getByText(label, { exact: true }) })
+        .locator("dd"),
+    ).toHaveText(value);
+  }
+  const taskRow = page
+    .getByRole("list", { name: "Назначенные задания" })
+    .locator("li")
+    .filter({ hasText: "Неделя первая" });
+  await taskRow
+    .getByRole("link", { name: "Рилс — История кампуса", exact: true })
+    .click();
+  await expect(page).toHaveURL(first + "#task=reel");
+  await expect(
+    page.locator('.task-brief[data-plan-block="reel-block"]'),
+  ).toHaveAttribute("data-selected", "true");
+  await page.goto("/activists/workload");
+  const row = page
+    .getByRole("row")
+    .filter({ has: page.getByRole("link", { name: "Ислом", exact: true }) });
+  await expect(row.locator("td")).toHaveText(["2", "1", "0", "1", "1"]);
+  await page.getByLabel("Статус задач в нагрузке").selectOption("done");
+  await expect(row.locator("td")).toHaveText(["1", "0", "0", "1", "0"]);
+  await page.getByRole("button", { name: "Сбросить срез" }).click();
+  await page
+    .getByLabel("План в нагрузке")
+    .selectOption(new URL(second).pathname.split("/").at(-1)!);
+  await expect(row.locator("td")).toHaveText(["1", "0", "0", "1", "0"]);
+  await page.goto(amina);
+  await expect(page.locator(".people-heading .panel-eyebrow")).toHaveText(
+    "Активист",
+  );
+  await expect(
+    page.getByRole("list", { name: "Назначенные задания" }).locator("li"),
+  ).toHaveCount(1);
+  await page.goto(maruf);
+  await expect(page.locator(".people-heading .panel-eyebrow")).toHaveText(
+    "Кандидат",
+  );
+  await page.goto(aziz);
+  await expect(
+    page.getByText("Нет подтверждённых привязок к заданиям.", { exact: false }),
+  ).toBeVisible();
+});

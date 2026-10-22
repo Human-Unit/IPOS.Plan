@@ -17,6 +17,7 @@ import { membershipLabels, specializationLabels } from "@/lib/schema/person";
 import { usePeople } from "./people-hooks";
 import { PersonForm } from "./person-form";
 import { useRouter } from "next/navigation";
+import { LegacyReview } from "./legacy-review";
 
 export function PeopleScreen() {
   const { people, ready, error } = usePeople();
@@ -52,7 +53,7 @@ export function PeopleScreen() {
               членство.
             </p>
           </div>
-          <Button onClick={() => setAdding(true)}>Добавить человека</Button>
+          <div className="people-heading-actions"><Button asChild variant="outline"><Link href="/activists/workload">Нагрузка команды</Link></Button><Button onClick={() => setAdding(true)}>Добавить человека</Button></div>
         </div>
         {error && (
           <p className="person-error" role="alert">
@@ -149,6 +150,7 @@ export function PeopleScreen() {
           перед назначением. Удаление профилей не используется: для сохранения
           истории выбирайте «Неактивен».
         </p>
+        <LegacyReview people={people} />
       </main>
       {adding && (
         <Dialog

@@ -14,6 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { membershipLabels, specializationLabels } from "@/lib/schema/person";
 import { usePeople } from "./people-hooks";
 import { PersonForm } from "./person-form";
+import { WorkloadPanel } from "./workload-panel";
+import { PersonActivity } from "./person-activity";
 export function PersonScreen({ id }: { id: string }) {
   const { people, ready, error } = usePeople();
   const [editing, setEditing] = useState(false);
@@ -83,6 +85,8 @@ export function PersonScreen({ id }: { id: string }) {
               Членство и заметки хранятся в этом браузере. Изменение имени
               профиля не переписывает старые тексты заданий.
             </p>
+          <WorkloadPanel people={people} personId={person.id} />
+          <PersonActivity personId={person.id} />
             {editing && (
               <Dialog
                 open
