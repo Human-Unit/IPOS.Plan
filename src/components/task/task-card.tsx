@@ -83,7 +83,31 @@ export function TaskCard({
           ) : editable ? (
             <p className="brief-label">Добавьте описание в свойствах задачи.</p>
           ) : null}
+
+          {references.length > 0 && (
+            <div className="brief-references">
+              <span className="brief-label">Референсы</span>
+              {references.map((block) => (
+                <ReferenceContent key={block.id} block={block} />
+              ))}
+            </div>
+          )}
+
+          <dl className="brief-facts">
+            <div className="brief-fact-deadline">
+              <dt>Дедлайн</dt>
+              <dd>{deadline || "Не указан"}</dd>
+            </div>
+            <div>
+              <dt>Ответственные</dt>
+              <dd>{task.assignee || "Не назначены"}</dd>
+            </div>
+          </dl>
+          <p className="brief-priority">
+            Приоритет: {priorityLabels[task.priority]}
+          </p>
         </div>
+
         {images.length > 0 && (
           <div className="brief-media">
             {images.map((block) => (
@@ -92,27 +116,6 @@ export function TaskCard({
           </div>
         )}
       </div>
-      {references.length > 0 && (
-        <div className="brief-references">
-          <span className="brief-label">Референсы</span>
-          {references.map((block) => (
-            <ReferenceContent key={block.id} block={block} />
-          ))}
-        </div>
-      )}
-      <dl className="brief-facts">
-        <div className="brief-fact-deadline">
-          <dt>Дедлайн</dt>
-          <dd>{deadline || "Не указан"}</dd>
-        </div>
-        <div>
-          <dt>Ответственные</dt>
-          <dd>{task.assignee || "Не назначены"}</dd>
-        </div>
-      </dl>
-      <p className="brief-priority">
-        Приоритет: {priorityLabels[task.priority]}
-      </p>
     </SelectableBlock>
   );
 }
