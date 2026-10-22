@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { statusLabels } from "@/lib/labels";
 import { TaskSearch } from "@/features/plans/task-search";
+import { AssignmentsPanel } from "@/features/activists/assignments-panel";
 
 export const insertItems = [
   { title: "Задача", type: "task", icon: CheckSquare },
@@ -85,6 +86,7 @@ export function PlanOutline({
   let number = 0;
   return (
     <div className="plan-outline">
+      <AssignmentsPanel plan={plan} blocks={blocks} selectedId={selectedId} select={(id) => select(id)} />
       <TaskSearch plan={{ ...plan, blocks }} select={select} focusRequest={focusSearch} />
       <p className="panel-eyebrow">Структура</p>
       <nav aria-label="Структура документа">

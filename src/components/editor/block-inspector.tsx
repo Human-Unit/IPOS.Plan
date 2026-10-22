@@ -13,6 +13,7 @@ import { statuses, priorities, type Task } from "@/lib/schema/task";
 import { statusLabels, priorityLabels } from "@/lib/labels";
 import { PlanInspector } from "./plan-inspector";
 import { DeadlinePicker } from "./deadline-picker";
+import { AssigneePicker } from "@/features/activists/assignee-picker";
 
 const textBlockTypes = new Set([
   "paragraph",
@@ -399,13 +400,10 @@ export function BlockInspector({
                     </select>
                   </Field>
                 </FieldGroup>
-                {field(
-                  "assignee",
-                  "Ответственные",
-                  task.assignee ?? "",
-                  (value) => change({ assignee: value || undefined }),
-                  { max: 200 },
-                )}
+                <AssigneePicker
+                  value={task.assignee ?? ""}
+                  onChange={(value) => change({ assignee: value || undefined })}
+                />
                 <DeadlinePicker id={`${id}-deadline`} value={task.deadline} onChange={(deadline) => change({ deadline })} />
                 {field(
                   "description",

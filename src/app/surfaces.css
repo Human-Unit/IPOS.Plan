@@ -691,3 +691,12 @@
     max-height: calc(82dvh - 72px);
   }
 }
+
+
+/* Persistent names are candidates collected from assignments, not a verified roster. */
+.activist-directory { margin: 24px 0 28px; padding: 16px 18px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+.activist-directory summary { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; cursor: pointer; font: 650 14px/1.5 var(--font-ui); }
+.activist-directory summary small { font-size: 12px; font-weight: 400; color: var(--muted-foreground); }
+.activist-directory p { margin: 10px 0; color: var(--muted-foreground); font: 400 12px/1.55 var(--font-ui); }
+.activist-directory ul { display: flex; flex-wrap: wrap; list-style: none; gap: 7px; padding: 0; margin: 0; }
+.activist-directory li { border: 1px solid var(--border); border-radius: 4px; background: var(--secondary); padding: 4px 9px; font: 500 12px/1.35 var(--font-ui); overflow-wrap: anywhere; }

@@ -36,6 +36,7 @@ import { BackupMenu } from "@/features/backup/backup-menu";
 import { Input } from "@/components/ui/input";
 import { matchesPlan, taskStats, type PlanFilter } from "./productivity";
 import { useLocalDate } from "./use-local-date";
+import { ACTIVIST_PREFIX, directoryNames, syncDirectoryFromPlans } from "@/features/activists/directory";
 export function Dashboard() {
   const router = useRouter();
   const plans = useLiveQuery(() =>
@@ -48,10 +49,16 @@ export function Dashboard() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<PlanFilter>("all");
   const today = useLocalDate();
+  const rosterRows = useLiveQuery(
+    () => db.settings.filter((row) => row.key.startsWith(ACTIVIST_PREFIX)).toArray(),
+    [],
+  );
+  const rememberedPeople = directoryNames(rosterRows ?? []);
+
   const visiblePlans = plans?.filter(plan => matchesPlan(plan, query, filter, today));
   const stats = taskStats((plans ?? []).flatMap(p => Object.values(p.tasks)), today);
   useEffect(() => {
-    void seedDemo().catch((e) => setError(errorMessage(e)));
+    void seedDemo().then(() => syncDirectoryFromPlans()).catch((e) => setError(errorMessage(e)));
   }, []);
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -119,6 +126,18 @@ export function Dashboard() {
           </select>
           {(query || filter !== "all") && <Button variant="ghost" onClick={() => { setQuery(""); setFilter("all"); }}>Сбросить поиск</Button>}
         </div>
+        <details className="activist-directory">
+          <summary>
+            <span>Имена из назначений</span>
+            <small>{rememberedPeople.length} сохранено локально</small>
+          </summary>
+          <p>Справочник для следующих заданий. Это имена из поручений, а не подтверждённый список активистов. Они остаются здесь даже после завершения задачи.</p>
+          {rememberedPeople.length ? (
+            <ul aria-label="Сохранённые ответственные">
+              {rememberedPeople.map((name) => <li key={name}>{name}</li>)}
+            </ul>
+          ) : <p>Назначьте человека в свойствах задачи — имя запомнится после ввода.</p>}
+        </details>
         <section className="plan-list" aria-label="Сохранённые планы">
           <div className="list-label">
             <h2>
