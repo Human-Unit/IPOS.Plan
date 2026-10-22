@@ -1,4 +1,8 @@
 /* The workspace owns panel placement. The document owns its own typography. */
+.deadline-trigger { width: 100%; justify-content: flex-start; }
+.deadline-popover { padding: 0; width: fit-content; max-width: calc(100vw - 24px); max-height: var(--radix-popover-content-available-height); overflow-y: auto; }
+.deadline-popover [data-slot="calendar"] { font: 400 13px/1.5 var(--font-ui); }
+.deadline-clear { width: calc(100% - 24px); margin: 0 12px 12px; }
 .editor-bar,
 .preview-bar {
   position: sticky;
