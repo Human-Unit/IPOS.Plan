@@ -55,6 +55,7 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
   await page.reload();
   await page
     .getByRole("region", { name: "Задача: Подготовить анонс", exact: true })
+    .getByRole("button", { name: /^Свойства задачи:/ })
     .click();
   await expect(page.getByLabel("Название задачи")).toHaveValue(
     "Подготовить анонс",
@@ -121,6 +122,7 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
     .fill("Изменённый план");
   await page
     .getByRole("region", { name: "Задача: Подготовить анонс", exact: true })
+    .getByRole("button", { name: /^Свойства задачи:/ })
     .click();
   await page.getByLabel("Статус", { exact: true }).selectOption("done");
   await saved(page);
@@ -166,6 +168,7 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
   );
   await page
     .getByRole("region", { name: "Задача: Подготовить анонс", exact: true })
+    .getByRole("button", { name: /^Свойства задачи:/ })
     .click();
   await expect(page.getByLabel("Статус", { exact: true })).toHaveValue(
     "in_progress",

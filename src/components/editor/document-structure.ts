@@ -1,40 +1,51 @@
+import { projectBriefs, type EditorNode } from "./brief-document";
+import { flattenBlocks } from "@/lib/schema/plan";
 import type { Block } from "@/lib/schema/plan";
 
-// Presentation only: keep every block and its ID in the original document.
+// Navigation metadata is derived from the same containers as the editor.
 export function taskCompanions(blocks: Block[]) {
   const companions: Record<string, Block[]> = {};
-  const embeddedIds = new Set<string>();
   const sectionById: Record<string, string> = {};
+  const embeddedIds = new Set<string>();
   const endIds = new Set<string>();
-  const walk = (siblings: Block[]) => {
-    siblings.forEach((block, index) => {
-      if (block.type === "task" && block.id) {
-        const members: Block[] = [];
-        for (const next of siblings.slice(index + 1)) {
-          if (next.type === "task" || next.type === "divider") break;
-          members.push(next);
-        }
-        companions[block.id] = members;
-        sectionById[block.id] = block.id;
-        members.forEach((item) => {
-          if (!item.id) return;
-          sectionById[item.id] = block.id!;
-          if (
-            (item.type === "reference" || item.type === "image") &&
-            (!item.children || item.children.length === 0)
-          )
-            embeddedIds.add(item.id);
-        });
-        const last = [block, ...members]
-          .filter((item) => !item.id || !embeddedIds.has(item.id))
-          .at(-1);
-        if (last?.id) endIds.add(last.id);
+  const sources = new Map(
+    flattenBlocks(blocks)
+      .filter((block) => block.id)
+      .map((block) => [block.id!, block]),
+  );
+  const walk = (nodes: EditorNode[], owner?: string) => {
+    for (const node of nodes) {
+      if (node.type === "brief" && node.id) {
+        companions[node.id] = [];
+        sectionById[node.id] = node.id;
+        walk(node.children ?? [], node.id);
+        continue;
       }
-      walk(block.children ?? []);
-    });
+      if (node.type === "briefChildren" || node.type === "mediaStrip") {
+        walk(node.children ?? [], owner);
+        continue;
+      }
+      const source = node.id ? sources.get(node.id) : undefined;
+      if (owner && source?.id) {
+        companions[owner].push(source);
+        sectionById[source.id] = owner;
+        if (
+          ["reference", "image"].includes(source.type) &&
+          !source.children?.length
+        )
+          embeddedIds.add(source.id);
+      }
+      walk(node.children ?? [], owner);
+    }
   };
-  walk(blocks);
-  return { companions, embeddedIds, sectionById, endIds };
+  walk(projectBriefs(blocks));
+  for (const [id, members] of Object.entries(companions)) {
+    const last = members
+      .filter((block) => block.id && !embeddedIds.has(block.id))
+      .at(-1);
+    endIds.add(last?.id ?? id);
+  }
+  return { companions, sectionById, embeddedIds, endIds };
 }
 
 export function duplicateTitleHeading(blocks: Block[], title: string) {

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { taskSchema } from "./task";
+import { inlineRasterSchema } from "./image-source";
 export const SCHEMA_VERSION = 1;
 export const MAX_JSON_BYTES = 1_000_000;
 export const webUrl = z
@@ -16,6 +17,7 @@ export const webUrl = z
     }
   }, "Нужна ссылка http:// или https:// без логина и пароля");
 const optionalUrl = z.union([z.literal(""), webUrl]);
+export const imageSourceSchema = z.union([optionalUrl, inlineRasterSchema]);
 const styles = z
   .object({
     bold: z.boolean().optional(),
@@ -62,12 +64,23 @@ export const blockTypographySchema = z
   })
   .strict();
 export type BlockTypography = z.infer<typeof blockTypographySchema>;
-export const fontSourceSchema = z.object({
-  family: z.string().trim().min(1).max(80)
-    .regex(/^[a-zA-Z0-9 _-]+$/, "Используйте простое название семейства шрифта"),
-  url: webUrl.refine((value) => value.startsWith("https://"),
-    "Внешний шрифт должен загружаться по HTTPS"),
-}).strict();
+export const fontSourceSchema = z
+  .object({
+    family: z
+      .string()
+      .trim()
+      .min(1)
+      .max(80)
+      .regex(
+        /^[a-zA-Z0-9 _-]+$/,
+        "Используйте простое название семейства шрифта",
+      ),
+    url: webUrl.refine(
+      (value) => value.startsWith("https://"),
+      "Внешний шрифт должен загружаться по HTTPS",
+    ),
+  })
+  .strict();
 export type FontSource = z.infer<typeof fontSourceSchema>;
 const fontSourcesSchema = z.array(fontSourceSchema).max(12).optional();
 
@@ -136,7 +149,11 @@ const props = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("image"),
     props: z
-      .object({ url: optionalUrl, caption: z.string().max(2000), ...textProps })
+      .object({
+        url: imageSourceSchema,
+        caption: z.string().max(2000),
+        ...textProps,
+      })
       .strict(),
   }),
 ]);
@@ -221,7 +238,11 @@ export const portablePlanSchema = z
       for (const source of plan.fontSources) {
         const name = source.family.toLowerCase();
         if (families.has(name))
-          ctx.addIssue({ code: "custom", message: "Шрифт добавлен дважды", path: ["fontSources"] });
+          ctx.addIssue({
+            code: "custom",
+            message: "Шрифт добавлен дважды",
+            path: ["fontSources"],
+          });
         families.add(name);
       }
     }
@@ -278,7 +299,9 @@ export function toPortable(plan: PortablePlan): PortablePlan {
       .filter((b) => b.type === "task")
       .map((b) => b.props.taskId),
   );
-  const blockIds = new Set(flattenBlocks(plan.blocks).flatMap((b) => (b.id ? [b.id] : [])));
+  const blockIds = new Set(
+    flattenBlocks(plan.blocks).flatMap((b) => (b.id ? [b.id] : [])),
+  );
   const portable = portablePlanSchema.parse({
     schemaVersion: plan.schemaVersion,
     title: plan.title,

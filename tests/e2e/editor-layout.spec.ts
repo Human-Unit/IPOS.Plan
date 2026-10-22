@@ -72,6 +72,7 @@ test("editorial brief, responsive inspectors and unchanged portable data", async
     exact: true,
   });
   await task.waitFor();
+  const section = page.locator('.bn-block[data-id="brief-task"]');
   for (const width of [1440, 1920, 1024, 768, 390]) {
     await page.setViewportSize({ width, height: 1000 });
     await expect(task.locator(".brief-fact-deadline dd")).toHaveText(
@@ -82,26 +83,23 @@ test("editorial brief, responsive inspectors and unchanged portable data", async
       task.getByText("Редактор, монтажёр", { exact: true }),
     ).toBeVisible();
     await expect(
-      task.getByRole("img", { name: "Портретный референс", exact: true }),
+      section.getByRole("img", { name: "Портретный референс", exact: true }),
     ).toBeVisible();
     await expect(
-      task.getByRole("link", { name: "Референс ролика", exact: true }),
+      section.getByRole("link", { name: "Референс ролика", exact: true }),
     ).toBeVisible();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-    const boxes = await task.evaluate((el) => {
-      const copy = el.querySelector(".brief-copy")!.getBoundingClientRect();
-      const image = el.querySelector(".brief-media")!.getBoundingClientRect();
-      return {
-        side: image.left > copy.left + copy.width,
-        below: image.top >= copy.bottom,
-      };
+    const boxes = await section.evaluate((el) => {
+      const copy = el.querySelector(".brief-body")!.getBoundingClientRect();
+      const image = el.querySelector(".brief-image")!.getBoundingClientRect();
+      return { below: image.top >= copy.bottom - 1 };
     });
-    expect(width >= 768 ? boxes.side : boxes.below).toBe(true);
-    await task.locator(".brief-heading").click();
+    expect(boxes.below).toBe(true);
+    await task.getByRole("button", { name: /^Свойства задачи:/ }).click();
     await expect(
       page.getByLabel("Название задачи", { exact: true }),
     ).toHaveValue(brief.tasks.reel.title);
@@ -145,14 +143,14 @@ test("editorial brief, responsive inspectors and unchanged portable data", async
   );
   await page.getByLabel("Подпись изображения").fill("Обновлённая подпись");
   await expect(
-    task.getByRole("img", { name: "Обновлённая подпись", exact: true }),
+    section.getByRole("img", { name: "Обновлённая подпись", exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("status").filter({ hasText: "Сохранено локально" }),
   ).toBeVisible();
   await page.reload();
   await expect(
-    task.getByRole("img", { name: "Обновлённая подпись", exact: true }),
+    section.getByRole("img", { name: "Обновлённая подпись", exact: true }),
   ).toBeVisible();
   await planAction(page, "Экспорт");
   const exported = JSON.parse(
@@ -177,7 +175,7 @@ test("editorial brief, responsive inspectors and unchanged portable data", async
       .evaluate((el) => el.getBoundingClientRect().width),
   ).toBeCloseTo((210 * 96) / 25.4, 1);
   await expect(
-    task.getByRole("img", { name: "Обновлённая подпись", exact: true }),
+    section.getByRole("img", { name: "Обновлённая подпись", exact: true }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });

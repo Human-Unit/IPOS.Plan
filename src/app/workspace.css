@@ -59,6 +59,24 @@
   align-items: center;
   gap: 8px;
 }
+.experience-switch {
+  flex-shrink: 0;
+  padding: 3px;
+  gap: 2px;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.experience-switch [data-slot="toggle-group-item"] {
+  font: 500 12px/1.5 var(--font-ui);
+  min-height: 32px;
+  padding: 5px 12px;
+  border-radius: 3px;
+}
+.experience-switch [data-state="on"] {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
 .editor-actions [data-slot="button"] {
   min-height: 36px;
 }
@@ -171,13 +189,16 @@
   text-align: left;
   font: 500 12px/1.5 var(--font-ui);
 }
-.outline-item > span:last-child {
+.outline-item:not(.outline-task-title) > span:last-child {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+}
+.outline-task-title > span:last-child {
+  min-width: 0;
 }
 .outline-item > svg {
   flex-shrink: 0;
@@ -206,6 +227,18 @@
 .outline-task-title {
   flex: 1;
   font-weight: 600;
+}
+.outline-task-title .outline-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.outline-task-status {
+  display: block;
+  margin-top: 4px;
+  font: 400 11px/1.4 var(--font-ui);
+  color: var(--muted-foreground);
 }
 .outline-collapse {
   display: grid;
@@ -508,6 +541,14 @@
   }
 }
 @media (max-width: 1439px) {
+  .editor-bar,
+  .preview-bar {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .editor-identity {
+    flex: 1 0 auto;
+  }
   .workspace-resize-handle,
   .workspace-outline,
   .workspace-inspector {
@@ -515,6 +556,12 @@
   }
 }
 @media (max-width: 767px) {
+  .experience-switch {
+    width: 100%;
+  }
+  .experience-switch [data-slot="toggle-group-item"] {
+    flex: 1;
+  }
   .editor-bar,
   .preview-bar {
     padding: 8px 12px;

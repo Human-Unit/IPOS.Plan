@@ -1,5 +1,7 @@
 # IPOS.Plan 2.0 — design and validation report
 
+> Historical 2.0 report. Current workspace architecture, media capabilities and QA: [IPOS_PLAN_3.md](IPOS_PLAN_3.md).
+
 ## Audit, before implementation
 
 Baseline: `d5d87e1` plus the existing uncommitted brand polish, preserved on `design/ipos-plan-2`. Main is unchanged. Screenshots use a fresh Chromium context and a realistic four-task fixture, never the user's browser database. The fixture covers two Reels, a carousel, design work, different statuses, long descriptions, multiple responsible roles, image/reference URLs, requirements, callouts and mixed fonts. It is QA content, not an institutional claim or production seed.

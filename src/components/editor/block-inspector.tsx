@@ -1,8 +1,9 @@
 "use client";
 import { useId, useState } from "react";
+import Image from "next/image";
 import { Trash2, ArrowUpRight, Type, RotateCcw } from "lucide-react";
 import type { Block, BlockTypography, FontSource } from "@/lib/schema/plan";
-import { webUrl } from "@/lib/schema/plan";
+import { webUrl, imageSourceSchema } from "@/lib/schema/plan";
 import { usePlanContext } from "./plan-context";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -69,7 +70,8 @@ export function BlockInspector({
   const id = useId();
   const [fontUrl, setFontUrl] = useState("");
   const [fontError, setFontError] = useState("");
-  const { plan, updateTask } = usePlanContext();
+  const [failedImage, setFailedImage] = useState("");
+  const { plan, updateTask, replaceImage } = usePlanContext();
   const task =
     block?.type === "task" ? plan.tasks[block.props.taskId] : undefined;
   const isTextBlock = Boolean(block && textBlockTypes.has(block.type));
@@ -446,12 +448,50 @@ export function BlockInspector({
               </>
             ) : block.type === "image" ? (
               <>
+                {block.props.url &&
+                  imageSourceSchema.safeParse(block.props.url).success &&
+                  failedImage !== block.props.url && (
+                    <Image
+                      unoptimized
+                      src={block.props.url}
+                      alt="Предпросмотр выбранного изображения"
+                      width={220}
+                      height={220}
+                      style={{
+                        width: "auto",
+                        height: "auto",
+                        maxHeight: 180,
+                        objectFit: "contain",
+                      }}
+                      onError={() => setFailedImage(block.props.url)}
+                    />
+                  )}
                 {field(
                   "url",
                   "URL изображения",
                   block.props.url,
                   (value) => updateProps({ url: value }),
-                  { type: "url", max: 4000 },
+                  { max: 90000 },
+                )}
+                {block.props.url.startsWith("data:image/") && (
+                  <p className="inspector-hint">
+                    Изображение встроено в план · до 64 КБ. Сохраняется в JSON и
+                    снимке; для длинной ссылки используйте JSON.
+                  </p>
+                )}
+                {block.id && replaceImage && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => replaceImage(block.id!)}
+                  >
+                    Заменить файлом
+                  </Button>
+                )}
+                {!imageSourceSchema.safeParse(block.props.url).success && (
+                  <p role="alert">
+                    Укажите HTTP-ссылку или выберите файл PNG, JPEG, WebP.
+                  </p>
                 )}
                 {field(
                   "caption",
@@ -470,10 +510,20 @@ export function BlockInspector({
           </FieldGroup>
           {typographyControls}
           {(block.type === "reference" || block.type === "image") &&
-            webUrl.safeParse(block.props.url).success && (
+            (block.type === "image"
+              ? Boolean(
+                  block.props.url &&
+                  imageSourceSchema.safeParse(block.props.url).success,
+                )
+              : webUrl.safeParse(block.props.url).success) && (
               <Button asChild variant="outline" size="sm">
                 <a
                   href={block.props.url}
+                  download={
+                    block.props.url.startsWith("data:")
+                      ? "ipos-image.webp"
+                      : undefined
+                  }
                   target="_blank"
                   rel="noopener noreferrer"
                   referrerPolicy="no-referrer"
@@ -481,7 +531,9 @@ export function BlockInspector({
                   <ArrowUpRight data-icon="inline-start" />
                   {block.type === "reference"
                     ? "Открыть референс"
-                    : "Открыть оригинал"}
+                    : block.props.url.startsWith("data:")
+                      ? "Скачать изображение"
+                      : "Открыть оригинал"}
                 </a>
               </Button>
             )}

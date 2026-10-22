@@ -19,6 +19,7 @@ import {
   duplicateTitleHeading,
 } from "./document-structure";
 import { Button } from "@/components/ui/button";
+import { statusLabels } from "@/lib/labels";
 
 export const insertItems = [
   { title: "Задача", type: "task", icon: CheckSquare },
@@ -116,7 +117,16 @@ export function PlanOutline({
                     <span className="outline-number">
                       {String(++number).padStart(2, "0")}
                     </span>
-                    <span>{label(block)}</span>
+                    <span>
+                      <span className="outline-name">{label(block)}</span>
+                      <small className="outline-task-status">
+                        {
+                          statusLabels[
+                            plan.tasks[block.props.taskId]?.status ?? "todo"
+                          ]
+                        }
+                      </small>
+                    </span>
                   </button>
                   {children.length > 0 && (
                     <button

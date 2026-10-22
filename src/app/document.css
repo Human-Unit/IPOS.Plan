@@ -1,4 +1,4 @@
-/* One document treatment shared by editor, preview, import, history and viewer. */
+/* Physical document and fluid authoring are presentations of the same editor. */
 .plan-paper {
   position: relative;
   isolation: isolate;
@@ -6,11 +6,20 @@
   min-width: 0;
   min-height: 297mm;
   margin: 0 auto;
-  padding: 44px 48px 56px;
-  background: white;
+  padding: 40px 48px 56px;
+  background: var(--background);
   border: 1px solid var(--border);
   border-radius: 3px;
   box-shadow: var(--page-shadow);
+}
+.mode-workspace .plan-paper {
+  width: 100%;
+  max-width: 1120px;
+  min-height: calc(100dvh - 150px);
+  padding: 28px 32px 48px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 .plan-cover,
 .paper-content {
@@ -20,17 +29,17 @@
 }
 .plan-cover {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr);
-  align-items: start;
+  grid-template-columns: 48px minmax(0, 1fr);
   gap: 16px;
+  align-items: start;
+  border-bottom: 2px solid var(--primary);
   padding-bottom: 24px;
   margin-bottom: 24px;
-  border-bottom: 2px solid var(--primary);
 }
 .plan-cover .plan-emblem {
-  width: 56px;
-  height: 56px;
-  margin-top: 3px;
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
 }
 .cover-eyebrow {
   font: 500 11px/1.5 var(--font-ui);
@@ -39,7 +48,7 @@
 }
 .plan-cover h1,
 .plan-cover .cover-title {
-  font: 650 var(--document-title)/1.28 var(--font-heading);
+  font: 650 var(--document-title)/1.3 var(--font-heading);
   letter-spacing: -0.035em;
   color: var(--foreground);
 }
@@ -54,30 +63,39 @@
   border-radius: 2px;
   background: transparent;
   resize: none;
-  box-shadow: none;
   overflow: hidden;
-}
-.plan-cover .cover-title:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 5px;
 }
 .cover-meta {
   font: 400 12px/1.6 var(--font-ui);
   color: var(--muted-foreground);
-  margin-top: 10px;
+  margin-top: 8px;
 }
-.print-only-cover-title {
+.print-only-cover-title,
+.print-task-title,
+.print-task-description,
+.task-status.print-task-status {
+  display: none;
+}
+.mode-workspace .plan-cover {
+  grid-template-columns: 40px minmax(0, 1fr);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+  padding-bottom: 20px;
+}
+.mode-workspace .plan-cover .plan-emblem {
+  width: 40px;
+  height: 40px;
+}
+.mode-workspace .cover-eyebrow,
+.mode-workspace .plan-watermark {
   display: none;
 }
 .plan-watermark {
   position: absolute;
-  top: 48px;
+  top: 40px;
   right: 24px;
-  left: auto;
-  width: 220px;
-  opacity: 0.018;
+  opacity: 0.012;
   pointer-events: none;
-  user-select: none;
   z-index: 0;
 }
 .plan-paper .bn-container {
@@ -89,7 +107,7 @@
   padding: 0;
   min-width: 0;
   background: transparent;
-  font: 400 var(--document-body)/1.65 var(--font-document);
+  font: 400 16px/1.65 var(--font-document);
   color: var(--foreground);
 }
 .plan-paper .bn-block-content {
@@ -114,14 +132,10 @@
   font-size: 25px;
 }
 .plan-paper .bn-editor h3 {
-  font-size: 21px;
+  font-size: 19px;
 }
 .plan-paper .bn-block-content[data-content-type="heading"] {
-  padding-block: 12px 5px;
-}
-.plan-paper .bn-block-content[data-content-type="bulletListItem"],
-.plan-paper .bn-block-content[data-content-type="numberedListItem"] {
-  padding-block: 2px;
+  padding-block: 10px 4px;
 }
 .plan-paper .bn-block-content[data-content-type="quote"] {
   border-left: 2px solid var(--border);
@@ -132,53 +146,134 @@
   color: var(--primary);
   text-underline-offset: 3px;
 }
+/* Native BlockNote containers establish the boundary; never paint source siblings. */
+.bn-block:has(> .node-brief) {
+  border-bottom: 1px solid var(--border);
+  padding: 24px 0;
+  margin: 0;
+  min-width: 0;
+}
+.bn-block:has(> .node-brief) > .bn-block-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.bn-block:has(> .node-briefChildren) > .bn-block-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.bn-block:has(> .node-brief)
+  .bn-block-content[data-content-type="heading"]
+  .bn-inline-content {
+  font-size: 17px;
+}
+.bn-block-content > [data-plan-block] {
+  width: 100%;
+}
+.bn-block-content[data-content-type="briefChildren"],
+.bn-block-content[data-content-type="mediaStrip"] {
+  height: 0;
+  padding: 0;
+  min-height: 0;
+}
+.brief-children-marker {
+  display: none;
+}
+.bn-block:has(> .node-brief .brief-heading[data-collapsed="true"])
+  > .bn-block-group {
+  display: none;
+}
+.bn-block:has(> .node-mediaStrip) > .bn-block-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
+  align-items: start;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.bn-block:has(> .node-mediaStrip) > .bn-block-group > .bn-block-outer {
+  min-width: 0;
+}
+.bn-block:is(:has(> .node-brief), :has(> .node-briefChildren), :has(> .node-mediaStrip))
+  > .bn-block-group > .bn-block-outer::before {
+  display: none;
+}
 .task-brief {
   position: relative;
-  padding: 8px 0 0;
-  font-family: var(--font-document);
   min-width: 0;
+  font-family: var(--font-document);
 }
 .brief-heading {
   display: flex;
   align-items: start;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 14px;
-}
-.plan-paper .brief-heading h3 {
-  display: flex;
-  align-items: baseline;
   gap: 12px;
-  font: 650 var(--document-task)/1.4 var(--font-heading);
-  letter-spacing: -0.03em;
+  margin-bottom: 12px;
+}
+.brief-title-group {
+  flex: 1;
   min-width: 0;
 }
-.brief-heading h3 > span:last-child {
+.brief-kind {
+  font: 500 11px/1.5 var(--font-ui);
+  color: var(--muted-foreground);
+  display: block;
+  margin-bottom: 3px;
+}
+.brief-number {
+  font: 600 19px/1.6 var(--font-heading);
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.plan-paper .brief-heading h3 {
+  font: 650 23px/1.4 var(--font-heading);
+  letter-spacing: -0.03em;
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.brief-number {
-  font: 600 18px/1.4 var(--font-heading);
-  color: var(--primary);
+.task-title-input {
+  field-sizing: content;
+  resize: none;
+  overflow: hidden;
+  height: auto;
+  min-height: 32px;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  letter-spacing: inherit;
+  padding: 0;
+  border-radius: 2px;
+}
+.task-title-input:hover,
+.task-description-input:hover {
+  background: var(--muted);
+}
+.brief-quick-controls {
+  display: flex;
+  gap: 2px;
   flex-shrink: 0;
+}
+.brief-quick-controls [data-slot="button"] {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
 }
 .task-status {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  white-space: nowrap;
-  flex-shrink: 0;
-  margin-top: 4px;
+  gap: 4px;
+  width: auto;
+  min-height: 26px;
   padding: 3px 7px;
-  border: 1px solid #d9dce3;
+  margin-top: 7px;
+  border: 1px solid var(--border);
   border-radius: 3px;
   background: #f6f7f9;
   color: #606875;
-  font: 500 10px/1.5 var(--font-ui);
-}
-.plan-paper .bn-editor .task-status svg {
-  width: 12px;
-  height: 12px;
+  font: 500 11px/1.5 var(--font-ui);
 }
 .task-status[data-status="in_progress"] {
   color: var(--primary);
@@ -198,58 +293,88 @@
 .task-status[data-status="cancelled"] {
   color: #775e65;
   background: #f7f3f4;
-  border-color: #e6dce0;
 }
 .brief-body {
   display: grid;
-  align-items: start;
-  gap: 16px;
+  gap: 14px;
   min-width: 0;
 }
-.brief-body.has-media {
-  grid-template-columns: minmax(0, 1fr) minmax(140px, 190px);
+.brief-body[data-collapsed="true"] {
+  display: none;
 }
-.brief-copy,
-.brief-media {
-  min-width: 0;
-}
-.brief-copy {
-  display: grid;
-  align-content: start;
-}
-.brief-media {
-  display: grid;
-  align-content: start;
-  align-self: start;
-  justify-self: stretch;
-  gap: 8px;
-}
-.brief-description {
-  display: grid;
-  gap: 6px;
-}
-.brief-label {
+.task-description-input {
+  field-sizing: content;
   display: block;
+  width: 100%;
+  max-width: 76ch;
+  min-width: 0;
+  min-height: 32px;
+  max-height: 480px;
+  resize: vertical;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: 400 16px/1.65 var(--font-document);
+  border-radius: 2px;
+  color: var(--foreground);
+}
+.task-description-input::placeholder {
   color: var(--muted-foreground);
-  font: 500 12px/1.5 var(--font-ui);
+  font-size: 14px;
 }
-.brief-description p {
+.brief-description-text {
   white-space: pre-wrap;
-  font-size: 16px;
-  line-height: 1.65;
+  max-width: 76ch;
+  font: 400 16px/1.65 var(--font-document);
 }
-.brief-references {
-  display: grid;
-  gap: 8px;
-  margin-top: 16px;
+.brief-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  margin: 0;
+  padding: 0;
+}
+.brief-facts > div {
+  min-width: 0;
+  max-width: 100%;
+}
+.brief-facts dt {
+  font: 400 11px/1.5 var(--font-ui);
+  color: var(--muted-foreground);
+  margin-bottom: 3px;
+}
+.brief-facts dd {
+  margin: 0;
+  font: 500 13px/1.6 var(--font-ui);
+  overflow-wrap: anywhere;
+}
+.brief-fact-deadline dd {
+  color: var(--brand-red);
+}
+.brief-priority {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.brief-insert {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.brief-insert [data-slot="button"] {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  height: 30px;
 }
 .brief-reference {
   display: flex;
   align-items: start;
   gap: 10px;
   position: relative;
-  padding: 10px 11px;
-  border: 1px solid #e6e8ed;
+  padding: 10px 12px;
+  margin-block: 8px;
+  border: 1px solid var(--border);
   background: #f8f9fb;
   border-radius: 4px;
   min-width: 0;
@@ -285,54 +410,22 @@
 }
 .reference-copy a:hover {
   text-decoration: underline;
-  text-underline-offset: 3px;
 }
 .reference-copy a > svg {
   display: inline-block;
   margin-left: 6px;
   vertical-align: -2px;
 }
-.reference-domain {
-  font: 400 11px/1.5 var(--font-ui);
-  color: var(--muted-foreground);
-  overflow-wrap: anywhere;
-}
+.reference-domain,
 .reference-copy p {
   font: 400 12px/1.6 var(--font-ui);
   color: var(--muted-foreground);
-  margin-top: 2px;
   overflow-wrap: anywhere;
-}
-.reference-copy strong {
-  font-size: 13px;
-}
-.brief-facts {
-  display: grid;
-  grid-template-columns: minmax(100px, 0.8fr) minmax(0, 1.2fr);
-  gap: 16px;
-  margin: 17px 0 0;
-}
-.brief-facts dt {
-  font: 400 12px/1.5 var(--font-ui);
-  color: var(--muted-foreground);
-  margin-bottom: 5px;
-}
-.brief-facts dd {
-  margin: 0;
-  font: 600 14px/1.6 var(--font-ui);
-  overflow-wrap: anywhere;
-}
-.brief-fact-deadline dd {
-  color: var(--brand-red);
-}
-.plan-paper .brief-priority {
-  margin-top: 10px;
-  color: var(--muted-foreground);
-  font: 400 12px/1.5 var(--font-ui);
 }
 .brief-image {
   position: relative;
   min-width: 0;
+  margin-block: 12px;
 }
 .brief-image figure {
   margin: 0;
@@ -342,34 +435,30 @@
   width: auto;
   max-width: 100%;
   height: auto;
-  max-height: 300px;
+  max-height: 320px;
   object-fit: contain;
   object-position: left top;
   border-radius: 3px;
 }
 .brief-image figcaption {
-  margin-top: 8px;
+  margin-top: 7px;
   color: var(--muted-foreground);
-  font: 400 11px/1.6 var(--font-ui);
+  font: 400 12px/1.6 var(--font-ui);
   overflow-wrap: anywhere;
 }
 .image-placeholder {
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 12px;
-  min-height: 160px;
-  padding: 20px;
+  gap: 10px;
+  min-height: 120px;
+  padding: 18px;
   border: 1px dashed var(--input);
   border-radius: 3px;
-  background: #f7f8fa;
+  background: var(--muted);
   color: var(--muted-foreground);
   text-align: center;
   font: 400 12px/1.6 var(--font-ui);
-}
-.image-placeholder svg {
-  width: 24px;
-  height: 24px;
 }
 .callout-block {
   border: 0;
@@ -382,7 +471,7 @@
   font: 400 13px/1.65 var(--font-ui);
 }
 .divider-block {
-  padding: 11px 0;
+  padding: 10px 0;
 }
 .divider-block [data-slot="separator"] {
   background: var(--border);
@@ -402,11 +491,7 @@
   outline: 1px solid var(--primary);
   outline-offset: 3px;
 }
-.plan-paper .bn-editor .bn-react-node-view-renderer.ProseMirror-selectednode,
-.plan-paper
-  .bn-editor
-  .bn-react-node-view-renderer.ProseMirror-selectednode
-  > .bn-block-content {
+.plan-paper .bn-react-node-view-renderer.ProseMirror-selectednode {
   outline: none;
   box-shadow: none;
   background: transparent;
@@ -417,22 +502,12 @@
   > [data-plan-block]::after {
   display: none;
 }
-.embedded-placeholder {
-  display: none;
-}
-.bn-block-outer:has(> .bn-block > .bn-block-content .embedded-placeholder) {
-  display: none;
-}
 .embedded-document .plan-paper {
   width: 100%;
   min-height: 0;
   padding: 0;
   border: 0;
-  border-radius: 0;
   box-shadow: none;
-}
-.embedded-document .brief-heading h3 {
-  font-size: 20px;
 }
 .readonly-workspace .bn-side-menu,
 .readonly-workspace .bn-formatting-toolbar,
@@ -440,82 +515,47 @@
   display: none;
 }
 @media (max-width: 767px) {
-  .plan-paper {
+  .plan-paper,
+  .mode-workspace .plan-paper {
     padding: 24px 18px 36px;
     min-height: 0;
-    border-radius: 2px;
   }
   .plan-cover {
     grid-template-columns: 40px minmax(0, 1fr);
     gap: 12px;
-    padding-bottom: 20px;
-    margin-bottom: 20px;
   }
   .plan-cover .plan-emblem {
     width: 40px;
     height: 40px;
   }
-  .cover-eyebrow {
-    font-size: 11px;
-    margin-bottom: 6px;
-  }
-  .cover-meta {
-    font-size: 12px;
-  }
-  .plan-watermark {
-    top: 40px;
-    right: 8px;
-    opacity: 0.012;
-  }
   .brief-heading {
-    display: grid;
-    gap: 8px;
-    margin-bottom: 12px;
-  }
-  .brief-heading h3 {
     gap: 10px;
+    flex-wrap: wrap;
   }
-  .brief-number {
-    font-size: 15px;
+  .brief-title-group {
+    flex-basis: calc(100% - 36px);
   }
-  .task-status {
-    justify-self: start;
-    margin-left: 30px;
-    margin-top: 0;
-    font-size: 11px;
+  .brief-quick-controls {
+    margin-left: 28px;
   }
-  .brief-body.has-media {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .brief-description p {
-    font-size: 16px;
-    line-height: 1.65;
+  .plan-paper .brief-heading h3 {
+    font-size: 21px;
   }
   .brief-facts {
+    gap: 12px 20px;
+  }
+  .brief-number {
+    font-size: 17px;
+  }
+  .brief-insert [data-slot="button"] {
+    min-height: 36px;
+  }
+  .plan-watermark {
+    right: 8px;
+    top: 36px;
+    opacity: 0.008;
+  }
+  .bn-block:has(> .node-mediaStrip) > .bn-block-group {
     grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
-    margin-top: 16px;
-  }
-  .brief-media {
-    max-width: 240px;
-  }
-  .brief-image img {
-    max-height: 320px;
-  }
-  .brief-reference {
-    padding: 10px;
-    gap: 6px;
-  }
-  .reference-copy a {
-    font-size: 12px;
-  }
-  .plan-paper .bn-editor h1 {
-    font-size: 26px;
-  }
-  .plan-paper .bn-editor h2 {
-    font-size: 23px;
-  }
-  .plan-paper .bn-editor h3 {
-    font-size: 20px;
   }
 }

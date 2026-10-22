@@ -7,11 +7,13 @@ export function SelectableBlock({
   label,
   className,
   children,
+  openPropertiesOnSelect = true,
 }: {
   id: string;
   label: string;
   className: string;
   children: ReactNode;
+  openPropertiesOnSelect?: boolean;
 }) {
   const { editable, selectedId, selectBlock } = usePlanContext();
   return (
@@ -26,7 +28,7 @@ export function SelectableBlock({
         editable
           ? (event) => {
               event.stopPropagation();
-              selectBlock?.(id);
+              selectBlock?.(id, openPropertiesOnSelect);
             }
           : undefined
       }

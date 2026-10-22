@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main, design/ipos-plan-2, design/ipos-2-task-sections-2026-10-20]
   push:
-    branches: [main, design/ipos-plan-2, design/ipos-2-task-sections-2026-10-20]
+    branches: [main, design/ipos-plan-2, design/ipos-2-task-sections-2026-10-20, feat/ipos-plan-3-workspace]
 
 jobs:
   validate:
@@ -39,5 +39,5 @@ jobs:
       - run: npm run build
       - name: Install Chromium for UI validation
         run: npx playwright install --with-deps chromium
-      - name: Verify grouped briefs in editor and responsive viewer
-        run: npx playwright test tests/e2e/redesign.spec.ts
+      - name: Verify editor, responsive viewer, data safety and portable media
+        run: npm run test:e2e
