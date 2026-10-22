@@ -70,6 +70,9 @@
   flex-shrink: 0;
 }
 .restore-strategies { display: grid; gap: 14px; font-size: 13px; }
+.dialog-panel.backup-dialog { grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; gap: 16px; }
+.backup-dialog-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: grid; gap: 16px; padding: 3px; font-size: 13px; line-height: 1.6; }
+.backup-dialog-body:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .restore-strategies legend { margin-bottom: 10px; font-weight: 600; }
 .restore-strategies label { display: flex; align-items: flex-start; gap: 8px; line-height: 1.5; }
 .restore-strategies input { margin-top: 3px; accent-color: var(--primary); }
@@ -79,7 +82,7 @@
 .template-personal { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.6; }
 .template-personal input { margin-top: 4px; accent-color: var(--primary); }
 .template-preview { max-height: 42vh; overflow: auto; border: 1px solid var(--border); border-radius: 4px; }
-.template-preview .plan-paper { width: 100%; min-height: 0; padding: 24px; box-shadow: none; }
+.template-dialog .template-preview .plan-paper { width: 100%; min-height: 0; padding: 24px; box-shadow: none; }
 .template-preview .readonly-workspace { padding: 0; }
 .library-stats { display: flex; flex-wrap: wrap; gap: 10px 28px; border-block: 1px solid var(--border); padding: 16px 0; margin-bottom: 20px; font-size: 12px; color: var(--muted-foreground); }
 .library-stats strong { color: var(--foreground); margin-left: 5px; font-variant-numeric: tabular-nums; }

@@ -77,7 +77,7 @@ test("editorial brief, responsive inspectors and unchanged portable data", async
   const section = page.locator('.bn-block[data-id="brief-task"]');
   for (const width of [1440, 1920, 1024, 768, 390]) {
     await page.setViewportSize({ width, height: 1000 });
-    await expect(task.locator(".brief-fact-deadline dd")).toHaveText(
+    await expect(task.locator(".brief-fact-deadline dd time")).toHaveText(
       "15.10.2026",
     );
     await expect(task.locator(".brief-fact-deadline dd")).toBeVisible();

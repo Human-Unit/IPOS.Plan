@@ -217,7 +217,7 @@ export function TaskCard({
             <div className="brief-fact-deadline" data-deadline={editable ? deadline.kind : undefined}>
               <dt>Дедлайн</dt>
               <dd>
-                {task.deadline?.split("-").reverse().join(".") || "Не указан"}
+                {task.deadline ? <time dateTime={task.deadline}>{task.deadline.split("-").reverse().join(".")}</time> : "Не указан"}
                 {editable && deadline.days !== undefined && <small className="deadline-hint">{deadline.label}</small>}
               </dd>
             </div>
