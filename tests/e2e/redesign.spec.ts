@@ -131,11 +131,11 @@ test("content-heavy workspace fits every viewport, panels resize and collapse, f
   // Brief's text, references and task metadata share one readable column.
   // The optional image is the second column rather than causing a large blank
   // region between the description and its references.
-  const brief = page.locator('.task-brief[data-plan-block="reel"]');
-  const description = await brief.locator(".brief-description").boundingBox();
-  const references = await brief.locator(".brief-references").boundingBox();
-  const facts = await brief.locator(".brief-facts").boundingBox();
-  const media = await brief.locator(".brief-media").boundingBox();
+  const taskCard = page.locator('.task-brief[data-plan-block="reel"]');
+  const description = await taskCard.locator(".brief-description").boundingBox();
+  const references = await taskCard.locator(".brief-references").boundingBox();
+  const facts = await taskCard.locator(".brief-facts").boundingBox();
+  const media = await taskCard.locator(".brief-media").boundingBox();
   expect(description).toBeTruthy();
   expect(references).toBeTruthy();
   expect(facts).toBeTruthy();
