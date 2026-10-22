@@ -20,7 +20,6 @@ test("assignments panel jumps between tasks and names survive into the local lib
   await page.getByRole("button", { name: "Следующая задача" }).click();
   await expect(page.locator(".task-jump")).toContainText("4 / 5");
   await page.getByRole("button", { name: "Свойства", exact: true }).click();
-  const assignee = page.locator('.block-inspector input').filter({ hasNot: page.locator("span") }).last();
   // Use the explicit, localized accessible field rather than implementation IDs.
   const field = page.getByRole("textbox", { name: "Ответственные", exact: true });
   await expect(field).toBeVisible();
