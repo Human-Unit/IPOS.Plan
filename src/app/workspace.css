@@ -698,3 +698,23 @@
     margin-bottom: 16px;
   }
 }
+
+
+/* 3.2 assignment navigation: stable compact controls in narrow panels. */
+.assignments-panel { border-bottom: 1px solid var(--border); padding: 0 0 12px; margin-bottom: 18px; }
+.assignments-panel > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; font: 650 12px/1.5 var(--font-ui); padding: 8px 2px; }
+.assignments-panel > summary small { font-size: 11px; color: var(--muted-foreground); }
+.assignments-list { display: grid; max-height: 245px; overflow-y: auto; overscroll-behavior: contain; }
+.assignment-row { display: grid; gap: 4px; min-width: 0; padding: 8px 5px; text-align: left; border-bottom: 1px solid var(--border); font: 500 12px/1.4 var(--font-ui); border-radius: 3px; }
+.assignment-row:hover, .assignment-row:focus-visible, .assignment-row[aria-current="location"] { background: var(--secondary); }
+.assignment-row-title { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
+.assignment-row-title > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.assignment-row-title small { flex: 0 0 auto; color: var(--primary); font-weight: 650; }
+.assignment-row-people { color: var(--muted-foreground); font-size: 11px; overflow-wrap: anywhere; }
+.assignee-people { display: flex; flex-wrap: wrap; gap: 5px; }
+.assignee-people button { min-height: 27px; max-width: 100%; padding: 3px 8px; border: 1px solid var(--border); border-radius: 4px; font: 500 11px/1.3 var(--font-ui); background: var(--secondary); }
+.assignee-people button:hover, .assignee-people button:focus-visible { border-color: var(--primary); }
+.task-jump { display: flex; align-items: center; gap: 3px; white-space: nowrap; font: 600 12px/1.4 var(--font-ui); color: var(--foreground); }
+.task-jump [data-slot="button"] { height: 30px; width: 30px; min-height: 30px; padding: 4px; }
+.task-jump span { min-width: 46px; text-align: center; font-variant-numeric: tabular-nums; }
+@media print { .assignments-panel, .task-jump { display: none !important; } }
