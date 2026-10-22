@@ -73,7 +73,7 @@ export function Dashboard() {
           <div>
             <h1>Контент-планы</h1>
             <p className="muted">
-              Планируйте, создавайте и организуйте медиапроекты.
+              От идеи и задания — к готовому медиапроекту.
             </p>
           </div>
           <div className="dashboard-actions">
@@ -124,6 +124,7 @@ export function Dashboard() {
                     <span>Задач: {tasks.length}</span>
                     <span>Готово: {done}</span>
                   </div>
+                  <p className="plan-row-summary" title={tasks.map(task=>task.title).join(' · ')}>{tasks.length ? tasks.slice(0,2).map(task=>task.title).join(' · ') + (tasks.length>2 ? ` · ещё ${tasks.length-2}` : '') : 'Добавьте первое задание или начните с текста'}</p>
                   <div
                     className="plan-progress"
                     role="progressbar"

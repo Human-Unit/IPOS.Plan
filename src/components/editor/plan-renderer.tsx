@@ -59,6 +59,13 @@ import { ExternalFontLoader } from "./external-font-loader";
 import { WorkspaceResizeHandle } from "./workspace-resize-handle";
 import { Button } from "@/components/ui/button";
 import {
+  Empty,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+  EmptyContent,
+} from "@/components/ui/empty";
+import {
   Dialog,
   DialogContent,
   DialogTitle,
@@ -722,6 +729,22 @@ export default function PlanRenderer({
                 : undefined
             }
           >
+            {editable && !plan.blocks.length && (
+              <Empty className="workspace-empty">
+                <EmptyHeader>
+                  <EmptyTitle>Начните с задания</EmptyTitle>
+                  <EmptyDescription>
+                    Добавьте идею, требования и референсы. Можно начать с
+                    обычного текста ниже.
+                  </EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent>
+                  <Button variant="outline" onClick={() => add("task")}>
+                    Новая задача
+                  </Button>
+                </EmptyContent>
+              </Empty>
+            )}
             <BlockNoteView
               editor={editor}
               portalElements={{ default: "body" }}

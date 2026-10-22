@@ -1,0 +1,39 @@
+{
+  "docx": {
+    "validParts": 8,
+    "media": 4,
+    "sealBytesPreserved": true,
+    "watermarkPreserved": true,
+    "editableTextRuns": 54,
+    "a4Twips": [
+      11906,
+      16838
+    ]
+  },
+  "pdf": [
+    {
+      "page": 1,
+      "points": [
+        594.9599609375,
+        841.9199829101562
+      ],
+      "characters": 706
+    },
+    {
+      "page": 2,
+      "points": [
+        594.9599609375,
+        841.9199829101562
+      ],
+      "characters": 721
+    },
+    {
+      "page": 3,
+      "points": [
+        594.9599609375,
+        841.9199829101562
+      ],
+      "characters": 548
+    }
+  ]
+}
