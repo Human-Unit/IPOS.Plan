@@ -64,6 +64,7 @@ export async function importAssignmentPlan(
     .fill(JSON.stringify(fixture));
   await page.getByRole("button", { name: "Проверить и посмотреть" }).click();
   await page.getByRole("button", { name: "Подтвердить импорт" }).click();
+  await page.locator(".bn-editor").waitFor();
   await expect(page.locator(".task-brief")).toHaveCount(2);
   return page.url();
 }
@@ -361,6 +362,7 @@ test("inline candidate creation, unlinking and normal typing keep assignment met
   await expect(text).toBeFocused();
   await expect(page.locator('.save-status[data-state="saved"]')).toBeVisible();
   await page.goto(plan + "#task=reel");
+  await page.locator(".bn-editor").waitFor();
   await expect(
     page.locator('.task-brief[data-plan-block="reel-block"]'),
   ).toContainText("Съёмочная группа");

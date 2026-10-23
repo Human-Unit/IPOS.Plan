@@ -28,6 +28,7 @@ test("assignments panel jumps between tasks and saved legacy names survive into 
   await page.getByLabel("JSON плана", { exact: true }).fill(JSON.stringify(fixture));
   await page.getByRole("button", { name: "Проверить и посмотреть" }).click();
   await page.getByRole("button", { name: "Подтвердить импорт" }).click();
+  await page.locator(".bn-editor").waitFor();
   await expect(page.locator(".task-brief")).toHaveCount(5);
   await page.getByRole("button", { name: "Структура", exact: true }).click();
   const assignmentNav = page.getByRole("navigation", { name: "Быстрый переход к заданиям" });
