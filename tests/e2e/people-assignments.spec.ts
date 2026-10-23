@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { planAction } from "./actions";
+import { readFile } from "node:fs/promises";
 export async function createPersonUI(page: Page, name: string, active = false) {
   await page.goto("/activists");
   await page
@@ -85,6 +86,7 @@ export async function assignUI(page: Page, title: string, names: string[]) {
 }
 test("explicit multi-person assignment preserves legacy text until confirmation and navigates exact briefs", async ({
   page,
+  context,
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -134,6 +136,17 @@ test("explicit multi-person assignment preserves legacy text until confirmation 
   expect(JSON.parse(json).tasks.reel.assignee).toBe("Ислом, Маруф");
   expect(json).not.toContain("personId");
   expect(json).not.toContain("assignments");
+  await page.getByRole("button", { name: "Закрыть", exact: true }).click();
+  await page.getByRole("button", { name: "Поделиться", exact: true }).click();
+  const share = await page.getByLabel("Ссылка на снимок").inputValue();
+  const viewer = await context.newPage();
+  viewer.on("pageerror", (e) => errors.push(e.message));
+  await viewer.goto(share);
+  await expect(viewer.locator(".task-brief").first()).toContainText("Ислом, Маруф");
+  await expect(viewer.locator('a[href*="/activists/"]')).toHaveCount(0);
+  await viewer.reload();
+  await expect(viewer.locator(".task-brief").first()).toContainText("Ислом, Маруф");
+  await viewer.close();
   expect(errors).toEqual([]);
 });
 
@@ -211,4 +224,149 @@ test("four people, shared work in two plans, completion, workload filters and pr
   await expect(
     page.getByText("Нет подтверждённых привязок к заданиям.", { exact: false }),
   ).toBeVisible();
+});
+
+test("people-aware backup restore copies identities and old backups retain distinct unverified candidates", async ({
+  page,
+}) => {
+  test.setTimeout(120000);
+  await createPersonUI(page, "Ислом", true);
+  await createPersonUI(page, "Маруф");
+  await importAssignmentPlan(page, "План для восстановления", "");
+  await assignUI(page, "Рилс — История кампуса", ["Ислом", "Маруф"]);
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Резервная копия", exact: true })
+    .click();
+  const download = page.waitForEvent("download");
+  await page.getByRole("menuitem", { name: "Скачать все данные" }).click();
+  const raw = await readFile((await (await download).path())!, "utf8");
+  const backup = JSON.parse(raw);
+  expect(backup.formatVersion).toBe(2);
+  expect(backup.people).toHaveLength(2);
+  await page
+    .locator('input[aria-label="Файл резервной копии"]')
+    .setInputFiles({
+      name: "people.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(raw),
+    });
+  await expect(page.getByRole("dialog")).toContainText(
+    "Профили всегда добавляются отдельными копиями",
+  );
+  await page
+    .getByRole("button", { name: "Подтвердить восстановление", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText("профилей: 2");
+  await page.getByRole("button", { name: "Готово", exact: true }).click();
+  await page.goto("/activists");
+  await expect(
+    page.getByRole("list", { name: "Локальные профили" }).locator("li"),
+  ).toHaveCount(4);
+  const profileLinks = await page
+    .locator(".people-list .person-name")
+    .evaluateAll((nodes) => nodes.map((n) => n.getAttribute("href")));
+  expect(new Set(profileLinks).size).toBe(4);
+  await page.goto("/");
+  const legacy = {
+    app: "IPOS.Plan",
+    formatVersion: 1,
+    createdAt: backup.createdAt,
+    schemas: { database: 1, portable: 1 },
+    plans: [],
+    revisions: [],
+    activity: [],
+    settings: [
+      {
+        key: "activist:old-one",
+        value: {
+          name: "Азиз",
+          createdAt: backup.createdAt,
+          source: "assignment",
+        },
+      },
+      {
+        key: "activist:old-two",
+        value: {
+          name: "Азиз",
+          createdAt: backup.createdAt,
+          source: "assignment",
+        },
+      },
+    ],
+  };
+  await page
+    .locator('input[aria-label="Файл резервной копии"]')
+    .setInputFiles({
+      name: "old.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(legacy)),
+    });
+  await page
+    .getByRole("button", { name: "Подтвердить восстановление", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Готово", exact: true }).click();
+  await page.goto("/activists");
+  await page.getByRole("searchbox", { name: "Поиск людей" }).fill("Азиз");
+  await expect(page.locator(".people-list > li")).toHaveCount(2);
+  await expect(page.locator(".people-list .person-identity")).toContainText([
+    "Кандидат",
+    "Кандидат",
+  ]);
+});
+
+test("inline candidate creation, unlinking and normal typing keep assignment metadata explicit", async ({
+  page,
+}) => {
+  const plan = await importAssignmentPlan(page, "Новый участник", "");
+  await page
+    .getByRole("button", {
+      name: "Свойства задачи: Рилс — История кампуса",
+      exact: true,
+    })
+    .click();
+  await page
+    .getByRole("button", { name: "Добавить нового человека", exact: true })
+    .click();
+  const form = page.locator(".inline-person-form");
+  await form.getByLabel("Имя и фамилия").fill("Азиз");
+  await form
+    .getByRole("button", { name: "Сохранить профиль", exact: true })
+    .click();
+  await expect(
+    page.locator(
+      '.task-brief[data-plan-block="reel-block"] a[href*="/activists/"]',
+    ),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Применить назначение", exact: true })
+    .click();
+  await expect(
+    page
+      .locator('.task-brief[data-plan-block="reel-block"]')
+      .getByRole("link", { name: "Азиз", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Снять привязки людей", exact: true })
+    .click();
+  await expect(
+    page.locator(
+      '.task-brief[data-plan-block="reel-block"] a[href*="/activists/"]',
+    ),
+  ).toHaveCount(0);
+  const text = page.getByLabel("Ответственные", { exact: true });
+  await text.click();
+  await text.pressSequentially("Съёмочная группа");
+  await expect(text).toHaveValue("Съёмочная группа");
+  await expect(text).toBeFocused();
+  await expect(page.locator('.save-status[data-state="saved"]')).toBeVisible();
+  await page.goto(plan + "#task=reel");
+  await expect(
+    page.locator('.task-brief[data-plan-block="reel-block"]'),
+  ).toContainText("Съёмочная группа");
+  await page.goto("/activists");
+  await expect(page.locator(".people-list > li")).toHaveCount(1);
+  await expect(page.locator(".people-list .person-identity")).toContainText(
+    "Кандидат",
+  );
 });

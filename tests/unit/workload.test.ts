@@ -179,19 +179,23 @@ describe("derived people workload", () => {
         ...common,
         id: "linked",
         type: "TASK_PEOPLE_CHANGED",
-        metadata: { personIds: [islam.id] },
+        metadata: { identityVersion: 1, personIds: [islam.id] },
       },
       {
         ...common,
         id: "removed",
         type: "TASK_PEOPLE_CHANGED",
-        metadata: { personIds: [], previousPersonIds: [islam.id] },
+        metadata: {
+          identityVersion: 1,
+          personIds: [],
+          previousPersonIds: [islam.id],
+        },
       },
       {
         ...common,
         id: "other",
         type: "TASK_STATUS_CHANGED",
-        metadata: { personIds: [maruf.id] },
+        metadata: { identityVersion: 1, personIds: [maruf.id] },
       },
     ];
     expect(personEvents(events, islam.id).map((e) => e.id)).toEqual([

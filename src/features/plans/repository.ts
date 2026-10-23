@@ -67,7 +67,7 @@ export async function savePlan(plan: Plan): Promise<Plan> {
     const events = [...activityChanges(toPortable(previous), portable), ...assignmentEvents(previous, saved)].map(
       ({ type, message, metadata }) => ({
         ...event(plan.id, type, message),
-        metadata: metadata?.taskId && typeof metadata.taskId === "string" && type !== "TASK_PEOPLE_CHANGED" ? { ...metadata, personIds: (saved.assignments?.[metadata.taskId] ?? previous.assignments?.[metadata.taskId])?.people.map(p => p.personId) ?? [] } : metadata,
+        metadata: metadata?.taskId && typeof metadata.taskId === "string" && type !== "TASK_PEOPLE_CHANGED" ? { ...metadata, identityVersion: 1, personIds: (saved.assignments?.[metadata.taskId] ?? previous.assignments?.[metadata.taskId])?.people.map(p => p.personId) ?? [] } : metadata,
       }),
     );
     await db.plans.put(saved);

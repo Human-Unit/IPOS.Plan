@@ -75,11 +75,24 @@ export function personEvents(activity: Activity[], personId: string) {
     .filter(
       (a) =>
         a.type.startsWith("TASK_") &&
+        a.metadata?.identityVersion === 1 &&
         [a.metadata?.personIds, a.metadata?.previousPersonIds].some(
           (ids) => Array.isArray(ids) && ids.includes(personId),
         ),
     )
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+export function workloadByPerson(rows: AssignmentRow[], today: string) {
+  const groups = new Map<string, AssignmentRow[]>();
+  for (const row of rows)
+    for (const id of new Set(row.personIds)) {
+      const group = groups.get(id);
+      if (group) group.push(row);
+      else groups.set(id, [row]);
+    }
+  return new Map(
+    [...groups].map(([id, group]) => [id, workSummary(group, today)]),
+  );
 }
 /** Suggestions are presentation only. No link, merge or text rewrite occurs here. */
 export function suggestPeople(text: string, people: Person[]) {

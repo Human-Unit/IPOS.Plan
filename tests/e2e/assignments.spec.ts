@@ -2,9 +2,27 @@ import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { productivityFixture } from "./productivity-fixture";
 
-test("assignments panel jumps between tasks and names survive into the local library backup", async ({ page }) => {
+test("assignments panel jumps between tasks and saved legacy names survive into the local library backup", async ({ page }) => {
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.goto("/");
+  // 3.3 preserves saved 3.2 names, but typing an ambiguous string must no
+  // longer split it or create identities. Restore actual old saved rows first.
+  const createdAt = "2026-10-22T00:00:00Z";
+  await page.locator('input[aria-label="Файл резервной копии"]').setInputFiles({
+    name: "legacy-names.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify({
+      app: "IPOS.Plan", formatVersion: 1, createdAt,
+      schemas: { database: 1, portable: 1 },
+      plans: [], revisions: [], activity: [],
+      settings: ["Ислом", "Маруф"].map((name, index) => ({
+        key: `activist:legacy-${index}`,
+        value: { name, createdAt, source: "assignment" },
+      })),
+    })),
+  });
+  await page.getByRole("button", { name: "Подтвердить восстановление", exact: true }).click();
+  await page.getByRole("button", { name: "Готово", exact: true }).click();
   const fixture = productivityFixture(new URL(page.url()).origin);
   await page.getByRole("button", { name: "Импорт JSON", exact: true }).click();
   await page.getByLabel("JSON плана", { exact: true }).fill(JSON.stringify(fixture));
@@ -45,4 +63,10 @@ test("assignments panel jumps between tasks and names survive into the local lib
   ).map((row: { value: { name: string } }) => row.value.name);
   expect(names).toContain("Ислом");
   expect(names).toContain("Маруф");
+  expect(names).toHaveLength(2);
+  expect(backup.people).toHaveLength(2);
+  expect(backup.people.every((person: { membershipStatus: string }) => person.membershipStatus === "candidate")).toBe(true);
+  const saved = backup.plans.find((plan: { title: string }) => plan.title === fixture.title);
+  expect(saved.tasks.photo.assignee).toBe("Ислом, Маруф");
+  expect(saved.assignments).toBeUndefined();
 });

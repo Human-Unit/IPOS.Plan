@@ -31,19 +31,20 @@ export function PersonForm({
   onCancel: () => void;
 }) {
   const fieldId = useId();
+  const [editBase] = useState(initial);
   const [draft, setDraft] = useState<PersonDraft>(() =>
-    initial
+    editBase
       ? {
-          displayName: initial.displayName,
-          aliases: initial.aliases,
-          role: initial.role,
-          specializations: initial.specializations,
-          membershipStatus: initial.membershipStatus,
-          notes: initial.notes,
+          displayName: editBase.displayName,
+          aliases: editBase.aliases,
+          role: editBase.role,
+          specializations: editBase.specializations,
+          membershipStatus: editBase.membershipStatus,
+          notes: editBase.notes,
         }
       : { ...blankPerson, displayName: initialName },
   );
-  const [aliases, setAliases] = useState(initial?.aliases.join("\n") ?? "");
+  const [aliases, setAliases] = useState(editBase?.aliases.join("\n") ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   return (
@@ -62,8 +63,8 @@ export function PersonForm({
               .map((s) => s.trim())
               .filter(Boolean),
           };
-          const saved = initial
-            ? await updatePerson(initial.id, input, initial.version)
+          const saved = editBase
+            ? await updatePerson(editBase.id, input, editBase.version)
             : await createPerson(input);
           onSaved(saved);
         } catch (err) {

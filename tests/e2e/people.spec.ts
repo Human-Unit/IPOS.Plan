@@ -64,3 +64,43 @@ test("directory keeps duplicate names distinct and supports candidate review, al
     page.getByRole("list", { name: "Локальные профили" }).locator("li"),
   ).toHaveCount(2);
 });
+
+test("a live profile update cannot replace the version of an already open edit form", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/activists");
+  const url = await addPerson(page, "Амина");
+  const other = await context.newPage();
+  await other.goto(url);
+  await page.getByRole("button", { name: "Редактировать профиль" }).click();
+  const oldEdit = page.getByRole("dialog", { name: "Редактировать профиль" });
+  await oldEdit.getByLabel("Роль", { exact: true }).fill("Старый черновик");
+  await other.getByRole("button", { name: "Редактировать профиль" }).click();
+  await other
+    .getByRole("dialog")
+    .getByLabel("Роль", { exact: true })
+    .fill("Сохранённая новая роль");
+  await other
+    .getByRole("button", { name: "Сохранить профиль", exact: true })
+    .click();
+  await expect(other.locator(".people-heading")).toContainText(
+    "Сохранённая новая роль",
+  );
+  // Let the first tab's live query receive the new record while its form remains open.
+  await expect(page.locator(".people-heading")).toContainText(
+    "Сохранённая новая роль",
+  );
+  await oldEdit
+    .getByRole("button", { name: "Сохранить профиль", exact: true })
+    .click();
+  await expect(oldEdit.getByRole("alert")).toContainText(
+    "Профиль изменён в другой вкладке",
+  );
+  await oldEdit.getByRole("button", { name: "Отмена", exact: true }).click();
+  await page.reload();
+  await expect(page.locator(".people-heading")).toContainText(
+    "Сохранённая новая роль",
+  );
+  await other.close();
+});

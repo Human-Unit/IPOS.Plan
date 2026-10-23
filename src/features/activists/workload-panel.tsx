@@ -15,6 +15,7 @@ import {
   emptyWorkloadFilter,
   filterAssignmentRows,
   workSummary,
+  workloadByPerson,
 } from "./workload";
 
 export function WorkloadPanel({
@@ -33,6 +34,7 @@ export function WorkloadPanel({
   const [filter, setFilter] = useState(emptyWorkloadFilter);
   const visible = filterAssignmentRows(baseRows, filter, today);
   const summary = workSummary(baseRows, today);
+  const personSummaries = workloadByPerson(visible, today);
   const displayedPeople =
     filter.personId === "all"
       ? people
@@ -194,10 +196,8 @@ export function WorkloadPanel({
               </thead>
               <tbody>
                 {displayedPeople.map((p) => {
-                  const stats = workSummary(
-                    visible.filter((r) => r.personIds.includes(p.id)),
-                    today,
-                  );
+                  const stats =
+                    personSummaries.get(p.id) ?? workSummary([], today);
                   return (
                     <tr key={p.id}>
                       <th scope="row">

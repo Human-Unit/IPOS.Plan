@@ -107,6 +107,7 @@ export function assignmentEvents(
           type: "TASK_PEOPLE_CHANGED",
           message: `Привязки людей к задаче «${next.tasks[taskId]?.title || previous.tasks[taskId]?.title || "Без названия"}»: ${current[taskId]?.people.map((p) => p.name).join(", ") || "сняты"}`,
           metadata: {
+            identityVersion: 1,
             taskId,
             personIds: current[taskId]?.people.map((p) => p.personId) ?? [],
             previousPersonIds: old[taskId]?.people.map((p) => p.personId) ?? [],

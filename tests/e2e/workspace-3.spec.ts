@@ -260,6 +260,9 @@ test("portable files, paste, drop, replacement, JSON, snapshot and DOCX preserve
   expect(image.type === "image" && image.props.url).toMatch(
     /^data:image\/(webp|png);base64,/,
   );
+  // Export is allowed from the current draft even before autosave completes.
+  // Reload only after the actual IndexedDB write has finished.
+  await expect(page.locator('.save-status[data-state="saved"]')).toBeVisible();
   await page.reload();
   await expect(
     page.getByRole("img", { name: "seal.png", exact: true }),
