@@ -80,6 +80,10 @@ test("Russian search, task navigation and local deadline counts work at five vie
     .fill(JSON.stringify(fixture));
   await page.getByRole("button", { name: "Проверить и посмотреть" }).click();
   await page.getByRole("button", { name: "Подтвердить импорт" }).click();
+  // The import preview also contains briefs. Capture the editor URL only
+  // after navigation commits, rather than racing the preview teardown.
+  await expect(page).toHaveURL(/\/plan\/[^/#?]+$/);
+  await page.locator(".bn-editor").waitFor();
   await expect(page.locator(".task-brief")).toHaveCount(5);
   const planUrl = page.url();
   await expect(page.locator(".deadline-hint")).toContainText([

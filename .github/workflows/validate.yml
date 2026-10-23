@@ -41,3 +41,11 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Verify editor, responsive viewer, data safety and portable media
         run: npm run test:e2e
+      - name: Retain browser failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-failure-diagnostics
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
