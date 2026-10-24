@@ -85,14 +85,22 @@ export function Dashboard() {
         </span>
       </header>
       <main className="dashboard">
-        <div className="dashboard-heading">
-          <div>
-            <h1>Контент-планы</h1>
-            <p className="muted">
-              От идеи и задания — к готовому медиапроекту.
-            </p>
+        <section className="dashboard-hero" aria-labelledby="dashboard-title">
+          <div className="dashboard-hero-main">
+            <span className="dashboard-hero-seal" aria-hidden="true">
+              <PlanEmblem size={60} />
+            </span>
+            <div className="dashboard-hero-copy">
+              <p className="dashboard-hero-eyebrow">
+                ИПОС <span aria-hidden="true">/</span> Медиасектор Студсовета
+              </p>
+              <h1 id="dashboard-title">Контент-планы</h1>
+              <p className="dashboard-hero-description">
+                От идеи до публикации: задачи, сроки и референсы в одном месте.
+              </p>
+            </div>
           </div>
-          <div className="dashboard-actions">
+          <div className="dashboard-actions dashboard-hero-actions" aria-label="Действия с планами">
             <BackupMenu />
             <Button
               variant="outline"
@@ -107,7 +115,7 @@ export function Dashboard() {
               Новый план
             </Button>
           </div>
-        </div>
+        </section>
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
