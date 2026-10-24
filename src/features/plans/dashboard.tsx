@@ -86,10 +86,12 @@ export function Dashboard() {
       </header>
       <main className="dashboard">
         <div className="dashboard-heading">
-          <div>
+          <div className="dashboard-hero-content">
+            <p className="dashboard-hero-kicker">ИПОС / РАБОЧЕЕ ПРОСТРАНСТВО</p>
             <h1>Контент-планы</h1>
-            <p className="muted">
-              От идеи и задания — к готовому медиапроекту.
+            <p className="dashboard-hero-description">
+              От идеи до готового медиапроекта. Собирайте брифы, распределяйте
+              задачи и делитесь планами с командой.
             </p>
           </div>
           <div className="dashboard-actions">
