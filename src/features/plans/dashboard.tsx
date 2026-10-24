@@ -25,6 +25,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogBody,
   DialogHeader,
   DialogTitle,
   DialogDescription,
@@ -36,7 +37,11 @@ import { BackupMenu } from "@/features/backup/backup-menu";
 import { Input } from "@/components/ui/input";
 import { matchesPlan, taskStats, type PlanFilter } from "./productivity";
 import { useLocalDate } from "./use-local-date";
-import { ACTIVIST_PREFIX, directoryNames, syncDirectoryFromPlans } from "@/features/activists/directory";
+import {
+  ACTIVIST_PREFIX,
+  directoryNames,
+  syncDirectoryFromPlans,
+} from "@/features/activists/directory";
 export function Dashboard() {
   const router = useRouter();
   const plans = useLiveQuery(() =>
@@ -50,15 +55,25 @@ export function Dashboard() {
   const [filter, setFilter] = useState<PlanFilter>("all");
   const today = useLocalDate();
   const rosterRows = useLiveQuery(
-    () => db.settings.filter((row) => row.key.startsWith(ACTIVIST_PREFIX)).toArray(),
+    () =>
+      db.settings
+        .filter((row) => row.key.startsWith(ACTIVIST_PREFIX))
+        .toArray(),
     [],
   );
   const rememberedPeople = directoryNames(rosterRows ?? []);
 
-  const visiblePlans = plans?.filter(plan => matchesPlan(plan, query, filter, today));
-  const stats = taskStats((plans ?? []).flatMap(p => Object.values(p.tasks)), today);
+  const visiblePlans = plans?.filter((plan) =>
+    matchesPlan(plan, query, filter, today),
+  );
+  const stats = taskStats(
+    (plans ?? []).flatMap((p) => Object.values(p.tasks)),
+    today,
+  );
   useEffect(() => {
-    void seedDemo().then(() => syncDirectoryFromPlans()).catch((e) => setError(errorMessage(e)));
+    void seedDemo()
+      .then(() => syncDirectoryFromPlans())
+      .catch((e) => setError(errorMessage(e)));
   }, []);
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -85,7 +100,10 @@ export function Dashboard() {
         </span>
       </header>
       <main className="dashboard">
-        <section className="dashboard-heading dashboard-hero" aria-labelledby="dashboard-title">
+        <section
+          className="dashboard-heading dashboard-hero"
+          aria-labelledby="dashboard-title"
+        >
           <div className="dashboard-hero-copy">
             <p className="dashboard-hero-kicker">ИПОС · Рабочее пространство</p>
             <h1 id="dashboard-title">Контент-планы</h1>
@@ -94,6 +112,10 @@ export function Dashboard() {
             </p>
           </div>
           <div className="dashboard-actions">
+            <Button data-primary-action disabled={busy} onClick={create}>
+              <Plus data-icon="inline-start" />
+              Новый план
+            </Button>
             <BackupMenu />
             <Button
               variant="outline"
@@ -103,10 +125,6 @@ export function Dashboard() {
               <Upload data-icon="inline-start" />
               Импорт JSON
             </Button>
-            <Button disabled={busy} onClick={create}>
-              <Plus data-icon="inline-start" />
-              Новый план
-            </Button>
           </div>
         </section>
         {error && (
@@ -115,34 +133,83 @@ export function Dashboard() {
           </Alert>
         )}
         <div className="library-stats" aria-label="Задачи во всей библиотеке">
-          <span>Не завершено <strong>{stats.unfinished}</strong></span>
-          <span data-warning={stats.overdue > 0 || undefined}>Просрочено <strong>{stats.overdue}</strong></span>
-          <span>В ближайшие 7 дней <strong>{stats.upcoming}</strong></span>
-          <span>Готово <strong>{stats.completed}</strong></span>
+          <span>
+            Не завершено <strong>{stats.unfinished}</strong>
+          </span>
+          <span data-warning={stats.overdue > 0 || undefined}>
+            Просрочено <strong>{stats.overdue}</strong>
+          </span>
+          <span>
+            В ближайшие 7 дней <strong>{stats.upcoming}</strong>
+          </span>
+          <span>
+            Готово <strong>{stats.completed}</strong>
+          </span>
         </div>
-        <div className="library-search" role="search" aria-label="Поиск по библиотеке">
-          <Input type="search" aria-label="Поиск планов" placeholder="План, задача или ответственный…" value={query} onChange={e => setQuery(e.target.value)} />
-          <select aria-label="Фильтр планов" value={filter} onChange={e => setFilter(e.target.value as PlanFilter)}>
-            <option value="all">Все планы</option><option value="unfinished">С незавершёнными задачами</option><option value="overdue">С просроченными задачами</option><option value="recent">Изменены за 7 дней</option>
+        <div
+          className="library-search"
+          role="search"
+          aria-label="Поиск по библиотеке"
+        >
+          <Input
+            type="search"
+            aria-label="Поиск планов"
+            placeholder="План, задача или ответственный…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <select
+            aria-label="Фильтр планов"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as PlanFilter)}
+          >
+            <option value="all">Все планы</option>
+            <option value="unfinished">С незавершёнными задачами</option>
+            <option value="overdue">С просроченными задачами</option>
+            <option value="recent">Изменены за 7 дней</option>
           </select>
-          {(query || filter !== "all") && <Button variant="ghost" onClick={() => { setQuery(""); setFilter("all"); }}>Сбросить поиск</Button>}
+          {(query || filter !== "all") && (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setQuery("");
+                setFilter("all");
+              }}
+            >
+              Сбросить поиск
+            </Button>
+          )}
         </div>
         <details className="activist-directory">
           <summary>
             <span>Имена из назначений</span>
             <small>{rememberedPeople.length} сохранено локально</small>
           </summary>
-          <p>Справочник для следующих заданий. Это имена из поручений, а не подтверждённый список активистов. Они остаются здесь даже после завершения задачи.</p>
+          <p>
+            Справочник для следующих заданий. Это имена из поручений, а не
+            подтверждённый список активистов. Они остаются здесь даже после
+            завершения задачи.
+          </p>
           {rememberedPeople.length ? (
             <ul aria-label="Сохранённые ответственные">
-              {rememberedPeople.map((name) => <li key={name}>{name}</li>)}
+              {rememberedPeople.map((name) => (
+                <li key={name}>{name}</li>
+              ))}
             </ul>
-          ) : <p>Назначьте человека в свойствах задачи — имя запомнится после ввода.</p>}
+          ) : (
+            <p>
+              Назначьте человека в свойствах задачи — имя запомнится после
+              ввода.
+            </p>
+          )}
         </details>
         <section className="plan-list" aria-label="Сохранённые планы">
           <div className="list-label">
             <h2>
-              Найдено планов <span role="status">{visiblePlans?.length ?? "…"} / {plans?.length ?? "…"}</span>
+              Найдено планов{" "}
+              <span role="status">
+                {visiblePlans?.length ?? "…"} / {plans?.length ?? "…"}
+              </span>
             </h2>
             <span>Обновлены недавно</span>
           </div>
@@ -167,7 +234,18 @@ export function Dashboard() {
                     <span>Задач: {tasks.length}</span>
                     <span>Готово: {done}</span>
                   </div>
-                  <p className="plan-row-summary" title={tasks.map(task=>task.title).join(' · ')}>{tasks.length ? tasks.slice(0,2).map(task=>task.title).join(' · ') + (tasks.length>2 ? ` · ещё ${tasks.length-2}` : '') : 'Добавьте первое задание или начните с текста'}</p>
+                  <p
+                    className="plan-row-summary"
+                    title={tasks.map((task) => task.title).join(" · ")}
+                  >
+                    {tasks.length
+                      ? tasks
+                          .slice(0, 2)
+                          .map((task) => task.title)
+                          .join(" · ") +
+                        (tasks.length > 2 ? ` · ещё ${tasks.length - 2}` : "")
+                      : "Добавьте первое задание или начните с текста"}
+                  </p>
                   <div
                     className="plan-progress"
                     role="progressbar"
@@ -214,7 +292,20 @@ export function Dashboard() {
               </article>
             );
           })}
-          {Boolean(plans?.length) && visiblePlans?.length === 0 && <div className="search-empty" role="status"><p>Планы не найдены. Измените запрос или фильтр.</p><Button variant="ghost" onClick={() => { setQuery(""); setFilter("all"); }}>Сбросить поиск</Button></div>}
+          {Boolean(plans?.length) && visiblePlans?.length === 0 && (
+            <div className="search-empty" role="status">
+              <p>Планы не найдены. Измените запрос или фильтр.</p>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setQuery("");
+                  setFilter("all");
+                }}
+              >
+                Сбросить поиск
+              </Button>
+            </div>
+          )}
           {plans?.length === 0 && (
             <Empty>
               <EmptyHeader>
@@ -238,7 +329,9 @@ export function Dashboard() {
         </section>
         <footer className="dashboard-footer">
           <p>
-            Планы сохраняются в этом браузере. «Резервная копия» скачивает всю библиотеку с историей. Перед копированием дождитесь сохранения в открытых вкладках.
+            Планы сохраняются в этом браузере. «Резервная копия» скачивает всю
+            библиотеку с историей. Перед копированием дождитесь сохранения в
+            открытых вкладках.
           </p>
         </footer>
       </main>
@@ -255,11 +348,13 @@ export function Dashboard() {
                 <Trash2 aria-hidden="true" />
                 Удалить план?
               </DialogTitle>
+            </DialogHeader>
+            <DialogBody>
               <DialogDescription>
                 «{deleting.title}» и его локальная история будут удалены из
                 этого браузера.
               </DialogDescription>
-            </DialogHeader>
+            </DialogBody>
             <DialogFooter>
               <Button
                 variant="outline"

@@ -5,6 +5,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import {
   Dialog,
   DialogContent,
+  DialogBody,
   DialogHeader,
   DialogTitle,
   DialogDescription,
@@ -34,29 +35,31 @@ export function ShareDialog({
             <Link2 aria-hidden="true" />
             Поделиться снимком
           </DialogTitle>
+        </DialogHeader>
+        <DialogBody>
           <DialogDescription>
             Ссылка содержит эту версию плана. Дальнейшие изменения не обновят
             снимок. Встроенные изображения включены; изображения по внешним
             ссылкам зависят от источника.
           </DialogDescription>
-        </DialogHeader>
-        <Alert className="snapshot-note">
-          <LockKeyhole aria-hidden="true" />
-          <AlertDescription>
-            Получатель сможет только просматривать документ. Снимок доступен
-            всем, кому вы передадите ссылку.
-          </AlertDescription>
-        </Alert>
-        <Field>
-          <FieldLabel htmlFor="share-url">Ссылка на снимок</FieldLabel>
-          <Textarea id="share-url" value={url} readOnly rows={3} />
-        </Field>
-        {url.length > 8000 && (
-          <p className="muted">
-            Длинную ссылку может обрезать мессенджер. Для надёжной передачи
-            используйте JSON.
-          </p>
-        )}
+          <Alert className="snapshot-note">
+            <LockKeyhole aria-hidden="true" />
+            <AlertDescription>
+              Получатель сможет только просматривать документ. Снимок доступен
+              всем, кому вы передадите ссылку.
+            </AlertDescription>
+          </Alert>
+          <Field>
+            <FieldLabel htmlFor="share-url">Ссылка на снимок</FieldLabel>
+            <Textarea id="share-url" value={url} readOnly rows={3} />
+          </Field>
+          {url.length > 8000 && (
+            <p className="muted">
+              Длинную ссылку может обрезать мессенджер. Для надёжной передачи
+              используйте JSON.
+            </p>
+          )}
+        </DialogBody>
         <DialogFooter>
           <Button variant="outline" asChild>
             <a href={url} target="_blank" rel="noopener noreferrer">

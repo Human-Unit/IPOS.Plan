@@ -1,237 +1,105 @@
-/* Dashboard hero: stronger hierarchy, dependable contrast, and usable actions. */
-.app-bar {
-  border-bottom-color: #dbe0ed;
-  box-shadow: 0 1px 0 rgb(19 47 193 / 3%);
-}
-
-.app-bar .brand-name {
-  color: #10278f;
-  font-weight: 750;
-}
-
-.app-bar .brand-description {
-  color: #414d63;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.app-bar .local-indicator {
-  color: #465063;
-  font-weight: 500;
-}
-
-.app-bar .local-indicator > span {
-  width: 7px;
-  height: 7px;
-}
-
+/* One responsive hero composition; action priority follows semantics, not position. */
 .dashboard-heading.dashboard-hero {
   position: relative;
-  isolation: isolate;
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(250px, auto);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 28px;
-  margin-bottom: 30px;
-  padding: clamp(28px, 3.7vw, 48px);
-  overflow: hidden;
+  gap: 32px;
+  margin-bottom: 28px;
+  padding: 36px 40px;
   color: #fff;
-  border: 1px solid #263fc2;
-  border-radius: 14px;
-  background: linear-gradient(116deg, #0c1d66 0%, #112b9b 54%, #1c38ae 100%);
-  box-shadow: 0 14px 32px rgb(15 35 120 / 14%);
+  border: 1px solid #263b9b;
+  border-radius: var(--ui-hero-radius);
+  background: linear-gradient(116deg, #0c1d66, #15309c);
 }
-
-/* Restrained IPOS accent, outside the text's reading area. */
-.dashboard-heading.dashboard-hero::before {
+.dashboard-hero::before {
   content: "";
   position: absolute;
   top: 0;
-  left: clamp(28px, 3.7vw, 48px);
-  width: 74px;
-  height: 4px;
+  left: 40px;
+  width: 48px;
+  height: 3px;
   background: #f47b7d;
-  border-radius: 0 0 3px 3px;
-  pointer-events: none;
+  border-radius: 0 0 2px 2px;
 }
-
-.dashboard-hero-copy {
-  position: relative;
-  z-index: 1;
-  min-width: 0;
-}
-
+.dashboard-hero-copy { min-width: 0; max-width: 650px; }
 .dashboard-hero-kicker {
-  color: #ffffff;
-  font: 750 12px/1.5 var(--font-ui);
-  letter-spacing: 0.1em;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
+  color: #dfe6ff;
+  font: 600 var(--ui-caption)/1.5 var(--font-ui);
+  letter-spacing: .06em;
+  text-transform: uppercase;
 }
-
 .dashboard-heading.dashboard-hero h1 {
   color: #fff;
-  font-family: var(--font-heading);
-  font-size: clamp(38px, 3.9vw, 52px);
-  font-weight: 800;
-  line-height: 1.11;
-  letter-spacing: -0.035em;
-  text-wrap: balance;
+  font: 700 clamp(32px, 3.2vw, 42px)/1.15 var(--font-heading);
+  letter-spacing: -.035em;
   overflow-wrap: break-word;
 }
-
 .dashboard-hero-description {
-  color: #ffffff;
-  font-size: clamp(16px, 1.4vw, 18px);
-  font-weight: 550;
-  line-height: 1.55;
-  max-width: 560px;
-  margin-top: 16px;
+  max-width: 48ch;
+  margin-top: 12px;
+  color: #f0f3ff;
+  font-size: 16px;
+  line-height: 1.6;
   text-wrap: pretty;
 }
-
 .dashboard-hero .dashboard-actions {
-  position: relative;
-  z-index: 1;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 9px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 360px;
 }
-
 .dashboard-hero .dashboard-actions [data-slot="button"] {
   min-height: 44px;
   height: auto;
-  padding: 10px 15px;
-  background: rgb(255 255 255 / 18%);
-  border: 1px solid rgb(255 255 255 / 85%);
+  padding: 10px 12px;
+  border: 1px solid #899adf;
+  border-radius: var(--ui-control-radius);
+  background: transparent;
   color: #fff;
-  font-weight: 700;
+  font-size: var(--ui-label);
+  font-weight: 500;
   white-space: nowrap;
-  box-shadow: none;
 }
-
 .dashboard-hero .dashboard-actions [data-slot="button"]:hover:not(:disabled) {
-  background: rgb(255 255 255 / 30%);
-  color: #fff;
+  background: rgb(255 255 255 / 12%);
 }
-
-.dashboard-hero .dashboard-actions > [data-slot="button"]:last-child {
-  background: #fff;
+.dashboard-hero .dashboard-actions [data-primary-action] {
+  grid-column: 1 / -1;
   border-color: #fff;
+  background: #fff;
   color: #112a9b;
+  font-weight: 600;
 }
-
-.dashboard-hero .dashboard-actions > [data-slot="button"]:last-child:hover:not(:disabled) {
+.dashboard-hero .dashboard-actions [data-primary-action]:hover:not(:disabled) {
   background: #eef2ff;
-  border-color: #eef2ff;
-  color: #0d237e;
 }
-
 .dashboard-hero .dashboard-actions [data-slot="button"]:focus-visible {
   outline: 3px solid #fff;
   outline-offset: 3px;
 }
-
-.dashboard-hero .dashboard-actions [data-slot="button"]:disabled {
-  opacity: 0.6;
-}
-
 @media (max-width: 1079px) {
   .dashboard-heading.dashboard-hero {
     grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-    gap: 26px;
+    gap: 24px;
+    padding: 32px;
   }
-  .dashboard-hero .dashboard-actions {
-    justify-content: flex-start;
-  }
+  .dashboard-hero::before { left: 32px; }
+  .dashboard-hero .dashboard-actions { width: 100%; }
 }
-
 @media (max-width: 767px) {
   .dashboard-heading.dashboard-hero {
-    padding: 28px 22px;
-    gap: 22px;
-    margin-bottom: 22px;
-    border-radius: 10px;
-  }
-  .dashboard-heading.dashboard-hero::before {
-    left: 22px;
-  }
-  .dashboard-hero-kicker {
-    font-size: 11px;
-    margin-bottom: 12px;
-  }
-  .dashboard-heading.dashboard-hero h1 {
-    font-size: clamp(29px, 8vw, 36px);
-    line-height: 1.16;
-  }
-  .dashboard-hero-description {
-    margin-top: 12px;
-    font-size: 15px;
-    line-height: 1.55;
-  }
-  .dashboard-hero .dashboard-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    width: 100%;
-  }
-  .dashboard-hero .dashboard-actions > [data-slot="button"]:first-child {
-    grid-column: 1 / -1;
-  }
-  .dashboard-hero .dashboard-actions [data-slot="button"] {
-    justify-content: center;
-    padding: 10px 9px;
-    min-width: 0;
-    width: 100%;
-    font-size: 12px;
-  }
-}
-
-@media (max-width: 420px) {
-  .dashboard-heading.dashboard-hero {
+    gap: 20px;
     padding: 24px 20px;
+    margin-bottom: 24px;
   }
-  .dashboard-heading.dashboard-hero::before {
-    left: 20px;
-  }
-  .dashboard-hero .dashboard-actions {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-/* Hero readability: keep copy independent of decorative light effects. */
-.dashboard-heading.dashboard-hero::after {
-  content: "";
-  position: absolute;
-  right: -115px;
-  bottom: -170px;
-  width: 320px;
-  height: 320px;
-  border: 1px solid rgb(255 255 255 / 13%);
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 0;
-}
-.dashboard-hero-copy { max-width: 650px; }
-.dashboard-hero-kicker {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  padding: 5px 11px;
-  border: 1px solid rgb(255 255 255 / 32%);
-  border-radius: 5px;
-  background: rgb(255 255 255 / 11%);
-  text-transform: uppercase;
-}
-.dashboard-hero-description { text-shadow: 0 1px 1px rgb(0 0 0 / 12%); }
-.dashboard-hero .dashboard-actions { flex-wrap: wrap; max-width: 390px; }
-.dashboard-hero .dashboard-actions [data-slot="button"] { transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease; }
-.dashboard-hero .dashboard-actions [data-slot="button"]:active:not(:disabled) { transform: translateY(1px); }
-@media (max-width: 1079px) {
+  .dashboard-hero::before { left: 20px; }
+  .dashboard-heading.dashboard-hero h1 { font-size: clamp(27px, 7vw, 36px); }
+  .dashboard-hero-kicker { font-size: var(--ui-caption); letter-spacing: .025em; }
+  .dashboard-hero-description { font-size: 15px; }
   .dashboard-hero .dashboard-actions { max-width: none; }
 }
-@media (max-width: 767px) {
-  .dashboard-heading.dashboard-hero h1 { font-size: clamp(32px, 8vw, 39px); }
-  .dashboard-hero-description { font-size: 16px; line-height: 1.55; }
-  .dashboard-hero-kicker { font-size: 10px; }
+@media (max-width: 374px) {
+  .dashboard-hero .dashboard-actions { grid-template-columns: minmax(0, 1fr); }
 }

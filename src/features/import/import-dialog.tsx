@@ -5,6 +5,7 @@ import { toast } from "@/lib/notifications";
 import {
   Dialog,
   DialogContent,
+  DialogBody,
   DialogHeader,
   DialogTitle,
   DialogDescription,
@@ -72,79 +73,83 @@ export function ImportDialog({
             <Upload aria-hidden="true" />
             Импорт плана
           </DialogTitle>
+        </DialogHeader>
+        <DialogBody>
           <DialogDescription>
             {replacing
               ? "После подтверждения текущий документ будет заменён. Перед заменой сохраним его версию."
               : "Загрузите JSON, включая планы 2026 года. Сначала проверим содержание и покажем документ; новый план появится после подтверждения."}
           </DialogDescription>
-        </DialogHeader>
-        <FieldGroup>
-          <Field className="file-import">
-            <FieldLabel htmlFor="import-file">Файл .json · до 1 МБ</FieldLabel>
-            <Input
-              id="import-file"
-              type="file"
-              accept=".json,application/json"
-              disabled={busy}
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                try {
-                  if (file.size > MAX_JSON_BYTES)
-                    throw new Error("Файл больше 1 МБ");
-                  setSource(await file.text());
-                } catch (e) {
-                  setPreview(undefined);
-                  setError(errorMessage(e));
+          <FieldGroup>
+            <Field className="file-import">
+              <FieldLabel htmlFor="import-file">
+                Файл .json · до 1 МБ
+              </FieldLabel>
+              <Input
+                id="import-file"
+                type="file"
+                accept=".json,application/json"
+                disabled={busy}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    if (file.size > MAX_JSON_BYTES)
+                      throw new Error("Файл больше 1 МБ");
+                    setSource(await file.text());
+                  } catch (e) {
+                    setPreview(undefined);
+                    setError(errorMessage(e));
+                  }
+                }}
+              />
+            </Field>
+            <Field data-invalid={Boolean(error)}>
+              <FieldLabel htmlFor="import-json">JSON плана</FieldLabel>
+              <Textarea
+                id="import-json"
+                rows={7}
+                value={raw}
+                disabled={busy}
+                aria-invalid={Boolean(error)}
+                onChange={(e) => setSource(e.target.value)}
+                placeholder={
+                  '{"schemaVersion": 1, "title": "Мой план", "blocks": [], "tasks": {}}'
                 }
-              }}
-            />
-          </Field>
-          <Field data-invalid={Boolean(error)}>
-            <FieldLabel htmlFor="import-json">JSON плана</FieldLabel>
-            <Textarea
-              id="import-json"
-              rows={7}
-              value={raw}
-              disabled={busy}
-              aria-invalid={Boolean(error)}
-              onChange={(e) => setSource(e.target.value)}
-              placeholder={
-                '{"schemaVersion": 1, "title": "Мой план", "blocks": [], "tasks": {}}'
-              }
-            />
-            <FieldError>{error}</FieldError>
-          </Field>
-        </FieldGroup>
-        {preview && (
-          <>
-            <dl className="import-summary">
-              <div>
-                <dt>Название</dt>
-                <dd>{preview.title}</dd>
+              />
+              <FieldError>{error}</FieldError>
+            </Field>
+          </FieldGroup>
+          {preview && (
+            <>
+              <dl className="import-summary">
+                <div>
+                  <dt>Название</dt>
+                  <dd>{preview.title}</dd>
+                </div>
+                <div>
+                  <dt>Блоков</dt>
+                  <dd>{blocks.length}</dd>
+                </div>
+                <div>
+                  <dt>Задач</dt>
+                  <dd>{Object.keys(preview.tasks).length}</dd>
+                </div>
+                <div>
+                  <dt>Референсов</dt>
+                  <dd>{blocks.filter((b) => b.type === "reference").length}</dd>
+                </div>
+                <div>
+                  <dt>Схема</dt>
+                  <dd>{preview.schemaVersion}</dd>
+                </div>
+              </dl>
+              <div className="import-preview">
+                <PlanRenderer key={raw} plan={preview} showCover />
               </div>
-              <div>
-                <dt>Блоков</dt>
-                <dd>{blocks.length}</dd>
-              </div>
-              <div>
-                <dt>Задач</dt>
-                <dd>{Object.keys(preview.tasks).length}</dd>
-              </div>
-              <div>
-                <dt>Референсов</dt>
-                <dd>{blocks.filter((b) => b.type === "reference").length}</dd>
-              </div>
-              <div>
-                <dt>Схема</dt>
-                <dd>{preview.schemaVersion}</dd>
-              </div>
-            </dl>
-            <div className="import-preview">
-              <PlanRenderer key={raw} plan={preview} showCover />
-            </div>
-          </>
-        )}
+            </>
+          )}
+        </DialogBody>
         <DialogFooter>
           <Button variant="outline" disabled={busy} onClick={onClose}>
             Отмена

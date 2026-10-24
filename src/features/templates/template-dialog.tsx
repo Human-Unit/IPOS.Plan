@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
+  DialogBody,
   DialogHeader,
   DialogTitle,
   DialogDescription,
@@ -48,52 +49,54 @@ export function TemplateDialog({
       <DialogContent className="template-dialog">
         <DialogHeader>
           <DialogTitle>Задача из шаблона</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
           <DialogDescription>
             Выберите бриф и проверьте структуру. После вставки всё можно
             редактировать.
           </DialogDescription>
-        </DialogHeader>
-        <label className="template-field">
-          Шаблон
-          <select
-            aria-label="Шаблон"
-            value={id}
-            onChange={(e) => {
-              setId(e.target.value);
-              setPersonal(false);
-            }}
-          >
-            <optgroup label="Готовые брифы">
-              {builtInTemplates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </optgroup>
-            {!!custom?.length && (
-              <optgroup label="Мои шаблоны">
-                {custom.map((t) => (
+          <label className="template-field">
+            Шаблон
+            <select
+              aria-label="Шаблон"
+              value={id}
+              onChange={(e) => {
+                setId(e.target.value);
+                setPersonal(false);
+              }}
+            >
+              <optgroup label="Готовые брифы">
+                {builtInTemplates.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
                   </option>
                 ))}
               </optgroup>
-            )}
-          </select>
-        </label>
-        {selected.custom && (
-          <label className="template-personal">
-            <input
-              type="checkbox"
-              checked={personal}
-              onChange={(e) => setPersonal(e.target.checked)}
-            />
-            Включить сохранённые исполнителей, даты и статус
+              {!!custom?.length && (
+                <optgroup label="Мои шаблоны">
+                  {custom.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
           </label>
-        )}
-        <div className="template-preview" aria-label="Предпросмотр шаблона">
-          <PlanRenderer key={`${selected.id}-${personal}`} plan={preview} />
-        </div>
+          {selected.custom && (
+            <label className="template-personal">
+              <input
+                type="checkbox"
+                checked={personal}
+                onChange={(e) => setPersonal(e.target.checked)}
+              />
+              Включить сохранённые исполнителей, даты и статус
+            </label>
+          )}
+          <div className="template-preview" aria-label="Предпросмотр шаблона">
+            <PlanRenderer key={`${selected.id}-${personal}`} plan={preview} />
+          </div>
+        </DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Отмена
@@ -135,31 +138,33 @@ export function SaveTemplateDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Сохранить шаблон задачи</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
           <DialogDescription>
             Сохранятся весь бриф, требования, референсы, изображения и шрифты.
             Локальные шаблоны входят в резервную копию библиотеки.
           </DialogDescription>
-        </DialogHeader>
-        <label className="template-field">
-          Название шаблона
-          <Input
-            value={name}
-            maxLength={120}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </label>
-        <label className="template-personal">
-          <input
-            type="checkbox"
-            checked={personal}
-            onChange={(e) => setPersonal(e.target.checked)}
-          />
-          Сохранить исполнителей, даты и статус
-        </label>
-        <p className="muted">
-          По умолчанию эти поля очищаются. Текст и медиа остаются: проверьте их
-          на личные сведения.
-        </p>
+          <label className="template-field">
+            Название шаблона
+            <Input
+              value={name}
+              maxLength={120}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          <label className="template-personal">
+            <input
+              type="checkbox"
+              checked={personal}
+              onChange={(e) => setPersonal(e.target.checked)}
+            />
+            Сохранить исполнителей, даты и статус
+          </label>
+          <p className="muted">
+            По умолчанию эти поля очищаются. Текст и медиа остаются: проверьте
+            их на личные сведения.
+          </p>
+        </DialogBody>
         <DialogFooter>
           <Button variant="outline" disabled={busy} onClick={onClose}>
             Отмена

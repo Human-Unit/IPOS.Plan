@@ -48,6 +48,7 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  onOpenAutoFocus,
   onCloseAutoFocus,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
@@ -55,7 +56,7 @@ function DialogContent({
 }) {
   // Controlled dialogs can open without a Radix DialogTrigger (including from
   // an action menu). Preserve the initiating control for keyboard return.
-  const [returnFocus] = React.useState<HTMLElement | null>(() => {
+  const captureReturnFocus = (): HTMLElement | null => {
     if (
       typeof document === "undefined" ||
       !(document.activeElement instanceof HTMLElement)
@@ -68,7 +69,9 @@ function DialogContent({
           `[aria-controls="${CSS.escape(menu.id)}"]`,
         ) ?? active)
       : active;
-  });
+  };
+  const [initialReturnFocus] = React.useState(captureReturnFocus);
+  const returnFocusRef = React.useRef(initialReturnFocus);
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
@@ -76,6 +79,14 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn("dialog-panel", className)}
         {...props}
+        onOpenAutoFocus={(event) => {
+          // Drawer content can remain mounted while closed. Capture again for
+          // each opening, before Radix moves focus into the dialog. Keep the
+          // mount-time menu trigger when a dismissed menu has focused body.
+          const active = captureReturnFocus();
+          if (active && active !== document.body) returnFocusRef.current = active;
+          onOpenAutoFocus?.(event);
+        }}
         onInteractOutside={(event) => {
           // Sonner notifications remain operable while this modal is open.
           // Closing a notification is not a request to dismiss the document dialog.
@@ -89,9 +100,9 @@ function DialogContent({
         }}
         onCloseAutoFocus={(event) => {
           onCloseAutoFocus?.(event);
-          if (!event.defaultPrevented && returnFocus?.isConnected) {
+          if (!event.defaultPrevented && returnFocusRef.current?.isConnected) {
             event.preventDefault();
-            returnFocus.focus({ preventScroll: true });
+            returnFocusRef.current.focus({ preventScroll: true });
           }
         }}
       >
@@ -115,6 +126,16 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="dialog-header"
       className={cn("dialog-header", className)}
+      {...props}
+    />
+  );
+}
+
+function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-body"
+      className={cn("dialog-body", className)}
       {...props}
     />
   );
@@ -173,6 +194,7 @@ function DialogDescription({
 export {
   Dialog,
   DialogClose,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,

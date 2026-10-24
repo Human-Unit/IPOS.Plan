@@ -559,3 +559,20 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Screen affordances only: A4 and DOCX retain their original typography. */
+@media screen {
+  .brief-kind, .brief-facts dt, .task-status { font-size: var(--ui-caption); }
+  .brief-kind, .brief-facts dt, .brief-priority { color: var(--ui-secondary); }
+  .brief-quick-controls [data-slot="button"] { width: 36px; height: 36px; min-height: 36px; }
+  .brief-insert [data-slot="button"] { height: auto; min-height: 36px; color: var(--ui-secondary); }
+  .brief-reference { border-radius: var(--ui-control-radius); border-color: var(--ui-border); }
+  .reference-domain, .reference-copy p { color: var(--ui-secondary); }
+}
+@media screen and (max-width: 767px) {
+  .brief-quick-controls [data-slot="button"] { width: 44px; height: 44px; min-height: 44px; }
+  .brief-insert [data-slot="button"] { min-height: 44px; }
+  .brief-heading { flex-wrap: wrap; }
+  .brief-title-group { flex-basis: calc(100% - 52px); }
+  .brief-quick-controls { margin-left: auto; }
+}
