@@ -85,10 +85,11 @@ export function Dashboard() {
         </span>
       </header>
       <main className="dashboard">
-        <div className="dashboard-heading">
-          <div>
-            <h1>Контент-планы</h1>
-            <p className="muted">
+        <section className="dashboard-heading dashboard-hero" aria-labelledby="dashboard-title">
+          <div className="dashboard-hero-copy">
+            <p className="dashboard-hero-kicker">ИПОС · Рабочее пространство</p>
+            <h1 id="dashboard-title">Контент-планы</h1>
+            <p className="dashboard-hero-description">
               От идеи и задания — к готовому медиапроекту.
             </p>
           </div>
@@ -107,7 +108,7 @@ export function Dashboard() {
               Новый план
             </Button>
           </div>
-        </div>
+        </section>
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
