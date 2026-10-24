@@ -57,7 +57,7 @@ export function BackupMenu() {
       const r = await restoreLibrary(backup, strategy);
       setBackup(undefined);
       setResult(
-        `Восстановлено планов: ${r.plans}; версий: ${r.revisions}; событий: ${r.activity}; настроек и шаблонов: ${r.settings}. Пропущено планов: ${r.skipped}. Исходные данные сохранены.`,
+        `Восстановлено планов: ${r.plans}; профилей: ${r.people}; версий: ${r.revisions}; событий: ${r.activity}; настроек и шаблонов: ${r.settings}. Пропущено планов: ${r.skipped}. Исходные данные сохранены.`,
       );
     } catch (e) {
       const message =
@@ -135,9 +135,9 @@ export function BackupMenu() {
               <DialogTitle>Восстановить библиотеку?</DialogTitle>
               <DialogDescription>
                 Копия от {formatDate(backup.createdAt)}. Планов:{" "}
-                {backup.plans.length}; версий: {backup.revisions.length};
-                событий: {backup.activity.length}; настроек и шаблонов:{" "}
-                {backup.settings.length}.
+                {backup.plans.length}; профилей: {backup.people.length}; версий:{" "}
+                {backup.revisions.length}; событий: {backup.activity.length};
+                настроек и шаблонов: {backup.settings.length}.
               </DialogDescription>
             </DialogHeader>
             <div
@@ -172,6 +172,13 @@ export function BackupMenu() {
                   Пропустить планы с совпадающими ID
                 </label>
               </fieldset>
+              <p className="muted">
+                Профили всегда добавляются отдельными копиями с новыми ID, даже
+                при пропуске планов. Совпадения имён не объединяются. Привязки
+                восстановленных планов и версий указывают на эти копии. В старых
+                копиях без профилей сохранённые имена становятся кандидатами без
+                автоматического назначения.
+              </p>
               <p className="muted">
                 Новые копии получат новые ID; история будет связана с ними. При
                 пропуске конфликтов их история тоже пропускается. Существующие

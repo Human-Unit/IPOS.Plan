@@ -36,7 +36,8 @@ import { BackupMenu } from "@/features/backup/backup-menu";
 import { Input } from "@/components/ui/input";
 import { matchesPlan, taskStats, type PlanFilter } from "./productivity";
 import { useLocalDate } from "./use-local-date";
-import { ACTIVIST_PREFIX, directoryNames, syncDirectoryFromPlans } from "@/features/activists/directory";
+import { ACTIVIST_PREFIX, directoryNames } from "@/features/activists/directory";
+import { migrateLegacyPeople } from "@/features/activists/people-repository";
 export function Dashboard() {
   const router = useRouter();
   const plans = useLiveQuery(() =>
@@ -58,7 +59,7 @@ export function Dashboard() {
   const visiblePlans = plans?.filter(plan => matchesPlan(plan, query, filter, today));
   const stats = taskStats((plans ?? []).flatMap(p => Object.values(p.tasks)), today);
   useEffect(() => {
-    void seedDemo().then(() => syncDirectoryFromPlans()).catch((e) => setError(errorMessage(e)));
+    void seedDemo().then(() => migrateLegacyPeople()).catch((e) => setError(errorMessage(e)));
   }, []);
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -95,6 +96,7 @@ export function Dashboard() {
           </div>
           <div className="dashboard-actions">
             <BackupMenu />
+            <Button asChild variant="outline"><Link href="/activists">Активисты</Link></Button>
             <Button
               variant="outline"
               disabled={busy}
@@ -137,7 +139,7 @@ export function Dashboard() {
             <ul aria-label="Сохранённые ответственные">
               {rememberedPeople.map((name) => <li key={name}>{name}</li>)}
             </ul>
-          ) : <p>Назначьте человека в свойствах задачи — имя запомнится после ввода.</p>}
+          ) : <p>Добавляйте людей в разделе «Активисты». Неоднозначные строки старых заданий остаются текстом до вашей проверки.</p>}
         </details>
         <section className="plan-list" aria-label="Сохранённые планы">
           <div className="list-label">

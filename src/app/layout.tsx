@@ -5,6 +5,7 @@ import "./dashboard-hero.css";
 import "./workspace.css";
 import "./document.css";
 import "./print.css";
+import "./people.css";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
