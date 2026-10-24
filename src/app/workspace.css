@@ -38,7 +38,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 11px;
+  font-size: var(--ui-caption);
   color: var(--muted-foreground);
   white-space: nowrap;
 }
@@ -69,7 +69,7 @@
   gap: 2px;
   background: var(--muted);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--ui-control-radius);
 }
 .experience-switch [data-slot="toggle-group-item"] {
   font: 500 12px/1.5 var(--font-ui);
@@ -119,16 +119,16 @@
 .task-search { margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
 .task-search input { font-size: 13px; }
 .task-search-filters { display: grid; gap: 8px; margin-top: 10px; }
-.task-search select { width: 100%; min-width: 0; border: 1px solid var(--border); border-radius: 4px; background: white; padding: 7px 5px; font-size: 12px; text-overflow: ellipsis; }
+.task-search select { width: 100%; min-width: 0; border: 1px solid var(--border); border-radius: var(--ui-control-radius); background: white; padding: 7px 5px; font-size: 12px; text-overflow: ellipsis; }
 .task-search-shortcuts { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 8px; }
-.task-search-shortcuts [data-slot="button"] { height: auto; min-height: 28px; padding: 4px; font-size: 11px; }
+.task-search-shortcuts [data-slot="button"] { height: auto; min-height: 28px; padding: 4px; font-size: var(--ui-caption); }
 .task-search [aria-pressed="true"] { background: var(--secondary); color: var(--primary); }
-.task-search-count { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; font-size: 11px; margin-top: 10px; }
-.search-hint { font-size: 11px; line-height: 1.6; color: var(--muted-foreground); margin: 8px 0; }
+.task-search-count { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; font-size: var(--ui-caption); margin-top: 10px; }
+.search-hint { font-size: var(--ui-caption); line-height: 1.6; color: var(--muted-foreground); margin: 8px 0; }
 .task-search-result { display: grid; width: 100%; text-align: left; gap: 5px; padding: 10px 6px; border-bottom: 1px solid var(--border); font-size: 12px; overflow-wrap: anywhere; }
 .task-search-result:hover, .task-search-result:focus-visible { background: var(--secondary); }
-.task-search-result small { font-size: 11px; color: var(--muted-foreground); }
-.deadline-hint { display: block; font: 400 11px/1.5 var(--font-ui); margin-top: 5px; color: var(--muted-foreground); }
+.task-search-result small { font-size: var(--ui-caption); color: var(--muted-foreground); }
+.deadline-hint { display: block; font: 400 var(--ui-caption)/1.5 var(--font-ui); margin-top: 5px; color: var(--muted-foreground); }
 .brief-fact-deadline[data-deadline] dd { color: var(--foreground); }
 .brief-fact-deadline[data-deadline="overdue"] .deadline-hint { color: #a82d32; }
 @media print { .deadline-hint { display: none; } }
@@ -160,7 +160,7 @@
 .workspace-inspector {
   background: white;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--ui-control-radius);
   padding: 16px;
   overflow-y: auto;
 }
@@ -204,7 +204,7 @@
   min-height: 36px;
   padding: 9px 10px;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--ui-control-radius);
   background: transparent;
   color: #4c5461;
   text-align: left;
@@ -258,7 +258,7 @@
 .outline-task-status {
   display: block;
   margin-top: 4px;
-  font: 400 11px/1.4 var(--font-ui);
+  font: 400 var(--ui-caption)/1.4 var(--font-ui);
   color: var(--muted-foreground);
 }
 .outline-collapse {
@@ -269,7 +269,7 @@
   height: 32px;
   margin-top: 3px;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--ui-control-radius);
   background: transparent;
   color: var(--muted-foreground);
 }
@@ -281,7 +281,7 @@
 }
 .outline-child {
   padding-left: 38px;
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 400;
   min-height: 32px;
   color: var(--muted-foreground);
@@ -303,7 +303,7 @@
 }
 .quick-insert [data-slot="button"] {
   justify-content: flex-start;
-  font-size: 11px;
+  font-size: var(--ui-caption);
   gap: 6px;
   padding: 6px;
   min-width: 0;
@@ -313,7 +313,7 @@
   height: 13px;
 }
 .outline-tip {
-  font-size: 11px;
+  font-size: var(--ui-caption);
   color: var(--muted-foreground);
   padding: 16px 10px 4px;
 }
@@ -372,7 +372,7 @@
   gap: 12px;
 }
 .inspector-hint {
-  font-size: 11px;
+  font-size: var(--ui-caption);
   line-height: 1.65;
   color: var(--muted-foreground);
 }
@@ -405,7 +405,7 @@
   font-size: 13px;
 }
 .typography-heading [data-slot="button"] {
-  font-size: 11px;
+  font-size: var(--ui-caption);
   padding-inline: 6px;
 }
 .font-source-editor {
@@ -428,7 +428,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 11px;
+  font-size: var(--ui-caption);
 }
 .font-source-error {
   color: var(--destructive);
@@ -597,17 +597,17 @@
     font-size: 16px;
   }
   .save-status {
-    font-size: 10px;
+    font-size: var(--ui-caption);
     margin-left: auto;
   }
   .editor-actions {
     width: 100%;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 32px 32px auto;
+    grid-template-columns: minmax(0, 1fr) 44px 44px auto;
     gap: 4px;
   }
   .preview-bar .editor-actions {
-    grid-template-columns: minmax(0, 1fr) 32px auto;
+    grid-template-columns: minmax(0, 1fr) 44px auto;
   }
   .editor-actions > [data-slot="button"]:first-child {
     min-width: 0;
@@ -617,10 +617,10 @@
     font-size: 12px;
   }
   .editor-actions [aria-pressed] {
-    min-width: 32px;
+    min-width: 44px;
   }
   .editor-actions [data-size="icon"] {
-    width: 32px;
+    width: 44px;
   }
   .toolbar-desktop-label {
     display: none;
@@ -685,7 +685,7 @@
     font-size: 12px;
   }
   .workspace-drawer .outline-collapse {
-    width: 32px;
+    width: 44px;
     height: 40px;
   }
   .viewer-stage {
@@ -694,7 +694,7 @@
   .preview-notice {
     padding-inline: 8px;
     text-align: center;
-    font-size: 11px;
+    font-size: var(--ui-caption);
     margin-bottom: 16px;
   }
 }
@@ -703,18 +703,46 @@
 /* 3.2 assignment navigation: stable compact controls in narrow panels. */
 .assignments-panel { border-bottom: 1px solid var(--border); padding: 0 0 12px; margin-bottom: 18px; }
 .assignments-panel > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; font: 650 12px/1.5 var(--font-ui); padding: 8px 2px; }
-.assignments-panel > summary small { font-size: 11px; color: var(--muted-foreground); }
+.assignments-panel > summary small { font-size: var(--ui-caption); color: var(--muted-foreground); }
 .assignments-list { display: grid; max-height: 245px; overflow-y: auto; overscroll-behavior: contain; }
 .assignment-row { display: grid; gap: 4px; min-width: 0; padding: 8px 5px; text-align: left; border-bottom: 1px solid var(--border); font: 500 12px/1.4 var(--font-ui); border-radius: 3px; }
 .assignment-row:hover, .assignment-row:focus-visible, .assignment-row[aria-current="location"] { background: var(--secondary); }
 .assignment-row-title { display: flex; gap: 8px; align-items: baseline; min-width: 0; }
 .assignment-row-title > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .assignment-row-title small { flex: 0 0 auto; color: var(--primary); font-weight: 650; }
-.assignment-row-people { color: var(--muted-foreground); font-size: 11px; overflow-wrap: anywhere; }
+.assignment-row-people { color: var(--muted-foreground); font-size: var(--ui-caption); overflow-wrap: anywhere; }
 .assignee-people { display: flex; flex-wrap: wrap; gap: 5px; }
-.assignee-people button { min-height: 27px; max-width: 100%; padding: 3px 8px; border: 1px solid var(--border); border-radius: 4px; font: 500 11px/1.3 var(--font-ui); background: var(--secondary); }
+.assignee-people button { min-height: 27px; max-width: 100%; padding: 3px 8px; border: 1px solid var(--border); border-radius: var(--ui-control-radius); font: 500 var(--ui-caption)/1.3 var(--font-ui); background: var(--secondary); }
 .assignee-people button:hover, .assignee-people button:focus-visible { border-color: var(--primary); }
 .task-jump { display: flex; align-items: center; gap: 3px; white-space: nowrap; font: 600 12px/1.4 var(--font-ui); color: var(--foreground); }
 .task-jump [data-slot="button"] { height: 30px; width: 30px; min-height: 30px; padding: 4px; }
 .task-jump span { min-width: 46px; text-align: center; font-variant-numeric: tabular-nums; }
 @media print { .assignments-panel, .task-jump { display: none !important; } }
+
+/* Workspace UI scale and grouping; document typography remains independent. */
+.editor-bar, .preview-bar, .workspace-controls, .workspace-outline,
+.workspace-inspector, .workspace-drawer { color: var(--ui-text); }
+.save-status, .inspector-hint, .outline-tip, .search-hint,
+.deadline-hint, .outline-task-status { color: var(--ui-secondary); }
+.experience-switch [data-slot="toggle-group-item"],
+.workspace-controls [data-slot="button"] { font-size: var(--ui-label); }
+.workspace-controls { padding-bottom: 12px; border-bottom: 1px solid var(--ui-border); }
+.workspace-controls [data-slot="button"] { min-height: 36px; color: var(--ui-secondary); }
+.workspace-controls [aria-pressed="true"] { color: var(--primary); }
+.workspace-inspector { border-color: var(--ui-border); border-radius: var(--ui-panel-radius); }
+.outline-item { font-size: var(--ui-label); min-height: 40px; }
+.outline-child { font-size: var(--ui-caption); }
+.inspector-panel-header [data-slot="button"] { width: 36px; height: 36px; }
+.task-search-shortcuts [data-slot="button"], .assignee-people button { min-height: 32px; }
+.task-jump [data-slot="button"] { width: 36px; height: 36px; min-height: 36px; }
+@media (max-width: 767px) {
+  .editor-actions [data-slot="button"],
+  .experience-switch [data-slot="toggle-group-item"],
+  .workspace-controls [data-slot="button"] { min-height: 44px; }
+  .workspace-controls { gap: 8px; padding-bottom: 8px; }
+  .task-jump [data-slot="button"] { width: 44px; height: 44px; min-height: 44px; }
+  .inspector-panel-header [data-slot="button"] { width: 44px; height: 44px; }
+  .workspace-drawer .outline-item { min-height: 44px; }
+  .workspace-drawer .outline-collapse { min-height: 44px; }
+  .workspace-drawer .quick-insert [data-slot="button"] { min-height: 44px; }
+}

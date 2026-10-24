@@ -6,6 +6,7 @@ import { exportPlanDocx, DOCX_TYPE } from "./docx";
 import {
   Dialog,
   DialogContent,
+  DialogBody,
   DialogHeader,
   DialogTitle,
   DialogDescription,
@@ -72,48 +73,56 @@ export function ExportDialog({
             <FileDown aria-hidden="true" />
             Экспорт документа
           </DialogTitle>
+        </DialogHeader>
+        <DialogBody>
           <DialogDescription>
             Передайте готовый документ коллегам или сохраните резервную копию
             плана.
           </DialogDescription>
-        </DialogHeader>
-        <section className="export-format" aria-labelledby="word-export-title">
-          <div className="export-format-header">
-            <FileDown aria-hidden="true" />
-            <h3 id="word-export-title">Редактируемый Word</h3>
-          </div>
-          <p>
-            Документ A4 с текстом, ссылками и изображениями. Для точного
-            оформления выбранные шрифты должны быть установлены в Word.
-            Недоступные изображения сохранятся ссылками.
-          </p>
-          <Button onClick={() => void downloadDocx()} disabled={exporting}>
-            <FileDown data-icon="inline-start" />{" "}
-            {exporting ? "Подготовка..." : "Скачать .docx"}
-          </Button>
-        </section>
-        {warnings.length > 0 && (
-          <p role="status" className="export-notice">
-            {warnings.join(" ")}
-          </p>
-        )}
-        <section className="export-format" aria-labelledby="json-export-title">
-          <div className="export-format-header">
-            <Braces aria-hidden="true" />
-            <h3 id="json-export-title">Резервная копия JSON</h3>
-          </div>
-          <p>
-            Сохраняет блоки, задачи, шрифты и встроенные изображения для
-            повторного импорта в IPOS.Plan. План ограничен 1 МБ; JSON надёжнее
-            длинной ссылки.
-          </p>
-          <Textarea
-            aria-label="JSON для экспорта"
-            value={json}
-            readOnly
-            rows={5}
-          />
-        </section>
+          <section
+            className="export-format"
+            aria-labelledby="word-export-title"
+          >
+            <div className="export-format-header">
+              <FileDown aria-hidden="true" />
+              <h3 id="word-export-title">Редактируемый Word</h3>
+            </div>
+            <p>
+              Документ A4 с текстом, ссылками и изображениями. Для точного
+              оформления выбранные шрифты должны быть установлены в Word.
+              Недоступные изображения сохранятся ссылками.
+            </p>
+            <Button onClick={() => void downloadDocx()} disabled={exporting}>
+              <FileDown data-icon="inline-start" />{" "}
+              {exporting ? "Подготовка..." : "Скачать .docx"}
+            </Button>
+          </section>
+          {warnings.length > 0 && (
+            <p role="status" className="export-notice">
+              {warnings.join(" ")}
+            </p>
+          )}
+          <section
+            className="export-format"
+            aria-labelledby="json-export-title"
+          >
+            <div className="export-format-header">
+              <Braces aria-hidden="true" />
+              <h3 id="json-export-title">Резервная копия JSON</h3>
+            </div>
+            <p>
+              Сохраняет блоки, задачи, шрифты и встроенные изображения для
+              повторного импорта в IPOS.Plan. План ограничен 1 МБ; JSON надёжнее
+              длинной ссылки.
+            </p>
+            <Textarea
+              aria-label="JSON для экспорта"
+              value={json}
+              readOnly
+              rows={5}
+            />
+          </section>
+        </DialogBody>
         <DialogFooter>
           <Button
             variant="outline"

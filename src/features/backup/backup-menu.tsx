@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogBody,
   DialogHeader,
   DialogTitle,
   DialogDescription,
@@ -133,19 +134,19 @@ export function BackupMenu() {
           <DialogContent className="backup-dialog">
             <DialogHeader>
               <DialogTitle>Восстановить библиотеку?</DialogTitle>
+            </DialogHeader>
+            <DialogBody
+              className="backup-dialog-body"
+              role="region"
+              aria-label="Условия восстановления"
+              tabIndex={0}
+            >
               <DialogDescription>
                 Копия от {formatDate(backup.createdAt)}. Планов:{" "}
                 {backup.plans.length}; версий: {backup.revisions.length};
                 событий: {backup.activity.length}; настроек и шаблонов:{" "}
                 {backup.settings.length}.
               </DialogDescription>
-            </DialogHeader>
-            <div
-              className="backup-dialog-body"
-              role="region"
-              aria-label="Условия восстановления"
-              tabIndex={0}
-            >
               <p className="muted">
                 Существующие планы и история останутся. Ссылки на внешние
                 изображения сохраняются без загрузки файлов. Копия содержит
@@ -182,7 +183,7 @@ export function BackupMenu() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-            </div>
+            </DialogBody>
             <DialogFooter>
               <Button
                 variant="outline"
@@ -208,8 +209,10 @@ export function BackupMenu() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Восстановление завершено</DialogTitle>
-              <DialogDescription>{result}</DialogDescription>
             </DialogHeader>
+            <DialogBody>
+              <DialogDescription>{result}</DialogDescription>
+            </DialogBody>
             <DialogFooter>
               <Button onClick={() => setResult("")}>Готово</Button>
             </DialogFooter>

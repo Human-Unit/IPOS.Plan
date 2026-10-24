@@ -80,6 +80,8 @@ test("Russian search, task navigation and local deadline counts work at five vie
     .fill(JSON.stringify(fixture));
   await page.getByRole("button", { name: "Проверить и посмотреть" }).click();
   await page.getByRole("button", { name: "Подтвердить импорт" }).click();
+  await expect(page).toHaveURL(/\/plan\/[^/#?]+$/);
+  await page.locator(".bn-editor").waitFor();
   await expect(page.locator(".task-brief")).toHaveCount(5);
   const planUrl = page.url();
   await expect(page.locator(".deadline-hint")).toContainText([

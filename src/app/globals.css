@@ -44,6 +44,15 @@
   --space-12: 48px;
   --motion-fast: 160ms;
   --page-shadow: 0 2px 8px rgb(23 25 29 / 4%);
+  --ui-text: #172033;
+  --ui-secondary: #525b6b;
+  --ui-border: #dce1e9;
+  --ui-caption: 12px;
+  --ui-label: 13px;
+  --ui-body: 14px;
+  --ui-control-radius: 6px;
+  --ui-panel-radius: 10px;
+  --ui-hero-radius: 12px;
   --document-title: 32px;
   --document-body: 17px;
   --document-task: 23px;
@@ -156,7 +165,7 @@ select {
   min-width: 0;
   width: 100%;
   border: 1px solid var(--input);
-  border-radius: 4px;
+  border-radius: var(--ui-control-radius);
   background: var(--background);
   color: var(--foreground);
   box-shadow: none;
@@ -174,7 +183,7 @@ select {
 }
 [data-slot="input"]::placeholder,
 [data-slot="textarea"]::placeholder {
-  color: #787e89;
+  color: #697180;
 }
 [data-slot="input"]:focus-visible,
 [data-slot="textarea"]:focus-visible,

@@ -270,7 +270,13 @@ export function TaskCard({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => selectBlock?.(blockId)}
+                onClick={(event) => {
+                  // ProseMirror can focus its text surface during a click in
+                  // this custom block. Keep the actual drawer opener focused
+                  // so closing properties returns here without moving selection.
+                  event.currentTarget.focus({ preventScroll: true });
+                  selectBlock?.(blockId);
+                }}
                 aria-label={`Свойства задачи: ${task.title}`}
               >
                 <SlidersHorizontal />
