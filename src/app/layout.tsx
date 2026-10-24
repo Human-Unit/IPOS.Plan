@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./surfaces.css";
+import "./dashboard-hero.css";
 import "./workspace.css";
 import "./document.css";
 import "./print.css";
