@@ -87,7 +87,7 @@ export function ShareDialog({
             <Copy data-icon="inline-start" />
             Копировать ссылку
           </Button>}
-}        </DialogFooter>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
