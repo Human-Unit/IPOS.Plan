@@ -750,3 +750,20 @@
   .publication-buttons > * { flex: 1 1 auto; }
 }
 @media print { .publication-controls { display: none !important; } }
+
+.publication-recovery {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-panel-radius);
+  padding: 12px;
+  display: grid;
+  gap: 12px;
+}
+.publication-recovery summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.publication-recovery[open] { gap: 16px; }
+.publication-recovery [data-slot="field"] { margin-top: 12px; }
+.publication-recovery [data-slot="button"] { margin-top: 12px; }
