@@ -52,13 +52,13 @@ export function EditorScreen({ id }: { id: string }) {
   const [watermark, setWatermark] = useState(true);
   const [dialog, setDialog] = useState<"import" | "export" | "history">();
   const [exportPlan, setExportPlan] = useState<PortablePlan>();
-  const [shareUrl, setShareUrl] = useState("");
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [sharePlan, setSharePlan] = useState<PortablePlan>();
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (!focusMode || preview) return;
     const onEscape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.isComposing || dialog || shareUrl)
+      if (event.key !== "Escape" || event.isComposing || dialog || shareUrl !== null)
         return;
       // Window bubble runs after native editor/Radix handlers. Visible overlays
       // also own Escape when their close handler does not cancel the event.
@@ -324,13 +324,19 @@ export function EditorScreen({ id }: { id: string }) {
             onClick={() =>
               void run(async () => {
                 const p = await flush();
-                const token = await encodeShare(p);
-                const url = `${window.location.origin}/view#p=${token}`;
-                await db.activity.add(
-                  event(id, "SHARE_CREATED", "Создана ссылка на снимок"),
-                );
                 setSharePlan(p);
-                setShareUrl(url);
+                try {
+                  const token = await encodeShare(p);
+                  const url = `${window.location.origin}/view#p=${token}`;
+                  await db.activity.add(
+                    event(id, "SHARE_CREATED", "Создана ссылка на снимок"),
+                  );
+                  setShareUrl(url);
+                } catch {
+                  // A large portable document can still be published online.
+                  // The self-contained URL is optional, not a publishing gate.
+                  setShareUrl("");
+                }
               })
             }
           >
@@ -366,7 +372,7 @@ export function EditorScreen({ id }: { id: string }) {
         )}
         <div
           className="document-content"
-          inert={busy || dialog !== undefined || Boolean(shareUrl)}
+          inert={busy || dialog !== undefined || shareUrl !== null}
         >
           <PlanRenderer
             key={generation}
@@ -409,8 +415,8 @@ export function EditorScreen({ id }: { id: string }) {
           }}
         />
       )}
-      {shareUrl && (
-        <ShareDialog url={shareUrl} plan={sharePlan ?? toPortable(plan)} planId={id} onClose={() => { setShareUrl(""); setSharePlan(undefined); }} />
+      {shareUrl !== null && (
+        <ShareDialog url={shareUrl} plan={sharePlan ?? toPortable(plan)} planId={id} onClose={() => { setShareUrl(null); setSharePlan(undefined); }} />
       )}
     </>
   );
