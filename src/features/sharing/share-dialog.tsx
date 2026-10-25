@@ -1,5 +1,7 @@
 "use client";
 import { toast } from "@/lib/notifications";
+import type { PortablePlan } from "@/lib/schema/plan";
+import { PublicationControls } from "./publication-controls";
 import { Link2, LockKeyhole, ArrowUpRight, Copy } from "lucide-react";
 import { Field, FieldLabel } from "@/components/ui/field";
 import {
@@ -18,9 +20,13 @@ import { errorMessage } from "@/lib/labels";
 export function ShareDialog({
   url,
   onClose,
+  plan,
+  planId,
 }: {
   url: string;
   onClose: () => void;
+  plan: PortablePlan;
+  planId: string;
 }) {
   return (
     <Dialog
@@ -59,6 +65,7 @@ export function ShareDialog({
               используйте JSON.
             </p>
           )}
+          <PublicationControls plan={plan} planId={planId} />
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" asChild>
