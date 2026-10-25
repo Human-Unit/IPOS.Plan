@@ -32,7 +32,7 @@ export function PublishedViewer({ id }: { id: string }) {
         {error ? <div className="viewer-error"><h1>Страница недоступна</h1><p role="alert">{error}</p><Button variant="outline" asChild><Link href="/">К планам</Link></Button></div>
           : page ? <>
               <div className="preview-notice"><Globe2 size={16} aria-hidden="true" /> Публичная страница · изменения в редакторе не появятся до повторной публикации</div>
-              <PlanRenderer key={id + page.updatedAt} plan={page.document} showCover />
+              <PlanRenderer key={id + page.updatedAt} plan={{ ...page.document, title: page.title }} showCover />
               <footer className="viewer-footer">IPOS.Plan · Опубликованный документ · Только просмотр</footer>
             </>
           : <div role="status" aria-label="Загружаем страницу"><Skeleton className="h-10 w-2/3" /><Skeleton className="mt-8 h-48 w-full" /></div>}
