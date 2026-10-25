@@ -108,7 +108,7 @@ test("editorial brief, responsive inspectors and unchanged portable data", async
     await expect(
       page.locator('.task-brief[data-plan-block="brief-task"]'),
     ).toHaveAttribute("data-selected", "true");
-    if (width < 1440) {
+    if (width < 1200) {
       const sheet = page.getByRole("dialog");
       await expect(sheet).toBeVisible();
       const bounds = await sheet.boundingBox();

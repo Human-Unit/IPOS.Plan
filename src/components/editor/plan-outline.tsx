@@ -19,6 +19,7 @@ import {
   duplicateTitleHeading,
 } from "./document-structure";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { statusLabels } from "@/lib/labels";
 import { TaskSearch } from "@/features/plans/task-search";
 import { AssignmentsPanel } from "@/features/activists/assignments-panel";
@@ -49,6 +50,10 @@ export function PlanOutline({
   focusSearch?: number;
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  const [section, setSection] = useState({ value: focusSearch ? "tasks" : "structure", request: focusSearch });
+  // The toolbar's search shortcut reveals the existing search without resetting
+  // its filters. A later manual section choice takes priority until the next request.
+  const activeSection = section.request === focusSearch ? section.value : "tasks";
   const { companions, sectionById } = taskCompanions(blocks);
   const duplicateId = duplicateTitleHeading(blocks, plan.title);
   const visible = flattenBlocks(blocks).filter(
@@ -86,9 +91,23 @@ export function PlanOutline({
   let number = 0;
   return (
     <div className="plan-outline">
-      <AssignmentsPanel plan={plan} blocks={blocks} selectedId={selectedId} select={(id) => select(id)} />
-      <TaskSearch plan={{ ...plan, blocks }} select={select} focusRequest={focusSearch} />
-      <p className="panel-eyebrow">Структура</p>
+      <ToggleGroup
+        type="single"
+        value={activeSection}
+        className="outline-tabs"
+        aria-label="Раздел навигации"
+        onValueChange={(value) => {
+          if (value) setSection({ value, request: focusSearch });
+        }}
+      >
+        <ToggleGroupItem value="structure">Структура</ToggleGroupItem>
+        <ToggleGroupItem value="tasks">Задачи</ToggleGroupItem>
+      </ToggleGroup>
+      <div className="outline-section" hidden={activeSection !== "tasks"}>
+        <TaskSearch plan={{ ...plan, blocks }} select={select} focusRequest={focusSearch} />
+        <AssignmentsPanel plan={plan} blocks={blocks} selectedId={selectedId} select={select} />
+      </div>
+      <div className="outline-section" hidden={activeSection !== "structure"}>
       <nav aria-label="Структура документа">
         <button
           className="outline-item cover-item"
@@ -177,6 +196,7 @@ export function PlanOutline({
         ))}
       </div>
       <p className="outline-tip">/ — вставка блока в документ</p>
+      </div>
     </div>
   );
 }

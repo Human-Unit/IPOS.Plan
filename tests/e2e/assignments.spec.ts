@@ -12,6 +12,7 @@ test("assignments panel jumps between tasks and names survive into the local lib
   await page.getByRole("button", { name: "Подтвердить импорт" }).click();
   await expect(page.locator(".task-brief")).toHaveCount(5);
   await page.getByRole("button", { name: "Структура", exact: true }).click();
+  await page.getByRole("radio", { name: "Задачи", exact: true }).click();
   const assignmentNav = page.getByRole("navigation", { name: "Быстрый переход к заданиям" });
   await expect(assignmentNav.locator("button")).toHaveCount(5);
   await expect(assignmentNav).toContainText("Амина");
@@ -26,7 +27,7 @@ test("assignments panel jumps between tasks and names survive into the local lib
   await field.fill("Ислом, Маруф");
   await field.press("Tab");
   await expect(page.locator(".task-brief").nth(3)).toContainText("Ислом, Маруф");
-  // The inspector is a modal sheet below 1440px. Close it before using
+  // The inspector is a modal sheet below 1200px. Close it before using
   // the top-level navigation, which is intentionally inert behind the dialog.
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog", { name: "Свойства блока" })).toBeHidden();

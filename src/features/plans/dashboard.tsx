@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Plus, Copy, Trash2, ArrowUpRight, Upload } from "lucide-react";
+import { Plus, Copy, Trash2, ArrowUpRight, Upload, FileText, ChevronDown } from "lucide-react";
 import { toast } from "@/lib/notifications";
 import { db } from "@/lib/db/database";
 import { createPlan, deletePlan, duplicatePlan } from "./repository";
@@ -105,7 +105,6 @@ export function Dashboard() {
           aria-labelledby="dashboard-title"
         >
           <div className="dashboard-hero-copy">
-            <p className="dashboard-hero-kicker">ИПОС · Рабочее пространство</p>
             <h1 id="dashboard-title">Контент-планы</h1>
             <p className="dashboard-hero-description">
               От идеи и задания — к готовому медиапроекту.
@@ -116,15 +115,6 @@ export function Dashboard() {
               <Plus data-icon="inline-start" />
               Новый план
             </Button>
-            <BackupMenu />
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => setImporting(true)}
-            >
-              <Upload data-icon="inline-start" />
-              Импорт JSON
-            </Button>
           </div>
         </section>
         {error && (
@@ -134,18 +124,37 @@ export function Dashboard() {
         )}
         <div className="library-stats" aria-label="Задачи во всей библиотеке">
           <span>
-            Не завершено <strong>{stats.unfinished}</strong>
+            <strong>{stats.unfinished}</strong> Не завершено
           </span>
           <span data-warning={stats.overdue > 0 || undefined}>
-            Просрочено <strong>{stats.overdue}</strong>
+            <strong>{stats.overdue}</strong> Просрочено
           </span>
           <span>
-            В ближайшие 7 дней <strong>{stats.upcoming}</strong>
+            <strong>{stats.upcoming}</strong> В ближайшие 7 дней
           </span>
           <span>
-            Готово <strong>{stats.completed}</strong>
+            <strong>{stats.completed}</strong> Готово
           </span>
         </div>
+        <section className="plan-list" aria-label="Сохранённые планы">
+          <div className="library-heading">
+            <div className="list-label">
+              <h2>
+                Сохранённые планы{" "}
+                <span role="status" aria-label="Найдено планов">
+                  {visiblePlans?.length ?? "…"} / {plans?.length ?? "…"}
+                </span>
+              </h2>
+              <span>Обновлены недавно</span>
+            </div>
+            <div className="library-utilities">
+              <BackupMenu />
+              <Button variant="outline" disabled={busy} onClick={() => setImporting(true)}>
+                <Upload data-icon="inline-start" />
+                Импорт JSON
+              </Button>
+            </div>
+          </div>
         <div
           className="library-search"
           role="search"
@@ -180,39 +189,6 @@ export function Dashboard() {
             </Button>
           )}
         </div>
-        <details className="activist-directory">
-          <summary>
-            <span>Имена из назначений</span>
-            <small>{rememberedPeople.length} сохранено локально</small>
-          </summary>
-          <p>
-            Справочник для следующих заданий. Это имена из поручений, а не
-            подтверждённый список активистов. Они остаются здесь даже после
-            завершения задачи.
-          </p>
-          {rememberedPeople.length ? (
-            <ul aria-label="Сохранённые ответственные">
-              {rememberedPeople.map((name) => (
-                <li key={name}>{name}</li>
-              ))}
-            </ul>
-          ) : (
-            <p>
-              Назначьте человека в свойствах задачи — имя запомнится после
-              ввода.
-            </p>
-          )}
-        </details>
-        <section className="plan-list" aria-label="Сохранённые планы">
-          <div className="list-label">
-            <h2>
-              Найдено планов{" "}
-              <span role="status">
-                {visiblePlans?.length ?? "…"} / {plans?.length ?? "…"}
-              </span>
-            </h2>
-            <span>Обновлены недавно</span>
-          </div>
           {!plans && !error && <Skeleton className="h-28 w-full" />}
           {visiblePlans?.map((plan) => {
             const tasks = Object.values(plan.tasks);
@@ -220,7 +196,7 @@ export function Dashboard() {
             return (
               <article className="plan-row" key={plan.id}>
                 <span className="plan-row-icon" aria-hidden="true">
-                  <PlanEmblem size={32} />
+                  <FileText size={24} />
                 </span>
                 <div className="plan-row-content">
                   <Link className="plan-title" href={`/plan/${plan.id}`}>
@@ -327,6 +303,25 @@ export function Dashboard() {
             </Empty>
           )}
         </section>
+        <details className="activist-directory">
+          <summary>
+            <span>Имена из назначений</span>
+            <small>{rememberedPeople.length} сохранено локально</small>
+            <ChevronDown aria-hidden="true" />
+          </summary>
+          <p>
+            Справочник для следующих заданий. Это имена из поручений, а не
+            подтверждённый список активистов. Они остаются здесь даже после
+            завершения задачи.
+          </p>
+          {rememberedPeople.length ? (
+            <ul aria-label="Сохранённые ответственные">
+              {rememberedPeople.map((name) => <li key={name}>{name}</li>)}
+            </ul>
+          ) : (
+            <p>Назначьте человека в свойствах задачи — имя запомнится после ввода.</p>
+          )}
+        </details>
         <footer className="dashboard-footer">
           <p>
             Планы сохраняются в этом браузере. «Резервная копия» скачивает всю

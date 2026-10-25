@@ -134,7 +134,7 @@ test("workspace/document share canonical data; direct task commands and undo pre
     ).toHaveCount(0);
     const paper = await page.locator(".plan-paper").boundingBox();
     expect(paper!.width).toBeLessThanOrEqual(794);
-    await page.getByText("Рабочий стол", { exact: true }).click();
+    await page.getByRole("radio", { name: "Рабочий стол", exact: true }).click();
   }
   expect(await exported(page)).toEqual(initial);
   await page.setViewportSize({ width: 1440, height: 900 });
@@ -260,6 +260,9 @@ test("portable files, paste, drop, replacement, JSON, snapshot and DOCX preserve
   expect(image.type === "image" && image.props.url).toMatch(
     /^data:image\/(webp|png);base64,/,
   );
+  // Export reads the current draft; it does not flush the 700ms autosave.
+  // Wait for persisted state before testing reload on faster CI runners.
+  await expect(page.locator('.save-status[data-state="saved"]')).toBeVisible();
   await page.reload();
   await expect(
     page.getByRole("img", { name: "seal.png", exact: true }),

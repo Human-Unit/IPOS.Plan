@@ -10,7 +10,7 @@
   --brand-dark: #101010;
   --brand-light: #eeeeee;
   --brand-gray: #a6a4a4;
-  --canvas: #f7f7f5;
+  --canvas: #f5f6f9;
   --background: #ffffff;
   --foreground: #17191d;
   --card: #ffffff;
@@ -154,7 +154,7 @@ img {
 }
 [data-slot="button"] {
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: var(--ui-body);
   line-height: 20px;
   box-shadow: none;
   transition-duration: var(--motion-fast);
@@ -274,4 +274,16 @@ select:focus-visible {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+@media screen {
+  :where(.dashboard, .dialog-panel, .workspace-outline, .workspace-inspector) [data-slot="input"],
+  :where(.dashboard, .dialog-panel, .workspace-outline, .workspace-inspector) [data-slot="textarea"] { font-size: var(--ui-body); }
+  :where(.dialog-panel, .workspace-inspector) [data-slot="field-label"] { font-size: var(--ui-label); }
+}
+@media screen and (max-width: 767px) {
+  .dashboard [data-slot="input"],
+  .dialog-panel [data-slot="input"], .dialog-panel [data-slot="textarea"],
+  .workspace-outline [data-slot="input"], .workspace-inspector [data-slot="input"],
+  .dashboard select, .dialog-panel select, .workspace-outline select, .workspace-inspector select { font-size: 16px; }
 }
