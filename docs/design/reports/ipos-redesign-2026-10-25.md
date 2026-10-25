@@ -155,3 +155,9 @@ Browser checks use Chromium viewport emulation. Physical iOS/Android devices, Sa
 All screenshot acceptance is based on rendered screenshots reviewed at matching sizes, with overview sheets used for the broader state matrix. The baseline and first iterations used the development server; final captures and the complete regression suite use the optimized local build. No public production acceptance or deployment is claimed for this redesign.
 
 The completed implementation and this report are committed together on the dedicated branch. The release boundary is local branch only: no merge, push or deployment was performed.
+
+### Subsequent release validation
+
+The user subsequently authorized pushing the branch and merging it into main. [PR #21](https://github.com/Human-Unit/IPOS.Plan/pull/21) runs the same checks in GitHub Actions before release.
+
+The first [Linux CI run](https://github.com/Human-Unit/IPOS.Plan/actions/runs/40190273278) passed the static/build checks and 25 browser tests, then exposed a timing error in the existing media test. Its retained trace shows the image was visible and present in exported JSON, but the test reloaded while the save indicator still reported pending changes. Export intentionally reads the current draft without flushing the 700ms autosave. The test now explicitly awaits the saved indicator before checking persistence after reload. No application or storage behavior was changed. The failure archive is retained locally at `C:/Users/ahmad/.codex/artifacts/ipos-redesign-2026-10-25/ci-failure.zip` and in the linked GitHub run.

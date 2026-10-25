@@ -260,6 +260,9 @@ test("portable files, paste, drop, replacement, JSON, snapshot and DOCX preserve
   expect(image.type === "image" && image.props.url).toMatch(
     /^data:image\/(webp|png);base64,/,
   );
+  // Export reads the current draft; it does not flush the 700ms autosave.
+  // Wait for persisted state before testing reload on faster CI runners.
+  await expect(page.locator('.save-status[data-state="saved"]')).toBeVisible();
   await page.reload();
   await expect(
     page.getByRole("img", { name: "seal.png", exact: true }),
