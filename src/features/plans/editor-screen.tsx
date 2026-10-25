@@ -53,6 +53,7 @@ export function EditorScreen({ id }: { id: string }) {
   const [dialog, setDialog] = useState<"import" | "export" | "history">();
   const [exportPlan, setExportPlan] = useState<PortablePlan>();
   const [shareUrl, setShareUrl] = useState("");
+  const [sharePlan, setSharePlan] = useState<PortablePlan>();
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (!focusMode || preview) return;
@@ -328,6 +329,7 @@ export function EditorScreen({ id }: { id: string }) {
                 await db.activity.add(
                   event(id, "SHARE_CREATED", "Создана ссылка на снимок"),
                 );
+                setSharePlan(p);
                 setShareUrl(url);
               })
             }
@@ -408,7 +410,7 @@ export function EditorScreen({ id }: { id: string }) {
         />
       )}
       {shareUrl && (
-        <ShareDialog url={shareUrl} onClose={() => setShareUrl("")} />
+        <ShareDialog url={shareUrl} plan={sharePlan ?? toPortable(plan)} planId={id} onClose={() => { setShareUrl(""); setSharePlan(undefined); }} />
       )}
     </>
   );
