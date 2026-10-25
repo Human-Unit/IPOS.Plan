@@ -767,3 +767,92 @@
 .publication-recovery[open] { gap: 16px; }
 .publication-recovery [data-slot="field"] { margin-top: 12px; }
 .publication-recovery [data-slot="button"] { margin-top: 12px; }
+
+
+/* Streamlined sharing: keep publishing as the primary task, advanced controls quiet. */
+.dialog-panel:has(.publication-controls) {
+  width: min(560px, calc(100vw - 24px));
+}
+.publication-controls {
+  gap: 14px;
+  border-top: 0;
+  padding-top: 0;
+}
+.publication-controls > .muted {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.publication-controls > [data-slot="button"] {
+  width: 100%;
+  min-height: 44px;
+}
+.publication-title {
+  font-size: 17px;
+}
+.publication-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ui-text);
+  font-size: 16px;
+  font-weight: 650;
+}
+.publication-state svg {
+  color: var(--primary);
+}
+.publication-advanced,
+.publication-recovery {
+  display: block;
+  border: 0;
+  border-top: 1px solid var(--ui-border);
+  border-radius: 0;
+  padding: 12px 0 0;
+  margin: 2px 0 0;
+  background: transparent;
+}
+.publication-advanced > summary,
+.publication-recovery > summary {
+  font: 500 13px/1.6 var(--font-ui);
+  color: var(--ui-secondary);
+  cursor: pointer;
+  padding: 3px 0;
+  list-style-position: inside;
+}
+.publication-advanced > summary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.publication-advanced[open] > *:not(summary) {
+  margin-top: 12px;
+}
+.publication-advanced > [data-slot="field"] {
+  margin-top: 12px;
+}
+.publication-advanced > [data-slot="button"] {
+  margin-top: 12px;
+}
+.publication-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.publication-buttons > [data-slot="button"] {
+  flex: 1 1 auto;
+}
+.share-alternatives {
+  margin-top: 12px;
+}
+.share-alternatives .muted {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ui-secondary);
+}
+@media (max-width: 767px) {
+  .dialog-panel:has(.publication-controls) {
+    width: calc(100vw - 24px);
+  }
+  .publication-advanced [data-slot="input"] {
+    font-size: 16px;
+  }
+}
