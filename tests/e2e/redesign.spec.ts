@@ -194,6 +194,16 @@ test("content-heavy workspace fits every viewport, panels resize and collapse, f
     } else {
       const dialog = page.getByRole("dialog");
       await expect(dialog).toBeVisible();
+      await expect
+        .poll(async () => {
+          const bounds = (await dialog.boundingBox())!;
+          return (
+            bounds.x >= 0 &&
+            bounds.x + bounds.width <= width &&
+            (width >= 768 || Math.round(bounds.y + bounds.height) === height)
+          );
+        })
+        .toBe(true);
       const bounds = await dialog.boundingBox();
       expect(bounds!.x).toBeGreaterThanOrEqual(0);
       expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);

@@ -111,10 +111,20 @@ test("editorial brief, responsive inspectors and unchanged portable data", async
     if (width < 1200) {
       const sheet = page.getByRole("dialog");
       await expect(sheet).toBeVisible();
-      const bounds = await sheet.boundingBox();
       if (width < 768)
-        expect(Math.round(bounds!.y + bounds!.height)).toBe(1000);
-      else expect(Math.round(bounds!.x + bounds!.width)).toBe(width);
+        await expect
+          .poll(async () => {
+            const bounds = (await sheet.boundingBox())!;
+            return Math.round(bounds.y + bounds.height);
+          })
+          .toBe(1000);
+      else
+        await expect
+          .poll(async () => {
+            const bounds = (await sheet.boundingBox())!;
+            return Math.round(bounds.x + bounds.width);
+          })
+          .toBe(width);
       await sheet.getByRole("button", { name: "Закрыть", exact: true }).click();
       await page
         .getByRole("button", { name: "Структура", exact: true })

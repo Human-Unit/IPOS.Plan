@@ -1,5 +1,15 @@
 "use client";
+import { useTheme } from "next-themes";
 import {
+  AnimatePresence,
+  motion,
+  useIsPresent,
+  useReducedMotion,
+  type HTMLMotionProps,
+} from "motion/react";
+import { panelReveal } from "@/lib/motion";
+import {
+  forwardRef,
   useEffect,
   useId,
   useMemo,
@@ -96,6 +106,32 @@ function subscribeWidth(callback: () => void) {
   query.addEventListener("change", callback);
   return () => query.removeEventListener("change", callback);
 }
+// Exit only the panel; the live document never enters a layout animation.
+// popLayout releases its grid column immediately, and inert removes exiting
+// controls from keyboard/pointer interaction until the short fade completes.
+const WorkspacePanel = forwardRef<HTMLElement, HTMLMotionProps<"aside">>(
+  function WorkspacePanel(props, ref) {
+    const present = useIsPresent();
+    const reduced = useReducedMotion();
+    return (
+      <motion.aside
+        {...props}
+        ref={ref}
+        {...(reduced ? {} : panelReveal)}
+        exit={
+          reduced
+            ? { opacity: 1 }
+            : {
+                opacity: 0,
+                x: props.className === "workspace-outline" ? -6 : 6,
+              }
+        }
+        transition={reduced ? { duration: 0 } : panelReveal.transition}
+        inert={!present}
+      />
+    );
+  },
+);
 export default function PlanRenderer({
   plan,
   editable = false,
@@ -111,6 +147,7 @@ export default function PlanRenderer({
   mode = "document",
   onPlanChange,
 }: Props) {
+  const { resolvedTheme } = useTheme();
   const editor = useCreateBlockNote({
     schema: editorSchema,
     dictionary: ru,
@@ -736,8 +773,9 @@ export default function PlanRenderer({
               </Button>
               </div>
             </div>
+            <AnimatePresence key={wide ? "desktop-outline" : "mobile-outline"} initial={false} mode="popLayout">
             {wide && outlineVisible && (
-              <aside className="workspace-outline" aria-label="Навигация плана">
+              <WorkspacePanel key="outline" className="workspace-outline" aria-label="Навигация плана">
                 {outline}
                 <WorkspaceResizeHandle
                   label="Изменить ширину структуры плана"
@@ -754,8 +792,9 @@ export default function PlanRenderer({
                   )}
                   onChange={setOutlineWidth}
                 />
-              </aside>
+              </WorkspacePanel>
             )}
+            </AnimatePresence>
           </>
         )}
         <article className="plan-paper" aria-label="Документ плана">
@@ -807,7 +846,7 @@ export default function PlanRenderer({
               editor={editor}
               portalElements={{ default: "body" }}
               editable={editable}
-              theme="light"
+              theme={editable && mode === "workspace" && resolvedTheme === "dark" ? "dark" : "light"}
               slashMenu={false}
               sideMenu={editable}
               formattingToolbar={editable}
@@ -847,8 +886,10 @@ export default function PlanRenderer({
             </BlockNoteView>
           </div>
         </article>
+        <AnimatePresence key={wide ? "desktop-inspector" : "mobile-inspector"} initial={false} mode="popLayout">
         {editable && wide && inspectorVisible && !focusMode && (
-          <aside
+          <WorkspacePanel
+            key="inspector"
             className="workspace-inspector"
             aria-label="Свойства выбранного блока"
           >
@@ -872,14 +913,18 @@ export default function PlanRenderer({
                 variant="ghost"
                 size="icon"
                 aria-label="Закрыть свойства"
-                onClick={() => setInspectorVisible(false)}
+                onClick={() => {
+                  root.current?.querySelector<HTMLButtonElement>('.workspace-panel-tools [aria-label="Свойства"]')?.focus({ preventScroll: true });
+                  setInspectorVisible(false);
+                }}
               >
                 <X />
               </Button>
             </div>
             {inspector}
-          </aside>
+          </WorkspacePanel>
         )}
+        </AnimatePresence>
         {editable && !wide && !focusMode && (
           <Dialog
             open={Boolean(panel)}

@@ -1,5 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion, useAnimationControls, useReducedMotion } from "motion/react";
+import { ChangingNumber } from "@/components/ui/changing-number";
+import { motionEase, motionTiming } from "@/lib/motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -10,6 +13,7 @@ import { createPlan, deletePlan, duplicatePlan } from "./repository";
 import { seedDemo } from "./demo";
 import { formatDate, errorMessage } from "@/lib/labels";
 import type { Plan } from "@/lib/schema/plan";
+import { ThemeControl } from "@/components/theme/theme-control";
 import { Brand } from "@/components/plan/brand";
 import { PlanEmblem } from "@/components/plan/plan-emblem";
 import { Button } from "@/components/ui/button";
@@ -44,6 +48,13 @@ import {
 } from "@/features/activists/directory";
 export function Dashboard() {
   const router = useRouter();
+  const reducedMotion = useReducedMotion();
+  const heroAnimation = useAnimationControls();
+  useEffect(() => {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    heroAnimation.set({ opacity: 0.8, y: 4 });
+    void heroAnimation.start({ opacity: 1, y: 0 });
+  }, [heroAnimation]);
   const plans = useLiveQuery(() =>
     db.plans.orderBy("updatedAt").reverse().toArray(),
   );
@@ -94,13 +105,16 @@ export function Dashboard() {
     <>
       <header className="app-bar">
         <Brand />
-        <span className="local-indicator">
+        <div className="app-bar-tools"><span className="local-indicator">
           <span />
           Локальное пространство
-        </span>
+        </span><ThemeControl /></div>
       </header>
       <main className="dashboard">
-        <section
+        <motion.section
+          initial={false}
+          animate={heroAnimation}
+          transition={{ duration: motionTiming.entrance, ease: motionEase }}
           className="dashboard-heading dashboard-hero"
           aria-labelledby="dashboard-title"
         >
@@ -116,7 +130,7 @@ export function Dashboard() {
               Новый план
             </Button>
           </div>
-        </section>
+        </motion.section>
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -124,19 +138,19 @@ export function Dashboard() {
         )}
         <div className="library-stats" aria-label="Задачи во всей библиотеке">
           <span>
-            <strong>{stats.unfinished}</strong> Не завершено
+            <ChangingNumber value={stats.unfinished} ready={plans !== undefined} /> Не завершено
           </span>
           <span data-warning={stats.overdue > 0 || undefined}>
-            <strong>{stats.overdue}</strong> Просрочено
+            <ChangingNumber value={stats.overdue} ready={plans !== undefined} /> Просрочено
           </span>
           <span>
-            <strong>{stats.upcoming}</strong> В ближайшие 7 дней
+            <ChangingNumber value={stats.upcoming} ready={plans !== undefined} /> В ближайшие 7 дней
           </span>
           <span>
-            <strong>{stats.completed}</strong> Готово
+            <ChangingNumber value={stats.completed} ready={plans !== undefined} /> Готово
           </span>
         </div>
-        <section className="plan-list" aria-label="Сохранённые планы">
+        <section className="plan-list" data-filtered={Boolean(query || filter !== "all")} aria-label="Сохранённые планы">
           <div className="library-heading">
             <div className="list-label">
               <h2>
@@ -190,11 +204,22 @@ export function Dashboard() {
           )}
         </div>
           {!plans && !error && <Skeleton className="h-28 w-full" />}
+          {/* Search replaces the result set immediately. Retaining old results
+              through rapid filter resets can leave invisible live actions. IDs
+              remain stable within each result set and across Dexie updates. */}
+          <AnimatePresence key={`${filter}:${query}`} initial={false} mode="popLayout">
           {visiblePlans?.map((plan) => {
             const tasks = Object.values(plan.tasks);
             const done = tasks.filter((task) => task.status === "done").length;
             return (
-              <article className="plan-row" key={plan.id}>
+              <motion.article className="plan-row" key={plan.id}
+                layout={reducedMotion ? false : "position"}
+                initial={reducedMotion ? false : { opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reducedMotion ? { opacity: 1 } : { opacity: 0, y: -3 }}
+                transition={{ duration: reducedMotion ? 0 : motionTiming.surface, ease: motionEase }}
+                whileHover={reducedMotion ? undefined : { y: -1 }}
+              >
                 <span className="plan-row-icon" aria-hidden="true">
                   <FileText size={24} />
                 </span>
@@ -231,10 +256,10 @@ export function Dashboard() {
                     aria-valuenow={done}
                     aria-valuetext={`${done} из ${tasks.length} задач готово`}
                   >
-                    <span
-                      style={{
-                        width: `${tasks.length ? (done / tasks.length) * 100 : 0}%`,
-                      }}
+                    <motion.span
+                      initial={false}
+                      animate={{ width: `${tasks.length ? (done / tasks.length) * 100 : 0}%` }}
+                      transition={{ duration: reducedMotion ? 0 : motionTiming.surface }}
                     />
                   </div>
                 </div>
@@ -265,9 +290,10 @@ export function Dashboard() {
                     <Trash2 />
                   </Button>
                 </div>
-              </article>
+              </motion.article>
             );
           })}
+          </AnimatePresence>
           {Boolean(plans?.length) && visiblePlans?.length === 0 && (
             <div className="search-empty" role="status">
               <p>Планы не найдены. Измените запрос или фильтр.</p>

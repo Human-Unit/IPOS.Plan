@@ -18,7 +18,7 @@ const subscribeMobile = (callback: () => void) => {
 };
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
+  const { resolvedTheme = "system" } = useTheme();
   const mobile = useSyncExternalStore(
     subscribeMobile,
     () => window.matchMedia("(max-width: 767px)").matches,
@@ -27,7 +27,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme={resolvedTheme as ToasterProps["theme"]}
       className="toaster group"
       position={mobile ? "bottom-center" : "bottom-right"}
       visibleToasts={mobile ? 1 : 2}
