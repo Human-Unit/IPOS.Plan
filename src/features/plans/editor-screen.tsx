@@ -323,7 +323,9 @@ export function EditorScreen({ id }: { id: string }) {
             disabled={busy}
             onClick={() =>
               void run(async () => {
-                const p = await flush();
+                // Publishing and self-contained links accept PortablePlan, not
+                // IndexedDB's Plan metadata (id, timestamps, version).
+                const p = toPortable(await flush());
                 setSharePlan(p);
                 try {
                   const token = await encodeShare(p);
