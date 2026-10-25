@@ -1,22 +1,14 @@
 "use client";
+import { Copy, ExternalLink, Link2 } from "lucide-react";
 import { toast } from "@/lib/notifications";
 import type { PortablePlan } from "@/lib/schema/plan";
 import { PublicationControls } from "./publication-controls";
-import { Link2, LockKeyhole, ArrowUpRight, Copy } from "lucide-react";
 import { Field, FieldLabel } from "@/components/ui/field";
-import {
-  Dialog,
-  DialogContent,
-  DialogBody,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogBody, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { errorMessage } from "@/lib/labels";
+
 export function ShareDialog({
   url,
   onClose,
@@ -29,65 +21,42 @@ export function ShareDialog({
   planId: string;
 }) {
   return (
-    <Dialog
-      open
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-    >
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            <Link2 aria-hidden="true" />
-            Поделиться снимком
-          </DialogTitle>
+          <DialogTitle><Link2 aria-hidden="true" /> Поделиться документом</DialogTitle>
         </DialogHeader>
         <DialogBody>
-          <DialogDescription>
-            Ссылка содержит эту версию плана. Дальнейшие изменения не обновят
-            снимок. Встроенные изображения включены; изображения по внешним
-            ссылкам зависят от источника.
-          </DialogDescription>
-          <Alert className="snapshot-note">
-            <LockKeyhole aria-hidden="true" />
-            <AlertDescription>
-              Получатель сможет только просматривать документ. Снимок доступен
-              всем, кому вы передадите ссылку.
-            </AlertDescription>
-          </Alert>
-          {url ? (
-            <Field>
-              <FieldLabel htmlFor="share-url">Самодостаточная ссылка на снимок</FieldLabel>
-              <Textarea id="share-url" value={url} readOnly rows={3} />
-            </Field>
-          ) : <p className="muted">Для этого документа невозможно создать самодостаточную ссылку. Используйте публикацию страницы ниже или экспортируйте JSON.</p>}
-          {url.length > 8000 && (
-            <p className="muted">
-              Длинную ссылку может обрезать мессенджер. Для надёжной передачи
-              используйте JSON.
-            </p>
-          )}
           <PublicationControls plan={plan} planId={planId} />
+          <details className="publication-advanced share-alternatives">
+            <summary>Другой способ: ссылка без публикации</summary>
+            <p className="muted">
+              Ссылка содержит документ целиком. Он не загружается в интернет-хранилище,
+              но ссылка может быть очень длинной. Получатель сможет только просматривать снимок.
+            </p>
+            {url ? (
+              <>
+                <Field>
+                  <FieldLabel htmlFor="share-url">Самодостаточная ссылка</FieldLabel>
+                  <Textarea id="share-url" value={url} readOnly rows={3} onFocus={(event) => event.target.select()} />
+                </Field>
+                {url.length > 8000 && <p className="muted">Мессенджер может обрезать длинную ссылку. Для надёжной передачи используйте JSON.</p>}
+                <div className="publication-buttons">
+                  <Button type="button" variant="outline" onClick={() => {
+                    void navigator.clipboard.writeText(url)
+                      .then(() => toast.success("Ссылка скопирована"))
+                      .catch((e) => toast.error(errorMessage(e)));
+                  }}><Copy data-icon="inline-start" /> Скопировать</Button>
+                  <Button type="button" variant="ghost" asChild>
+                    <a href={url} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink data-icon="inline-start" /> Открыть
+                    </a>
+                  </Button>
+                </div>
+              </>
+            ) : <p className="muted">Этот документ слишком большой для ссылки без публикации. Используйте публичную страницу или экспорт JSON.</p>}
+          </details>
         </DialogBody>
-        <DialogFooter>
-          {url && <Button variant="outline" asChild>
-            <a href={url} target="_blank" rel="noopener noreferrer">
-              <ArrowUpRight data-icon="inline-start" />
-              Открыть снимок
-            </a>
-          </Button>}
-          {url && <Button
-            onClick={() => {
-              void navigator.clipboard
-                .writeText(url)
-                .then(() => toast.success("Ссылка скопирована"))
-                .catch((e) => toast.error(errorMessage(e)));
-            }}
-          >
-            <Copy data-icon="inline-start" />
-            Копировать ссылку
-          </Button>}
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
