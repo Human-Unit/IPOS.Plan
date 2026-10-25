@@ -38,12 +38,32 @@ export function PublicationControls({ planId, plan }: { planId: string; plan: Po
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(true);
+  const [restoreUrl, setRestoreUrl] = useState("");
+  const [restoreKey, setRestoreKey] = useState("");
   useEffect(() => {
     const saved = readOwned(planId);
     setOwned(saved);
     setChecking(false);
   }, [planId]);
 
+  const restore = async () => {
+    setBusy(true); setError("");
+    try {
+      const value = restoreUrl.trim();
+      const id = value.includes("/p/") ? value.split("/p/").pop()?.split(/[?#]/)[0] || "" : value;
+      if (!/^[a-z0-9-]{5,90}$/.test(id)) throw new Error("Укажите адрес или ID страницы.");
+      const response = await fetch("/api/publications/" + encodeURIComponent(id) + "/verify", {
+        method: "POST", headers: { "x-ipos-manager-key": restoreKey }, cache: "no-store"
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Ключ управления не принят.");
+      const next = { id, managerKey: restoreKey };
+      localStorage.setItem(keyFor(planId), JSON.stringify(next));
+      setOwned(next); setTitle(data.title); setRestoreKey(""); setRestoreUrl("");
+      toast.success("Управление страницей восстановлено");
+    } catch (e) { setError(e instanceof Error ? e.message : "Не удалось восстановить управление."); }
+    finally { setBusy(false); }
+  };
   const url = owned ? `${typeof location === "undefined" ? "" : location.origin}/p/${owned.id}` : "";
   const invoke = async (method: "POST" | "PUT" | "DELETE") => {
     if (busy) return;
@@ -104,7 +124,19 @@ export function PublicationControls({ planId, plan }: { planId: string; plan: Po
         <Input id="publication-access" value={accessKey} onChange={e => setAccessKey(e.target.value)} type="password" autoComplete="off" disabled={busy} placeholder="Код владельца IPOS.Plan" />
       </Field>
       <Button type="button" disabled={busy || !accessKey || !title.trim()} onClick={() => void invoke("POST")}><Globe2 data-icon="inline-start" /> Опубликовать страницу</Button>
-      <p className="muted">Код защищает публикацию от посторонних загрузок. После создания сохраните резервный ключ управления: потеря ключа означает потерю доступа к обновлению и удалению страницы.</p>
+      <p className="muted">Код защищает публикацию от посторонних загрузок. Сохраните резервный ключ управления отдельно, чтобы позже обновлять или удалять страницу с другого устройства.</p>
+      <details className="publication-recovery">
+        <summary>У меня уже есть ссылка и ключ управления</summary>
+        <Field><FieldLabel htmlFor="publication-recover-url">Ссылка или ID опубликованной страницы</FieldLabel>
+          <Input id="publication-recover-url" value={restoreUrl} disabled={busy} onChange={e => setRestoreUrl(e.target.value)} placeholder="https://ipos-plan.vercel.app/p/…" />
+        </Field>
+        <Field><FieldLabel htmlFor="publication-recover-key">Резервный ключ управления</FieldLabel>
+          <Input id="publication-recover-key" type="password" autoComplete="off" value={restoreKey} disabled={busy} onChange={e => setRestoreKey(e.target.value)} />
+        </Field>
+        <Button type="button" variant="outline" disabled={busy || !restoreUrl.trim() || !restoreKey.trim()} onClick={() => void restore()}>
+          Восстановить управление
+        </Button>
+      </details>
     </>}
     {error && <p role="alert" className="publication-error">{error}</p>}
   </section>;
