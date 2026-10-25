@@ -706,3 +706,64 @@
   .plan-actions-menu [role="menuitem"] { min-height: 44px; }
   .dialog-panel textarea[readonly] { font-size: 16px; }
 }
+
+/* Named published pages: a quiet extension of the existing share dialog. */
+.publication-controls {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--ui-border);
+}
+.publication-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: var(--ui-text);
+}
+.publication-controls .muted {
+  color: var(--ui-secondary);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.publication-controls [data-slot="input"] {
+  min-height: 40px;
+  font-size: 14px;
+}
+.publication-controls [data-slot="field"] {
+  gap: 6px;
+}
+.publication-buttons {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.publication-error {
+  color: var(--destructive);
+  font-size: 13px;
+  line-height: 1.5;
+}
+@media (max-width: 767px) {
+  .publication-controls [data-slot="input"] { font-size: 16px; }
+  .publication-buttons > * { flex: 1 1 auto; }
+}
+@media print { .publication-controls { display: none !important; } }
+
+.publication-recovery {
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-panel-radius);
+  padding: 12px;
+  display: grid;
+  gap: 12px;
+}
+.publication-recovery summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.publication-recovery[open] { gap: 16px; }
+.publication-recovery [data-slot="field"] { margin-top: 12px; }
+.publication-recovery [data-slot="button"] { margin-top: 12px; }
