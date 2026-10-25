@@ -1,105 +1,23 @@
-/* One responsive hero composition; action priority follows semantics, not position. */
+/* The hero orients; the library owns import, backup and retrieval. */
 .dashboard-heading.dashboard-hero {
-  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 32px;
-  margin-bottom: 28px;
-  padding: 36px 40px;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding: 32px 36px;
   color: #fff;
-  border: 1px solid #263b9b;
   border-radius: var(--ui-hero-radius);
-  background: linear-gradient(116deg, #0c1d66, #15309c);
+  background: #12266f;
 }
-.dashboard-hero::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 40px;
-  width: 48px;
-  height: 3px;
-  background: #f47b7d;
-  border-radius: 0 0 2px 2px;
-}
-.dashboard-hero-copy { min-width: 0; max-width: 650px; }
-.dashboard-hero-kicker {
-  margin-bottom: 12px;
-  color: #dfe6ff;
-  font: 600 var(--ui-caption)/1.5 var(--font-ui);
-  letter-spacing: .06em;
-  text-transform: uppercase;
-}
-.dashboard-heading.dashboard-hero h1 {
-  color: #fff;
-  font: 700 clamp(32px, 3.2vw, 42px)/1.15 var(--font-heading);
-  letter-spacing: -.035em;
-  overflow-wrap: break-word;
-}
-.dashboard-hero-description {
-  max-width: 48ch;
-  margin-top: 12px;
-  color: #f0f3ff;
-  font-size: 16px;
-  line-height: 1.6;
-  text-wrap: pretty;
-}
-.dashboard-hero .dashboard-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  max-width: 360px;
-}
-.dashboard-hero .dashboard-actions [data-slot="button"] {
-  min-height: 44px;
-  height: auto;
-  padding: 10px 12px;
-  border: 1px solid #899adf;
-  border-radius: var(--ui-control-radius);
-  background: transparent;
-  color: #fff;
-  font-size: var(--ui-label);
-  font-weight: 500;
-  white-space: nowrap;
-}
-.dashboard-hero .dashboard-actions [data-slot="button"]:hover:not(:disabled) {
-  background: rgb(255 255 255 / 12%);
-}
-.dashboard-hero .dashboard-actions [data-primary-action] {
-  grid-column: 1 / -1;
-  border-color: #fff;
-  background: #fff;
-  color: #112a9b;
-  font-weight: 600;
-}
-.dashboard-hero .dashboard-actions [data-primary-action]:hover:not(:disabled) {
-  background: #eef2ff;
-}
-.dashboard-hero .dashboard-actions [data-slot="button"]:focus-visible {
-  outline: 3px solid #fff;
-  outline-offset: 3px;
-}
-@media (max-width: 1079px) {
-  .dashboard-heading.dashboard-hero {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 24px;
-    padding: 32px;
-  }
-  .dashboard-hero::before { left: 32px; }
-  .dashboard-hero .dashboard-actions { width: 100%; }
-}
+.dashboard-hero-copy { min-width: 0; }
+.dashboard-heading.dashboard-hero h1 { color: #fff; font: 700 clamp(32px, 3.2vw, 42px)/1.15 var(--font-heading); letter-spacing: -.035em; overflow-wrap: break-word; }
+.dashboard-hero-description { margin-top: 12px; max-width: 48ch; color: #eef1ff; font-size: 15px; line-height: 1.6; }
+.dashboard-hero .dashboard-actions [data-primary-action] { min-height: 44px; height: auto; padding: 12px 28px; border: 1px solid #fff; border-radius: var(--ui-control-radius); background: #fff; color: #12266f; font-size: var(--ui-body); font-weight: 600; white-space: nowrap; }
+.dashboard-hero .dashboard-actions [data-primary-action]:hover:not(:disabled) { background: #eef2ff; }
+.dashboard-hero .dashboard-actions [data-slot="button"]:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
 @media (max-width: 767px) {
-  .dashboard-heading.dashboard-hero {
-    gap: 20px;
-    padding: 24px 20px;
-    margin-bottom: 24px;
-  }
-  .dashboard-hero::before { left: 20px; }
-  .dashboard-heading.dashboard-hero h1 { font-size: clamp(27px, 7vw, 36px); }
-  .dashboard-hero-kicker { font-size: var(--ui-caption); letter-spacing: .025em; }
-  .dashboard-hero-description { font-size: 15px; }
-  .dashboard-hero .dashboard-actions { max-width: none; }
-}
-@media (max-width: 374px) {
-  .dashboard-hero .dashboard-actions { grid-template-columns: minmax(0, 1fr); }
+  .dashboard-heading.dashboard-hero { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 24px; }
+  .dashboard-heading.dashboard-hero h1 { font-size: clamp(27px, 7.5vw, 36px); }
+  .dashboard-hero .dashboard-actions, .dashboard-hero .dashboard-actions [data-primary-action] { width: 100%; }
 }

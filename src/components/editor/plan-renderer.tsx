@@ -92,7 +92,7 @@ type Props = {
   onPlanChange?: (plan: PortablePlan) => void;
 };
 function subscribeWidth(callback: () => void) {
-  const query = window.matchMedia("(min-width: 1440px)");
+  const query = window.matchMedia("(min-width: 1200px)");
   query.addEventListener("change", callback);
   return () => query.removeEventListener("change", callback);
 }
@@ -265,7 +265,7 @@ export default function PlanRenderer({
   const rendererId = useId();
   const wide = useSyncExternalStore(
     subscribeWidth,
-    () => window.matchMedia("(min-width: 1440px)").matches,
+    () => window.matchMedia("(min-width: 1200px)").matches,
     () => false,
   );
   const selectedNode = selectedId ? editor.getBlock(selectedId) : undefined;
@@ -699,24 +699,31 @@ export default function PlanRenderer({
                   aria-label="Следующая задача" title="Следующая задача"
                   onClick={() => jumpTo(1)}><ChevronRight aria-hidden="true" /></Button>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => { setPanel(undefined); setTemplatesOpen(true); }}>Шаблоны</Button>
-              <Button variant="ghost" size="sm" onClick={() => { setOutlineVisible(true); if (!wide) setPanel("outline"); setFocusSearch(n => n + 1); }}>Поиск задач</Button>
+              <div className="workspace-secondary-tools">
+                <Button variant="ghost" size="sm" onClick={() => { setPanel(undefined); setTemplatesOpen(true); }}>Шаблоны</Button>
+                <Button variant="ghost" size="sm" onClick={() => { setOutlineVisible(true); if (!wide) setPanel("outline"); setFocusSearch(n => n + 1); }}>Поиск задач</Button>
+              </div>
+              <div className="workspace-panel-tools">
               <Button
                 variant="ghost"
                 size="sm"
+                aria-label="Структура"
+                title="Структура плана"
                 aria-pressed={wide ? outlineVisible : panel === "outline"}
-                onClick={() =>
-                  wide
-                    ? setOutlineVisible((value) => !value)
-                    : setPanel("outline")
-                }
+                onClick={() => {
+                  setFocusSearch(0);
+                  if (wide) setOutlineVisible((value) => !value);
+                  else setPanel("outline");
+                }}
               >
                 <PanelLeft data-icon="inline-start" />
-                Структура
+                <span className="workspace-panel-label">Структура</span>
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
+                aria-label="Свойства"
+                title="Свойства выбранного блока"
                 aria-pressed={wide ? inspectorVisible : panel === "inspector"}
                 onClick={() =>
                   wide
@@ -725,8 +732,9 @@ export default function PlanRenderer({
                 }
               >
                 <SlidersHorizontal data-icon="inline-start" />
-                Свойства
+                <span className="workspace-panel-label">Свойства</span>
               </Button>
+              </div>
             </div>
             {wide && outlineVisible && (
               <aside className="workspace-outline" aria-label="Навигация плана">

@@ -17,6 +17,7 @@ import { event, saveRevision } from "./repository";
 import { PlanRenderer } from "@/components/plan/renderer";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
+import { PlanEmblem } from "@/components/plan/plan-emblem";
 import { PlanActionsMenu } from "@/components/editor/plan-actions-menu";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -193,7 +194,10 @@ export function EditorScreen({ id }: { id: string }) {
           >
             <ArrowLeft />
           </Button>
-          <span className="editor-plan-name">IPOS.Plan</span>
+          <span className="editor-plan-name" aria-label="IPOS.Plan">
+            <PlanEmblem size={26} />
+            <span className="editor-brand-label">IPOS.Plan</span>
+          </span>
           <span
             className="save-status"
             role="status"
@@ -222,7 +226,10 @@ export function EditorScreen({ id }: { id: string }) {
               });
           }}
         >
-          <ToggleGroupItem value="workspace">Рабочий стол</ToggleGroupItem>
+          <ToggleGroupItem value="workspace" aria-label="Рабочий стол">
+            <span className="mode-label-full">Рабочий стол</span>
+            <span className="mode-label-short" aria-hidden="true">Стол</span>
+          </ToggleGroupItem>
           <ToggleGroupItem value="document">Документ</ToggleGroupItem>
         </ToggleGroup>
         <nav className="editor-actions" aria-label="Действия с планом">
@@ -307,6 +314,7 @@ export function EditorScreen({ id }: { id: string }) {
           />
           <Button
             size="sm"
+            aria-label="Поделиться"
             disabled={busy}
             onClick={() =>
               void run(async () => {
@@ -321,7 +329,7 @@ export function EditorScreen({ id }: { id: string }) {
             }
           >
             <Share2 data-icon="inline-start" />
-            Поделиться
+            <span className="toolbar-share-label">Поделиться</span>
           </Button>
         </nav>
       </header>

@@ -90,7 +90,7 @@ test("seven widths keep library actions, editor drawers and portable content acc
           .evaluate((el) => parseFloat(getComputedStyle(el).fontSize)),
       ).toBeGreaterThanOrEqual(12);
     }
-    if (width < 1440) {
+    if (width < 1200) {
       const structure = page.getByRole("button", {
         name: "Структура",
         exact: true,

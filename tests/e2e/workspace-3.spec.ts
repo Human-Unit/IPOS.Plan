@@ -134,7 +134,7 @@ test("workspace/document share canonical data; direct task commands and undo pre
     ).toHaveCount(0);
     const paper = await page.locator(".plan-paper").boundingBox();
     expect(paper!.width).toBeLessThanOrEqual(794);
-    await page.getByText("Рабочий стол", { exact: true }).click();
+    await page.getByRole("radio", { name: "Рабочий стол", exact: true }).click();
   }
   expect(await exported(page)).toEqual(initial);
   await page.setViewportSize({ width: 1440, height: 900 });

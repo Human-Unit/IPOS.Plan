@@ -171,7 +171,7 @@ test("content-heavy workspace fits every viewport, panels resize and collapse, f
     const geometry = await paper.boundingBox();
     expect(geometry!.x).toBeGreaterThanOrEqual(0);
     expect(geometry!.x + geometry!.width).toBeLessThanOrEqual(width);
-    if (width >= 1440) expect(geometry!.width).toBeGreaterThan(794);
+    if (width >= 1200) expect(geometry!.width).toBeGreaterThan(794);
     await expect(
       page.locator('.bn-block-outer[data-id="source-title"]'),
     ).toBeHidden();
@@ -182,7 +182,7 @@ test("content-heavy workspace fits every viewport, panels resize and collapse, f
     await expect(
       page.getByLabel("Название задачи", { exact: true }),
     ).toHaveValue(brief.tasks.one.title);
-    if (width >= 1440) {
+    if (width >= 1200) {
       const inspector = page.getByRole("complementary", {
         name: "Свойства выбранного блока",
       });
