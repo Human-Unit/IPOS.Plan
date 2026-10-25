@@ -59,7 +59,8 @@ export function isPublisher(accessKey: string) {
 }
 
 export function mayManage(record: StoredPublication, secret: string) {
-  return managerKeyPattern.test(secret) && matches(secret, record.managerHash);
+  if (!managerKeyPattern.test(secret) || !/^[a-f0-9]{64}$/.test(record.managerHash)) return false;
+  return timingSafeEqual(Buffer.from(hash(secret), "hex"), Buffer.from(record.managerHash, "hex"));
 }
 
 export function cleanTitle(title: unknown) {
