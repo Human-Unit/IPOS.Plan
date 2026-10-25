@@ -55,10 +55,12 @@ export function ShareDialog({
               всем, кому вы передадите ссылку.
             </AlertDescription>
           </Alert>
-          <Field>
-            <FieldLabel htmlFor="share-url">Ссылка на снимок</FieldLabel>
-            <Textarea id="share-url" value={url} readOnly rows={3} />
-          </Field>
+          {url ? (
+            <Field>
+              <FieldLabel htmlFor="share-url">Самодостаточная ссылка на снимок</FieldLabel>
+              <Textarea id="share-url" value={url} readOnly rows={3} />
+            </Field>
+          ) : <p className="muted">Для этого документа невозможно создать самодостаточную ссылку. Используйте публикацию страницы ниже или экспортируйте JSON.</p>}
           {url.length > 8000 && (
             <p className="muted">
               Длинную ссылку может обрезать мессенджер. Для надёжной передачи
@@ -68,13 +70,13 @@ export function ShareDialog({
           <PublicationControls plan={plan} planId={planId} />
         </DialogBody>
         <DialogFooter>
-          <Button variant="outline" asChild>
+          {url && <Button variant="outline" asChild>
             <a href={url} target="_blank" rel="noopener noreferrer">
               <ArrowUpRight data-icon="inline-start" />
               Открыть снимок
             </a>
-          </Button>
-          <Button
+          </Button>}
+          {url && <Button
             onClick={() => {
               void navigator.clipboard
                 .writeText(url)
@@ -84,8 +86,8 @@ export function ShareDialog({
           >
             <Copy data-icon="inline-start" />
             Копировать ссылку
-          </Button>
-        </DialogFooter>
+          </Button>}
+}        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
