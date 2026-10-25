@@ -5,6 +5,7 @@ import { LockKeyhole } from "lucide-react";
 import { decodeShare } from "@/lib/share/codec";
 import type { PortablePlan } from "@/lib/schema/plan";
 import { errorMessage } from "@/lib/labels";
+import { ThemeControl } from "@/components/theme/theme-control";
 import { Brand } from "@/components/plan/brand";
 import { PlanRenderer } from "@/components/plan/renderer";
 import { Button } from "@/components/ui/button";
@@ -47,10 +48,10 @@ export function ViewerScreen() {
     <>
       <header className="app-bar">
         <Brand />
-        <span className="local-indicator">
+        <div className="app-bar-tools"><span className="local-indicator">
           <LockKeyhole size={14} aria-hidden="true" />
           Только просмотр
-        </span>
+        </span><ThemeControl /></div>
       </header>
       <main className="viewer-stage">
         {state.error ? (

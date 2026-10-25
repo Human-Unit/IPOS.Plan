@@ -271,28 +271,29 @@
   margin-top: 7px;
   border: 1px solid var(--border);
   border-radius: 3px;
-  background: #f6f7f9;
-  color: #606875;
+  background: var(--muted);
+  color: var(--muted-foreground);
   font: 500 11px/1.5 var(--font-ui);
+  transition: color var(--motion-fast), background-color var(--motion-fast), border-color var(--motion-fast);
 }
 .task-status[data-status="in_progress"] {
   color: var(--primary);
-  background: #f2f4ff;
-  border-color: #d8def8;
+  background: var(--secondary);
+  border-color: var(--border);
 }
 .task-status[data-status="review"] {
-  color: #805619;
-  background: #fffaf0;
-  border-color: #eadfca;
+  color: var(--warning);
+  background: var(--warning-surface);
+  border-color: var(--warning-border);
 }
 .task-status[data-status="done"] {
-  color: #32694f;
-  background: #f2f8f4;
-  border-color: #d7e6dc;
+  color: var(--success);
+  background: var(--success-surface);
+  border-color: var(--success-border);
 }
 .task-status[data-status="cancelled"] {
-  color: #775e65;
-  background: #f7f3f4;
+  color: var(--cancelled);
+  background: var(--cancelled-surface);
 }
 .brief-body {
   display: grid;
@@ -349,7 +350,7 @@
   overflow-wrap: anywhere;
 }
 .brief-fact-deadline dd {
-  color: var(--brand-red);
+  color: var(--destructive);
 }
 .brief-priority {
   font-size: 12px;
@@ -375,7 +376,7 @@
   padding: 10px 12px;
   margin-block: 8px;
   border: 1px solid var(--border);
-  background: #f8f9fb;
+  background: var(--subtle-surface);
   border-radius: 4px;
   min-width: 0;
   font-family: var(--font-ui);
@@ -462,12 +463,12 @@
 }
 .callout-block {
   border: 0;
-  border-left: 2px solid #bfc8e9;
+  border-left: 2px solid var(--border);
   border-radius: 2px;
-  background: #f5f6fa;
+  background: var(--muted);
   padding: 12px 14px;
   margin-block: 10px;
-  color: #50596d;
+  color: var(--ui-secondary);
   font: 400 13px/1.65 var(--font-ui);
 }
 .divider-block {

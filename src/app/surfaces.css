@@ -7,7 +7,7 @@
   justify-content: space-between;
   gap: 20px;
   border-bottom: 1px solid var(--border);
-  background: white;
+  background: var(--background);
   box-shadow: 0 1px 0 rgb(19 47 193 / 3%);
 }
 .brand {
@@ -24,13 +24,13 @@
 }
 .brand-name {
   font: 750 19px/1.2 var(--font-heading);
-  color: #10278f;
+  color: var(--primary);
   letter-spacing: -0.04em;
 }
 .brand-description {
   font-size: var(--ui-label);
   font-weight: 500;
-  color: #414d63;
+  color: var(--ui-secondary);
   padding-left: 16px;
   margin-left: 16px;
   border-left: 1px solid var(--border);
@@ -40,7 +40,7 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #465063;
+  color: var(--ui-secondary);
   font-weight: 500;
 }
 .local-indicator > span {
@@ -81,7 +81,7 @@
 .restore-strategies input { margin-top: 3px; accent-color: var(--primary); }
 .template-dialog { width: min(780px, calc(100vw - 32px)); }
 .template-field { display: grid; gap: 8px; font-size: 13px; font-weight: 600; }
-.template-field select { width: 100%; min-width: 0; border: 1px solid var(--border); border-radius: var(--ui-control-radius); padding: 10px; background: white; font-weight: 400; }
+.template-field select { width: 100%; min-width: 0; border: 1px solid var(--border); border-radius: var(--ui-control-radius); padding: 10px; background: var(--background); font-weight: 400; }
 .template-personal { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; line-height: 1.6; }
 .template-personal input { margin-top: 4px; accent-color: var(--primary); }
 .template-preview { max-height: 42vh; overflow: auto; border: 1px solid var(--border); border-radius: var(--ui-control-radius); }
@@ -112,6 +112,7 @@
 .library-search input { flex: 1 1 260px; }
 .library-search select { flex: 0 1 240px; min-width: 0; max-width: 100%; }
 .search-empty { padding: 32px 0; display: grid; justify-items: start; gap: 12px; font-size: var(--ui-body); color: var(--ui-secondary); }
+.search-empty { animation: overlay-in 180ms ease-out; }
 .plan-row {
   position: relative;
   display: grid;
@@ -124,6 +125,9 @@
   transition: background-color var(--motion-fast);
 }
 .plan-row:hover, .plan-row:focus-within { background: var(--muted); }
+.plan-row:hover { border-top-color: var(--input); }
+.plan-list[data-filtered="true"] .plan-row { animation: results-in 160ms ease-out; }
+@keyframes results-in { from { opacity: .85; } to { opacity: 1; } }
 .plan-row-icon { display: grid; place-items: center; width: 44px; height: 52px; border-radius: var(--ui-control-radius); background: var(--secondary); color: var(--primary); }
 .plan-row-content { min-width: 0; display: grid; gap: 6px; }
 .plan-title {
@@ -164,7 +168,7 @@
 .plan-progress {
   width: min(300px, 100%);
   height: 3px;
-  background: #e4e6eb;
+  background: var(--progress-track);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -179,7 +183,7 @@
 }
 .plan-row-actions [data-slot="button"]:last-child:hover {
   color: var(--destructive);
-  background: #fcf0f0;
+  background: var(--danger-surface);
 }
 .dashboard-footer {
   margin-top: 24px;
@@ -193,7 +197,7 @@
   padding: 56px 24px;
   border: 1px dashed var(--border);
   border-radius: var(--ui-control-radius);
-  background: white;
+  background: var(--background);
 }
 .dashboard [data-slot="empty-title"] {
   font-family: var(--font-heading);
@@ -206,8 +210,9 @@
   inset: 0;
   z-index: 50;
   background: rgb(20 26 43 / 38%);
-  animation: overlay-in var(--motion-fast) ease-out;
+  animation: overlay-in 180ms ease-out;
 }
+.dialog-overlay[data-state="closed"] { animation: overlay-out 180ms ease-in; }
 .dialog-panel {
   position: fixed;
   top: 50%;
@@ -220,7 +225,7 @@
   max-height: calc(100dvh - 48px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  background: white;
+  background: var(--background);
   border: 1px solid var(--border);
   border-radius: var(--ui-panel-radius);
   padding: 28px;
@@ -246,8 +251,10 @@
 }
 .dialog-body > * { min-width: 0; }
 .dialog-panel:not(.workspace-drawer) {
-  animation: dialog-in var(--motion-fast) ease-out;
+  animation: dialog-in 200ms ease-out;
 }
+.dialog-panel:not(.workspace-drawer)[data-state="closed"] { animation: dialog-out 160ms ease-in; }
+.plan-actions-menu[data-state="closed"] { animation: overlay-out 160ms ease-in; }
 .dialog-panel.wide-dialog {
   width: min(880px, calc(100% - 48px));
 }
@@ -305,7 +312,7 @@
   min-height: 40px;
 }
 .dialog-panel textarea[readonly] {
-  background: #f8f9fb;
+  background: var(--subtle-surface);
   font:
     12px/1.6 ui-monospace,
     SFMono-Regular,
@@ -330,12 +337,12 @@
 }
 .file-import {
   padding: 16px;
-  background: #f8f9fb;
+  background: var(--subtle-surface);
   border: 1px dashed var(--input);
   border-radius: var(--ui-control-radius);
 }
 .file-import input {
-  background: white;
+  background: var(--background);
 }
 .import-summary {
   margin: 0;
@@ -363,7 +370,7 @@
   border: 1px solid var(--border);
   border-radius: var(--ui-control-radius);
   padding: 24px;
-  background: white;
+  background: var(--background);
 }
 .revision-list {
   display: grid;
@@ -384,9 +391,9 @@
   align-items: center;
   gap: 12px;
   padding: 16px;
-  border: 1px solid #edced0;
+  border: 1px solid var(--danger-border);
   border-radius: var(--ui-control-radius);
-  background: #fff8f8;
+  background: var(--danger-surface);
 }
 .confirm-row > p {
   width: 100%;
@@ -444,8 +451,8 @@
 }
 .export-notice {
   padding: 12px;
-  background: #fff8eb;
-  color: #7d4913;
+  background: var(--warning-surface);
+  color: var(--warning);
   font-size: 13px;
   border-radius: var(--ui-control-radius);
 }
@@ -468,7 +475,7 @@
   padding: 6px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: white;
+  background: var(--background);
   box-shadow: 0 8px 32px rgb(20 26 43 / 12%);
   font-size: 13px;
   animation: overlay-in var(--motion-fast) ease-out;
@@ -509,6 +516,8 @@
     opacity: 1;
   }
 }
+@keyframes overlay-out { to { opacity: 0; } }
+@keyframes dialog-out { to { opacity: 0; transform: translate(-50%, -49%); } }
 @keyframes dialog-in {
   from {
     opacity: 0;
@@ -666,7 +675,7 @@
 
 
 /* Persistent names are candidates collected from assignments, not a verified roster. */
-.activist-directory { margin: 20px 0 0; padding: 16px 20px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+.activist-directory { margin: 20px 0 0; padding: 16px 20px; border: 1px solid var(--border); border-radius: 6px; background: var(--background); }
 .activist-directory summary { display: flex; align-items: center; min-height: 28px; list-style: none; flex-wrap: wrap; gap: 10px; cursor: pointer; font: 650 14px/1.5 var(--font-ui); }
 .activist-directory summary small { font-size: 12px; font-weight: 400; color: var(--muted-foreground); }
 .activist-directory p { margin: 12px 0; color: var(--muted-foreground); font: 400 var(--ui-label)/1.65 var(--font-ui); }

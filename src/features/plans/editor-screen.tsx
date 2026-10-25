@@ -1,5 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState, useRef } from "react";
+import { ThemeControl } from "@/components/theme/theme-control";
+import { motion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -198,7 +200,9 @@ export function EditorScreen({ id }: { id: string }) {
             <PlanEmblem size={26} />
             <span className="editor-brand-label">IPOS.Plan</span>
           </span>
-          <span
+          <ThemeControl />
+          <motion.span
+            animate={{ opacity: error ? [0.65, 1] : 1 }}
             className="save-status"
             role="status"
             data-state={
@@ -209,8 +213,8 @@ export function EditorScreen({ id }: { id: string }) {
                   : "pending"
             }
           >
-            {status}
-          </span>
+            <motion.span key={status} initial={{ opacity: 0.65 }} animate={{ opacity: 1 }}>{status}</motion.span>
+          </motion.span>
         </div>
         <ToggleGroup
           type="single"

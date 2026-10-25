@@ -10,6 +10,8 @@
     padding: 0 !important;
     width: auto !important;
     background: white !important;
+    color: #17191d !important;
+    color-scheme: light !important;
   }
   .editor-bar,
   .preview-bar,
@@ -53,6 +55,7 @@
     border: 0 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
+    background: white !important;
   }
   .plan-cover .cover-title {
     display: none !important;

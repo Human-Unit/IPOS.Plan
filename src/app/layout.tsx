@@ -5,6 +5,7 @@ import "./dashboard-hero.css";
 import "./workspace.css";
 import "./document.css";
 import "./print.css";
+import { AppProviders } from "@/components/theme/app-providers";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
@@ -22,7 +23,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ru">
+    <html lang="ru" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -37,8 +38,10 @@ export default function RootLayout({
         />
       </head>
       <body>
-        {children}
-        <Toaster theme="light" richColors closeButton />
+        <AppProviders>
+          {children}
+          <Toaster richColors closeButton />
+        </AppProviders>
       </body>
     </html>
   );
