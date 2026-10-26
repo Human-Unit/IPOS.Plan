@@ -28,7 +28,13 @@ const instrumentation = `(() => {
     const entry = {before: document.documentElement.className, started: performance.now()};
     window.themeQA.push(entry);
     const transition = start(async () => { await callback(); entry.committed = document.documentElement.className; });
-    transition.ready.then(() => { entry.snapshot = document.documentElement.className; }).catch(() => {});
+    transition.ready.then(() => {
+      entry.snapshot = document.documentElement.className;
+      entry.maskedAtStart = document.documentElement.dataset.themeWave === "active";
+      entry.initialClip = getComputedStyle(
+        document.documentElement, "::view-transition-new(root)"
+      ).clipPath;
+    }).catch(() => {});
     transition.finished.then(() => { entry.finished = performance.now(); }).catch(() => {});
     return transition;
   };
@@ -136,6 +142,15 @@ test("explicit wave snapshots the committed theme and rapid selections settle sa
     ["dark", "dark"],
     ["light", "light"],
   ]);
+  const firstFrames = (await page.evaluate(
+    "window.themeQA.map(x => [x.maskedAtStart,x.initialClip])",
+  )) as Array<[boolean, string]>;
+  for (const [masked, clip] of firstFrames) {
+    expect(masked).toBe(true);
+    expect(clip).toMatch(/^polygon\(/);
+  }
+  await expect(page.locator("html")).not.toHaveAttribute("data-theme-wave", "active");
+  expect(await page.evaluate(() => document.documentElement.style.getPropertyValue("--theme-wave-start"))).toBe("");
   await expect
     .poll(() =>
       page.evaluate(
