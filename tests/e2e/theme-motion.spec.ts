@@ -142,9 +142,9 @@ test("explicit wave snapshots the committed theme and rapid selections settle sa
     ["dark", "dark"],
     ["light", "light"],
   ]);
-  const firstFrames = await page.evaluate(
+  const firstFrames = (await page.evaluate(
     "window.themeQA.map(x => [x.maskedAtStart,x.initialClip])",
-  );
+  )) as Array<[boolean, string]>;
   for (const [masked, clip] of firstFrames) {
     expect(masked).toBe(true);
     expect(clip).toMatch(/^polygon\(/);
