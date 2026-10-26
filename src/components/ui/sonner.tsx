@@ -18,7 +18,7 @@ const subscribeMobile = (callback: () => void) => {
 };
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { resolvedTheme = "system" } = useTheme();
+  const { resolvedTheme = "dark" } = useTheme();
   const mobile = useSyncExternalStore(
     subscribeMobile,
     () => window.matchMedia("(max-width: 767px)").matches,
