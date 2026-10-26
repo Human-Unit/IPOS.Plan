@@ -34,6 +34,18 @@ const instrumentation = `(() => {
   };
 })();`;
 
+test("legacy device preference becomes dark and no System choice exists", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("ipos-plan-theme", "system"));
+  await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveClass("dark");
+  await expect(page.getByRole("switch", { name: "Тёмная тема" })).toHaveAttribute("aria-checked", "true");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("ipos-plan-theme"))).toBe("dark");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveClass("dark");
+  await expect(page.getByRole("menuitemradio")).toHaveCount(0);
+});
+
 test("saved dark preference is applied before hydration scripts run", async ({
   page,
 }) => {
