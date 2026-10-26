@@ -6,23 +6,22 @@ let active: ViewTransition | undefined;
 let activeAnimation: Animation | undefined;
 let request = 0;
 
-/** Slightly asymmetric wave; the polygon keeps its vertex count for interpolation. */
+/** A gently rippled circular reveal. Every frame has the same vertex count. */
 export function radialWave(x: number, y: number, radius: number) {
   return `polygon(${Array.from({ length: 64 }, (_, index) => {
     const angle = (index / 64) * Math.PI * 2;
     const organic =
-      1 + 0.055 * Math.sin(3 * angle + 0.6) + 0.025 * Math.sin(5 * angle);
+      1 + 0.032 * Math.sin(3 * angle + 0.6) + 0.016 * Math.sin(5 * angle);
     return `${(x + Math.cos(angle) * radius * organic).toFixed(2)}px ${(y + Math.sin(angle) * radius * organic).toFixed(2)}px`;
   }).join(",")})`;
 }
 
-// next-themes applies the class in an effect. Observe that commit, rather than
-// assuming setTheme synchronously changed the snapshot. The timeout is a safety
-// bound for suspended/background pages, not an animation delay.
+// next-themes updates html.className from an effect. Wait until the class
+// actually changes, so the new View Transition snapshot contains the new
+// theme. The timeout only guards a suspended background render.
 async function commitTheme(
   setTheme: (theme: string) => void,
   preference: ThemePreference,
-  effective: string,
 ) {
   const root = document.documentElement;
   await new Promise<void>((resolve) => {
@@ -32,12 +31,12 @@ async function commitTheme(
       resolve();
     };
     const observer = new MutationObserver(() => {
-      if (root.classList.contains(effective)) done();
+      if (root.classList.contains(preference)) done();
     });
-    const timeout = window.setTimeout(done, 160);
+    const timeout = window.setTimeout(done, 200);
     observer.observe(root, { attributes: true, attributeFilter: ["class"] });
     flushSync(() => setTheme(preference));
-    if (root.classList.contains(effective)) done();
+    if (root.classList.contains(preference)) done();
   });
 }
 
@@ -47,65 +46,80 @@ export async function changeTheme(
   trigger: HTMLElement,
 ) {
   const serial = ++request;
+  // Cancel a stale transition before starting a fresh reveal. Its finally
+  // handler must not remove the newer transition's CSS masking state.
   active?.skipTransition();
   activeAnimation?.cancel();
   activeAnimation = undefined;
   active = undefined;
+
   const root = document.documentElement;
-  const effective = preference;
-  const apply = () => commitTheme(setTheme, preference, effective);
+  const apply = () => commitTheme(setTheme, preference);
   if (
     !document.startViewTransition ||
     matchMedia("(prefers-reduced-motion: reduce)").matches ||
     document.visibilityState !== "visible" ||
-    root.classList.contains(effective)
+    root.classList.contains(preference)
   ) {
     await apply();
     return;
   }
+
   const rect = trigger.getBoundingClientRect();
   const x = rect.left + rect.width / 2;
   const y = rect.top + rect.height / 2;
+  // A little overshoot prevents irregular edges from exposing an old corner.
   const radius =
     Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) *
-    1.12;
+    1.08;
+  const startingClip = radialWave(x, y, 0);
+  const endingClip = radialWave(x, y, radius);
+
+  // Critical: mask the incoming snapshot *before* transition.ready. Without
+  // this initial CSS clip, the new theme can flash fully onscreen for a frame
+  // before Web Animations begins.
+  root.style.setProperty("--theme-wave-start", startingClip);
+  root.dataset.themeWave = "active";
   let transition: ViewTransition | undefined;
   let animation: Animation | undefined;
   try {
     transition = document.startViewTransition(async () => {
-      if (serial === request) {
-        await apply();
-        // If React deferred the effect beyond the bounded wait, skip the
-        // snapshot and let next-themes finish its normal immediate update.
-        if (!root.classList.contains(effective))
-          throw new Error("Theme commit deferred");
-      }
+      if (serial !== request) return;
+      await apply();
+      if (!root.classList.contains(preference))
+        throw new Error("Theme commit deferred");
     });
     active = transition;
-    // A skipped/unsupported snapshot must never leave an unhandled rejection.
+    // A skipped View Transition rejects ready; prevent abandoned rejections.
+    void transition.ready.catch(() => {});
     void transition.finished.catch(() => {});
     void transition.updateCallbackDone.catch(() => {});
     await transition.ready;
     if (serial !== request) return;
+
+    // Two compatible polygon frames + one global easing curve produce one
+    // continuous expansion (rather than visible acceleration at each waypoint).
     animation = root.animate(
-      [0, 0.2, 0.52, 0.8, 1].map((part) => ({
-        clipPath: radialWave(x, y, radius * part),
-        offset: part,
-      })),
+      [{ clipPath: startingClip }, { clipPath: endingClip }],
       {
         duration: motionTiming.wave,
-        easing: "cubic-bezier(.22,.65,.25,1)",
+        easing: "cubic-bezier(0.22, 0.68, 0.22, 1)",
         fill: "both",
         pseudoElement: "::view-transition-new(root)",
       },
     );
     activeAnimation = animation;
-    // Snapshot animation is cancelled automatically if the transition is skipped.
     await Promise.allSettled([animation.finished, transition.finished]);
   } catch {
+    // If the browser supports View Transitions but not animated pseudo-element
+    // clipping, finish the theme change normally instead of freezing the page.
     transition?.skipTransition();
     if (serial === request) await apply();
   } finally {
+    if (serial === request) {
+      root.removeAttribute("data-theme-wave");
+      root.style.removeProperty("--theme-wave-start");
+    }
     animation?.cancel();
     if (activeAnimation === animation) activeAnimation = undefined;
     if (active === transition) active = undefined;
