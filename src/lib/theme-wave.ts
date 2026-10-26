@@ -1,7 +1,7 @@
 import { flushSync } from "react-dom";
 import { motionTiming } from "./motion";
 
-export type ThemePreference = "light" | "dark" | "system";
+export type ThemePreference = "light" | "dark";
 let active: ViewTransition | undefined;
 let activeAnimation: Animation | undefined;
 let request = 0;
@@ -52,12 +52,7 @@ export async function changeTheme(
   activeAnimation = undefined;
   active = undefined;
   const root = document.documentElement;
-  const effective =
-    preference === "system"
-      ? matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light"
-      : preference;
+  const effective = preference;
   const apply = () => commitTheme(setTheme, preference, effective);
   if (
     !document.startViewTransition ||

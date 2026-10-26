@@ -2,12 +2,12 @@ import { expect, test, type Page } from "@playwright/test";
 import { productivityFixture } from "./productivity-fixture";
 import { planAction } from "./actions";
 
-async function theme(page: Page, label: string, effective: string) {
-  await page
-    .getByRole("button", { name: "Тема оформления", exact: true })
-    .click();
-  await page.getByRole("menuitemradio", { name: label, exact: true }).click();
+async function theme(page: Page, _label: string, effective: "light" | "dark") {
+  const toggle = page.getByRole("switch", { name: "Тёмная тема", exact: true });
+  if ((await toggle.getAttribute("aria-checked")) !== String(effective === "dark"))
+    await toggle.click();
   await expect(page.locator("html")).toHaveClass(effective);
+  await expect(toggle).toHaveAttribute("aria-checked", String(effective === "dark"));
 }
 async function importPlan(page: Page) {
   await page.goto("/");
@@ -33,6 +33,18 @@ const instrumentation = `(() => {
     return transition;
   };
 })();`;
+
+test("legacy device preference becomes dark and no System choice exists", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("ipos-plan-theme", "system"));
+  await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+  await page.goto("/");
+  await expect(page.locator("html")).toHaveClass("dark");
+  await expect(page.getByRole("switch", { name: "Тёмная тема" })).toHaveAttribute("aria-checked", "true");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("ipos-plan-theme"))).toBe("dark");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveClass("dark");
+  await expect(page.getByRole("menuitemradio")).toHaveCount(0);
+});
 
 test("saved dark preference is applied before hydration scripts run", async ({
   page,
@@ -64,7 +76,7 @@ test("saved dark preference is applied before hydration scripts run", async ({
   await expect(page.locator(".plan-row")).toHaveCount(1);
 });
 
-test("theme persists through routes and reload, system updates do not create waves or hydration errors", async ({
+test("dark default and saved light/dark persist without following device appearance", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -73,9 +85,10 @@ test("theme persists through routes and reload, system updates do not create wav
     if (message.type() === "error") errors.push(message.text());
   });
   await page.addInitScript(instrumentation);
-  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+  await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
   await page.goto("/");
   await expect(page.locator("html")).toHaveClass("dark");
+  await expect(page.getByRole("switch", { name: "Тёмная тема" })).toHaveAttribute("aria-checked", "true");
   await theme(page, "Светлая", "light");
   await page.reload();
   await expect(page.locator("html")).toHaveClass("light");
@@ -85,14 +98,15 @@ test("theme persists through routes and reload, system updates do not create wav
   await theme(page, "Тёмная", "dark");
   await page.reload();
   await expect(page.locator("html")).toHaveClass("dark");
-  await theme(page, "Как в системе", "dark");
+  // Device appearance is never an available user preference.
+  await expect(page.getByRole("menuitemradio")).toHaveCount(0);
   await page.emulateMedia({ colorScheme: "light" });
-  await expect(page.locator("html")).toHaveClass("light");
+  await expect(page.locator("html")).toHaveClass("dark");
   await page.emulateMedia({ colorScheme: "dark" });
   await expect(page.locator("html")).toHaveClass("dark");
   expect(
     await page.evaluate(() => localStorage.getItem("ipos-plan-theme")),
-  ).toBe("system");
+  ).toBe("dark");
   expect(await page.evaluate("window.themeQA.length")).toBe(0);
   expect(errors).toEqual([]);
 });
@@ -104,8 +118,10 @@ test("explicit wave snapshots the committed theme and rapid selections settle sa
     colorScheme: "light",
     reducedMotion: "no-preference",
   });
+  await page.addInitScript(() => localStorage.setItem("ipos-plan-theme", "light"));
   await page.addInitScript(instrumentation);
   await page.goto("/");
+  await expect(page.locator("html")).toHaveClass("light");
   await expect(page.locator(".plan-row")).toHaveCount(1);
   expect(await page.evaluate("window.themeQA.length")).toBe(0);
   await theme(page, "Тёмная", "dark");
@@ -134,17 +150,15 @@ test("explicit wave snapshots the committed theme and rapid selections settle sa
       ),
     )
     .toBe(0);
-  await page
-    .getByRole("button", { name: "Тема оформления", exact: true })
-    .focus();
+  const toggle = page.getByRole("switch", { name: "Тёмная тема", exact: true });
+  await toggle.focus();
   await page.keyboard.press("Enter");
-  await expect(
-    page.getByRole("menuitemradio", { name: "Светлая", exact: true }),
-  ).toHaveAttribute("aria-checked", "true");
-  await page.keyboard.press("Escape");
-  await expect(
-    page.getByRole("button", { name: "Тема оформления", exact: true }),
-  ).toBeFocused();
+  await expect(page.locator("html")).toHaveClass("dark");
+  await expect(toggle).toHaveAttribute("aria-checked", "true");
+  await expect(toggle).toBeFocused();
+  await page.keyboard.press("Space");
+  await expect(page.locator("html")).toHaveClass("light");
+  await expect(toggle).toHaveAttribute("aria-checked", "false");
 });
 
 for (const fallback of ["reduced", "unsupported"] as const) {
@@ -155,6 +169,7 @@ for (const fallback of ["reduced", "unsupported"] as const) {
       reducedMotion: fallback === "reduced" ? "reduce" : "no-preference",
       colorScheme: "light",
     });
+    await page.addInitScript(() => localStorage.setItem("ipos-plan-theme", "light"));
     await page.addInitScript(instrumentation);
     if (fallback === "unsupported")
       await page.addInitScript("document.startViewTransition = undefined");
@@ -172,6 +187,7 @@ test("unsaved editing, caret, selection, scroll and editor identity survive a th
     colorScheme: "light",
     reducedMotion: "no-preference",
   });
+  await page.addInitScript(() => localStorage.setItem("ipos-plan-theme", "light"));
   await importPlan(page);
   const field = page.locator(".task-description-input").first();
   await field.fill("Несохранённый текст — проверка темы и позиции курсора.");
@@ -188,15 +204,12 @@ test("unsaved editing, caret, selection, scroll and editor identity survive a th
   // A real pointer leaves the sticky header in place. locator.click() invokes
   // scrollIntoView first, which itself scrolls a sticky child back to its origin.
   const trigger = (await page
-    .getByRole("button", { name: "Тема оформления", exact: true })
+    .getByRole("switch", { name: "Тёмная тема", exact: true })
     .boundingBox())!;
   await page.mouse.click(
     trigger.x + trigger.width / 2,
     trigger.y + trigger.height / 2,
   );
-  await page
-    .getByRole("menuitemradio", { name: "Тёмная", exact: true })
-    .click();
   await expect(page.locator("html")).toHaveClass("dark");
   await expect(field).toBeFocused();
   expect(
@@ -232,6 +245,7 @@ test("dark portals and notifications, paper-white Document and equivalent print/
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.addInitScript(() => localStorage.setItem("ipos-plan-theme", "light"));
   await importPlan(page);
   await planAction(page, "Экспорт");
   const before = await page.getByLabel("JSON для экспорта").inputValue();
@@ -285,6 +299,7 @@ test("BlockNote text selection and open dialog drafts survive theme changes", as
   page,
 }) => {
   await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+  await page.addInitScript(() => localStorage.setItem("ipos-plan-theme", "light"));
   await importPlan(page);
   const paragraph = page
     .locator(
@@ -316,14 +331,15 @@ test("BlockNote text selection and open dialog drafts survive theme changes", as
   );
   await page.reload();
   await expect(paragraph).toContainText("Проверка курсора BlockNote.");
-  await theme(page, "Как в системе", "light");
+  await theme(page, "Светлая", "light");
   await planAction(page, "Импорт");
   const draft = page.getByLabel("JSON плана", { exact: true });
   await draft.fill("Текст для проверки открытого диалога");
   await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator("html")).toHaveClass("light");
   await expect(page.getByRole("dialog")).toHaveCSS(
     "background-color",
-    "rgb(21, 31, 49)",
+    "rgb(255, 255, 255)",
   );
   await expect(draft).toHaveValue("Текст для проверки открытого диалога");
   await expect(draft).toBeFocused();
@@ -335,6 +351,7 @@ test("desktop panels exit without interactive ghosts or remounting the editor", 
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.addInitScript(() => localStorage.setItem("ipos-plan-theme", "light"));
   await importPlan(page);
   await page.locator(".bn-editor").evaluate((element) => {
     (window as Window & { panelEditor?: Element }).panelEditor = element;
