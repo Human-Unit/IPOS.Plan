@@ -4,7 +4,7 @@ export const motionTiming = {
   surface: 0.2,
   panel: 0.24,
   entrance: 0.32,
-  wave: 620,
+  wave: 680,
 } as const;
 export const motionEase = [0.22, 1, 0.36, 1] as const;
 export const surfaceTransition = {
