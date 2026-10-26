@@ -231,19 +231,64 @@ img {
 ::view-transition { pointer-events: none; }
 
 .app-bar-tools { display: flex; align-items: center; gap: 16px; }
-[data-slot="button"].theme-control { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
-.theme-control .theme-dark-icon, .dark .theme-control .theme-light-icon { display: none; }
-.dark .theme-control .theme-dark-icon { display: block; }
-.theme-menu-label { display: block; padding: 8px 10px; font-size: 12px; color: var(--muted-foreground); }
-.theme-menu [role="menuitemradio"] { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 10px; border-radius: 3px; outline: none; cursor: pointer; }
-.theme-menu [role="menuitemradio"][data-highlighted] { background: var(--secondary); color: var(--primary); }
-.theme-check { margin-left: auto; }
-.theme-menu[data-state="closed"] { animation: none; }
+/* Binary light/dark switch. The saved preference wins; new visits start dark. */
+[data-slot="button"].theme-control {
+  --toggle-shift: 34px;
+  width: 80px;
+  min-width: 80px;
+  height: 44px;
+  min-height: 44px;
+  padding: 4px;
+  border-radius: 999px;
+}
+.theme-toggle-track {
+  position: relative;
+  display: block;
+  width: 68px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--secondary);
+  overflow: hidden;
+}
+.theme-toggle-thumb {
+  position: absolute;
+  z-index: 1;
+  top: 3px;
+  left: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--background);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 16%);
+  transition: transform 220ms cubic-bezier(.22,.65,.25,1);
+}
+.dark .theme-toggle-thumb { transform: translateX(var(--toggle-shift)); }
+.theme-toggle-sun, .theme-toggle-moon {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+.theme-toggle-sun { left: 8px; color: var(--primary); }
+.theme-toggle-moon { right: 8px; color: var(--muted-foreground); }
+.dark .theme-toggle-sun { color: var(--muted-foreground); }
+.dark .theme-toggle-moon { color: var(--primary); }
 .plan-emblem { background: white; border-radius: 50%; }
 @media (max-width: 767px) {
   .app-bar-tools { gap: 4px; }
   .app-bar-tools .local-indicator { display: none; }
-  .editor-identity > [data-slot="button"].theme-control { width: 44px; padding: 0; margin-left: 0; }
+  .editor-identity > [data-slot="button"].theme-control {
+    --toggle-shift: 28px;
+    width: 72px;
+    min-width: 72px;
+    padding: 4px;
+    margin-left: 0;
+  }
+  .editor-identity .theme-toggle-track { width: 62px; }
 }
 [data-slot="input"],
 [data-slot="textarea"],
