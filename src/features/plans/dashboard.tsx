@@ -6,7 +6,7 @@ import { motionEase, motionTiming } from "@/lib/motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Plus, Copy, Trash2, ArrowUpRight, Upload, FileText, ChevronDown } from "lucide-react";
+import { Plus, Copy, Trash2, ArrowUpRight, Upload, FileText, ChevronDown, ShieldCheck } from "lucide-react";
 import { toast } from "@/lib/notifications";
 import { db } from "@/lib/db/database";
 import { createPlan, deletePlan, duplicatePlan } from "./repository";
@@ -105,7 +105,7 @@ export function Dashboard() {
     <>
       <header className="app-bar">
         <Brand />
-        <div className="app-bar-tools"><span className="local-indicator">
+        <div className="app-bar-tools"><Link className="admin-entry" href="/admin"><ShieldCheck size={16} aria-hidden="true" /><span>Админка</span></Link><span className="local-indicator">
           <span />
           Локальное пространство
         </span><ThemeControl /></div>
