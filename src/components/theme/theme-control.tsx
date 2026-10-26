@@ -1,30 +1,22 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore } from "react";
-import { flushSync } from "react-dom";
+import { useRef, useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
-import { Check, Monitor, Moon, Sun } from "lucide-react";
-import { DropdownMenu } from "radix-ui";
+import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { changeTheme, type ThemePreference } from "@/lib/theme-wave";
+import { changeTheme } from "@/lib/theme-wave";
 
 const subscribe = () => () => {};
-const options = [
-  { value: "light", label: "Светлая", Icon: Sun },
-  { value: "dark", label: "Тёмная", Icon: Moon },
-  { value: "system", label: "Как в системе", Icon: Monitor },
-] as const;
 
 export function ThemeControl() {
   const { theme, setTheme } = useTheme();
-  const [open, setOpen] = useState(false);
-  const mounted = useSyncExternalStore(
-    subscribe,
-    () => true,
-    () => false,
-  );
+  const mounted = useSyncExternalStore(subscribe, () => true, () => false);
   const trigger = useRef<HTMLButtonElement>(null);
   const returnEditorFocus = useRef<(() => void) | undefined>(undefined);
+  const dark = !mounted || theme !== "light";
+
+  // Preserve the active editor's cursor and unsaved input when clicking the
+  // toggle, rather than letting a theme change steal its selection or scroll.
   function captureEditor() {
     const element = document.activeElement;
     returnEditorFocus.current = undefined;
@@ -53,9 +45,9 @@ export function ThemeControl() {
       if (input && start != null && end != null)
         input.setSelectionRange(start, end, direction ?? undefined);
       else if (anchor?.isConnected && focus?.isConnected) {
-        window
-          .getSelection()
-          ?.setBaseAndExtent(anchor, anchorOffset, focus, focusOffset);
+        window.getSelection()?.setBaseAndExtent(
+          anchor, anchorOffset, focus, focusOffset,
+        );
       } else if (range?.startContainer.isConnected) {
         const selection = window.getSelection();
         selection?.removeAllRanges();
@@ -64,72 +56,36 @@ export function ThemeControl() {
       window.scrollTo(scroll);
     };
   }
+
   return (
-    <DropdownMenu.Root modal={false} open={open} onOpenChange={setOpen}>
-      <DropdownMenu.Trigger asChild>
-        <Button
-          ref={trigger}
-          className="theme-control"
-          variant="ghost"
-          size="icon"
-          aria-label="Тема оформления"
-          title="Тема оформления"
-          onPointerDown={captureEditor}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") captureEditor();
-          }}
-        >
-          {/* CSS chooses the initial icon before hydration; the box never changes. */}
-          <Sun className="theme-light-icon" />
-          <Moon className="theme-dark-icon" />
-        </Button>
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content
-          className="plan-actions-menu theme-menu"
-          align="end"
-          sideOffset={8}
-          aria-label="Тема оформления"
-          onInteractOutside={() => {
-            returnEditorFocus.current = undefined;
-          }}
-          onCloseAutoFocus={(event) => {
-            if (returnEditorFocus.current) {
-              event.preventDefault();
-              returnEditorFocus.current();
-              returnEditorFocus.current = undefined;
-            }
-          }}
-        >
-          <DropdownMenu.Label className="theme-menu-label">
-            Тема оформления
-          </DropdownMenu.Label>
-          <DropdownMenu.RadioGroup
-            value={mounted ? theme : undefined}
-            onValueChange={(value) => {
-              // Dismiss before capturing either snapshot, so the menu cannot
-              // linger as a frozen overlay inside the reveal.
-              flushSync(() => setOpen(false));
-              if (trigger.current)
-                void changeTheme(
-                  value as ThemePreference,
-                  setTheme,
-                  trigger.current,
-                );
-            }}
-          >
-            {options.map(({ value, label, Icon }) => (
-              <DropdownMenu.RadioItem key={value} value={value}>
-                <Icon aria-hidden="true" />
-                {label}
-                <DropdownMenu.ItemIndicator className="theme-check">
-                  <Check aria-hidden="true" />
-                </DropdownMenu.ItemIndicator>
-              </DropdownMenu.RadioItem>
-            ))}
-          </DropdownMenu.RadioGroup>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+    <Button
+      ref={trigger}
+      type="button"
+      variant="ghost"
+      size="icon"
+      className="theme-control"
+      role="switch"
+      aria-label="Тёмная тема"
+      aria-checked={dark}
+      title={dark ? "Включить светлую тему" : "Включить тёмную тему"}
+      onPointerDown={captureEditor}
+      onClick={() => {
+        const next = document.documentElement.classList.contains("dark")
+          ? "light"
+          : "dark";
+        const restoreFocus = returnEditorFocus.current;
+        returnEditorFocus.current = undefined;
+        if (trigger.current)
+          void changeTheme(next, setTheme, trigger.current).finally(() => {
+            restoreFocus?.();
+          });
+      }}
+    >
+      <span className="theme-toggle-track" aria-hidden="true">
+        <span className="theme-toggle-thumb" />
+        <Sun className="theme-toggle-sun" />
+        <Moon className="theme-toggle-moon" />
+      </span>
+    </Button>
   );
 }
