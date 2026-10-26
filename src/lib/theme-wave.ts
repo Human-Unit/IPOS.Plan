@@ -54,6 +54,10 @@ export async function changeTheme(
   active = undefined;
 
   const root = document.documentElement;
+  // Also reset a cancelled ripple when the next request takes an immediate
+  // fallback path. The cancelled request's finally is intentionally inert.
+  root.removeAttribute("data-theme-wave");
+  root.style.removeProperty("--theme-wave-start");
   const apply = () => commitTheme(setTheme, preference);
   if (
     !document.startViewTransition ||
