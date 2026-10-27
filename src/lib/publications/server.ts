@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import { del, get, put } from "@vercel/blob";
+import { BlobPreconditionFailedError, del, get, head, put } from "@vercel/blob";
 import { parseImport } from "@/lib/schema/import";
 import { MAX_JSON_BYTES, type PortablePlan } from "@/lib/schema/plan";
 
@@ -94,9 +94,67 @@ export async function createPublication(title: string, slug: string, document: P
   return { id, managerKey };
 }
 
+/**
+ * A conditional write must never silently overwrite another editor's update.
+ * The Blob GET response ETag may occasionally lag behind the write metadata.
+ * On a 412, re-read the authoritative document and retry at most once using
+ * HEAD's current ETag, and only when the published content has not changed.
+ */
+export class PublicationConflictError extends Error {
+  constructor(message = "Страница изменилась на сервере. Проверьте опубликованную версию и повторите обновление. Локальный план сохранён.") {
+    super(message);
+    this.name = "PublicationConflictError";
+  }
+}
+
+function preconditionFailed(error: unknown) {
+  return error instanceof BlobPreconditionFailedError ||
+    (error instanceof Error && /etag mismatch|precondition failed/i.test(error.message));
+}
+
+function sameContent(a: StoredPublication, b: StoredPublication) {
+  return a.title === b.title && JSON.stringify(a.document) === JSON.stringify(b.document);
+}
+
 export async function updatePublication(record: StoredPublication, etag: string, title: string, document: PortablePlan) {
   const next: StoredPublication = { ...record, title, document, updatedAt: new Date().toISOString() };
-  await put(pathFor(record.id), JSON.stringify(next), { access: "private", contentType: "application/json", allowOverwrite: true, ifMatch: etag, addRandomSuffix: false });
+  const pathname = pathFor(record.id);
+  const write = (currentEtag: string) => put(pathname, JSON.stringify(next), {
+    access: "private" as const,
+    contentType: "application/json",
+    allowOverwrite: true,
+    ifMatch: currentEtag,
+    addRandomSuffix: false,
+  });
+  try {
+    await write(etag);
+  } catch (error) {
+    if (!preconditionFailed(error)) throw error;
+
+    // Check the actual document, not just its ETag, before attempting a retry.
+    const latest = await readPublication(record.id);
+    if (!latest) throw new PublicationConflictError("Страница была удалена. Публикуйте новый документ.");
+
+    // Two requests may have raced to publish the same snapshot (double-tap).
+    // If one succeeded, treat the second as an idempotent success.
+    if (sameContent(latest.record, next)) return publicData(latest.record);
+
+    // A genuine concurrent edit must not be overwritten automatically.
+    if (!sameContent(latest.record, record) || latest.record.updatedAt !== record.updatedAt) {
+      throw new PublicationConflictError();
+    }
+
+    // GET can provide a stale ETag even when its body has not changed.
+    // HEAD is the documented source for conditional-write metadata.
+    const metadata = await head(pathname);
+    if (!metadata?.etag) throw new PublicationConflictError();
+    try {
+      await write(metadata.etag);
+    } catch (retryError) {
+      if (preconditionFailed(retryError)) throw new PublicationConflictError();
+      throw retryError;
+    }
+  }
   return publicData(next);
 }
 
