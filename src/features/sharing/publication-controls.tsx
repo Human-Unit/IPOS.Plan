@@ -38,23 +38,20 @@ function slugify(value: string) {
 }
 
 export function PublicationControls({ planId, plan }: { planId: string; plan: PortablePlan }) {
-  const [owned, setOwned] = useState<Owned | null>(null);
+  const [owned, setOwned] = useState<Owned | null>(() => readOwned(planId));
   const [title, setTitle] = useState(plan.title);
   const [slug, setSlug] = useState(() => slugify(plan.title));
-  const [accessKey, setAccessKey] = useState("");
+  const [accessKey, setAccessKey] = useState(() => {
+    try { return sessionStorage.getItem(sessionCodeKey) || ""; } catch { return ""; }
+  });
   const [needsCode, setNeedsCode] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [checking, setChecking] = useState(true);
   const [restoreUrl, setRestoreUrl] = useState("");
   const [restoreKey, setRestoreKey] = useState("");
   const accessRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setOwned(readOwned(planId));
-    try { setAccessKey(sessionStorage.getItem(sessionCodeKey) || ""); } catch { /* optional convenience */ }
-    setChecking(false);
-  }, [planId]);
+  // Synchronous guard against rapid taps before React updates the busy state.
+  const requestInFlight = useRef(false);
 
   useEffect(() => {
     if (needsCode) accessRef.current?.focus();
@@ -72,7 +69,8 @@ export function PublicationControls({ planId, plan }: { planId: string; plan: Po
   };
 
   const restore = async () => {
-    if (busy) return;
+    if (busy || requestInFlight.current) return;
+    requestInFlight.current = true;
     setBusy(true); setError("");
     try {
       const value = restoreUrl.trim();
@@ -88,17 +86,18 @@ export function PublicationControls({ planId, plan }: { planId: string; plan: Po
       setOwned(next); setTitle(data.title); setRestoreKey(""); setRestoreUrl("");
       toast.success("Управление страницей восстановлено");
     } catch (e) { setError(e instanceof Error ? e.message : "Не удалось восстановить управление."); }
-    finally { setBusy(false); }
+    finally { requestInFlight.current = false; setBusy(false); }
   };
 
   const invoke = async (method: "POST" | "PUT" | "DELETE") => {
-    if (busy) return;
+    if (busy || requestInFlight.current) return;
     if (method === "POST" && !accessKey.trim()) {
       setNeedsCode(true);
       setError("");
       return;
     }
     if (method === "DELETE" && !confirm("Снять страницу с публикации? Ссылка перестанет работать.")) return;
+    requestInFlight.current = true;
     setBusy(true); setError("");
     try {
       const response = await fetch(method === "POST" ? "/api/publications" : "/api/publications/" + encodeURIComponent(owned!.id), {
@@ -127,14 +126,12 @@ export function PublicationControls({ planId, plan }: { planId: string; plan: Po
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Неизвестная ошибка.");
-    } finally { setBusy(false); }
+    } finally { requestInFlight.current = false; setBusy(false); }
   };
 
   return (
     <section className="publication-controls" aria-label="Публичная страница">
-      {checking ? (
-        <p className="muted" role="status">Проверяем публикацию…</p>
-      ) : owned ? (
+      {owned ? (
         <>
           <div className="publication-state"><Check size={17} aria-hidden="true" /> Страница опубликована</div>
           <Field>

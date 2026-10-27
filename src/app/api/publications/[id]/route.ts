@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   cleanTitle, isConfigured, mayManage, parseDocument, publicData,
-  publicationId, readPublication, removePublication, updatePublication,
+  publicationId, readPublication, removePublication, updatePublication, PublicationConflictError,
 } from "@/lib/publications/server";
 
 export const runtime = "nodejs";
@@ -39,8 +39,12 @@ export async function PUT(request: NextRequest, { params }: RouteContext) {
     const updated = await updatePublication(publication.record, publication.etag, title, document);
     return NextResponse.json(updated, { headers: noStore });
   } catch (error) {
+    if (error instanceof PublicationConflictError)
+      return NextResponse.json({ error: error.message }, { status: 409, headers: noStore });
     const message = error instanceof Error ? error.message : "Не удалось обновить публикацию.";
-    return NextResponse.json({ error: message }, { status: /etag|precondition|conflict/i.test(message) ? 409 : 400 });
+    if (/etag mismatch|precondition failed/i.test(message))
+      return NextResponse.json({ error: "Страница была изменена одновременно с вашим запросом. Проверьте её и попробуйте ещё раз. Локальный план не затронут." }, { status: 409, headers: noStore });
+    return NextResponse.json({ error: message }, { status: 400, headers: noStore });
   }
 }
 
