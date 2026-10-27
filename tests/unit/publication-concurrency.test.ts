@@ -55,7 +55,7 @@ describe("conditional published snapshot update", () => {
 
   it("retries a stale ETag once with HEAD metadata when the document is unchanged", async () => {
     mockedPut
-      .mockRejectedValueOnce(new BlobPreconditionFailedError("ETag mismatch"))
+      .mockRejectedValueOnce(new BlobPreconditionFailedError())
       .mockResolvedValueOnce({} as Awaited<ReturnType<typeof put>>);
     mockFreshRead(existing);
     mockedHead.mockResolvedValue({ etag: '"current"' } as Awaited<ReturnType<typeof head>>);
@@ -69,7 +69,7 @@ describe("conditional published snapshot update", () => {
   });
 
   it("treats duplicate publication of the same content as a success", async () => {
-    mockedPut.mockRejectedValueOnce(new BlobPreconditionFailedError("ETag mismatch"));
+    mockedPut.mockRejectedValueOnce(new BlobPreconditionFailedError());
     mockFreshRead({ ...existing, title: "Updated", updatedAt: "2026-10-25T10:01:00.000Z" });
     const result = await updatePublication(existing, '"old"', "Updated", document);
     expect(result.title).toBe("Updated");
@@ -78,7 +78,7 @@ describe("conditional published snapshot update", () => {
   });
 
   it("never overwrites another editor's changes", async () => {
-    mockedPut.mockRejectedValueOnce(new BlobPreconditionFailedError("ETag mismatch"));
+    mockedPut.mockRejectedValueOnce(new BlobPreconditionFailedError());
     mockFreshRead({ ...existing, title: "A newer version", updatedAt: "2026-10-25T10:01:00.000Z" });
     await expect(updatePublication(existing, '"old"', "Updated", document)).rejects.toBeInstanceOf(PublicationConflictError);
     expect(mockedHead).not.toHaveBeenCalled();
@@ -86,7 +86,7 @@ describe("conditional published snapshot update", () => {
   });
 
   it("reports a conflict when a second conditional write fails", async () => {
-    mockedPut.mockRejectedValue(new BlobPreconditionFailedError("ETag mismatch"));
+    mockedPut.mockRejectedValue(new BlobPreconditionFailedError());
     mockFreshRead(existing);
     mockedHead.mockResolvedValue({ etag: '"current"' } as Awaited<ReturnType<typeof head>>);
     await expect(updatePublication(existing, '"stale"', "Updated", document)).rejects.toBeInstanceOf(PublicationConflictError);
