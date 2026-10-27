@@ -49,6 +49,8 @@ export function PublicationControls({ planId, plan }: { planId: string; plan: Po
   const [restoreUrl, setRestoreUrl] = useState("");
   const [restoreKey, setRestoreKey] = useState("");
   const accessRef = useRef<HTMLInputElement>(null);
+  // Synchronous guard against rapid taps before React updates the busy state.
+  const requestInFlight = useRef(false);
 
   useEffect(() => {
     setOwned(readOwned(planId));
@@ -72,7 +74,8 @@ export function PublicationControls({ planId, plan }: { planId: string; plan: Po
   };
 
   const restore = async () => {
-    if (busy) return;
+    if (busy || requestInFlight.current) return;
+    requestInFlight.current = true;
     setBusy(true); setError("");
     try {
       const value = restoreUrl.trim();
@@ -88,17 +91,18 @@ export function PublicationControls({ planId, plan }: { planId: string; plan: Po
       setOwned(next); setTitle(data.title); setRestoreKey(""); setRestoreUrl("");
       toast.success("Управление страницей восстановлено");
     } catch (e) { setError(e instanceof Error ? e.message : "Не удалось восстановить управление."); }
-    finally { setBusy(false); }
+    finally { requestInFlight.current = false; setBusy(false); }
   };
 
   const invoke = async (method: "POST" | "PUT" | "DELETE") => {
-    if (busy) return;
+    if (busy || requestInFlight.current) return;
     if (method === "POST" && !accessKey.trim()) {
       setNeedsCode(true);
       setError("");
       return;
     }
     if (method === "DELETE" && !confirm("Снять страницу с публикации? Ссылка перестанет работать.")) return;
+    requestInFlight.current = true;
     setBusy(true); setError("");
     try {
       const response = await fetch(method === "POST" ? "/api/publications" : "/api/publications/" + encodeURIComponent(owned!.id), {
@@ -127,7 +131,7 @@ export function PublicationControls({ planId, plan }: { planId: string; plan: Po
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Неизвестная ошибка.");
-    } finally { setBusy(false); }
+    } finally { requestInFlight.current = false; setBusy(false); }
   };
 
   return (
