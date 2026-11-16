@@ -163,7 +163,7 @@ export function Dashboard() {
                   {visiblePlans?.length ?? "…"} / {plans?.length ?? "…"}
                 </span>
               </h2>
-              <span>Обновлены недавно</span>
+              <span>Черновики в этом браузере</span>
             </div>
             <div className="library-utilities">
               <BackupMenu />
