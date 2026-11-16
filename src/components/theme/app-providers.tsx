@@ -10,7 +10,17 @@ import { surfaceTransition } from "@/lib/motion";
 function MigrateLegacySystemTheme() {
   const { theme, setTheme } = useTheme();
   useEffect(() => {
-    if (theme === "system") setTheme("dark");
+    // The previous version persisted "system" even though only Light/Dark
+    // is supported now. Read storage directly: next-themes may expose the
+    // effective "dark" value while leaving the legacy "system" class behind.
+    let storedLegacy = false;
+    try {
+      storedLegacy = localStorage.getItem("ipos-plan-theme") === "system";
+    } catch { /* Storage can be unavailable in private browsing. */ }
+    if (theme === "system" || storedLegacy) {
+      setTheme("dark");
+      document.documentElement.classList.remove("system");
+    }
   }, [theme, setTheme]);
   return null;
 }
