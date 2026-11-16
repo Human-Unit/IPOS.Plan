@@ -174,6 +174,40 @@ test("Russian search, task navigation and local deadline counts work at five vie
   expect(errors).toEqual([]);
 });
 
+test("dashboard workload indicators filter actual plans without mutating them", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-10-22T09:00:00Z"));
+  await page.goto("/");
+  const fixture = productivityFixture(new URL(page.url()).origin);
+  await page.getByRole("button", { name: "Импорт JSON", exact: true }).click();
+  await page.getByLabel("JSON плана", { exact: true }).fill(JSON.stringify(fixture));
+  await page.getByRole("button", { name: "Проверить и посмотреть" }).click();
+  await page.getByRole("button", { name: "Подтвердить импорт" }).click();
+  await page.goto("/");
+  await expect(page.locator(".plan-row")).toHaveCount(2);
+  const group = page.getByRole("group", { name: "Задачи во всей библиотеке" });
+  const overdue = group.getByRole("button", { name: /Просрочено/ });
+  await overdue.click();
+  await expect(overdue).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Фильтр планов")).toHaveValue("overdue");
+  await expect(page.locator(".plan-row")).toHaveCount(1);
+  await expect(page.locator(".plan-row-deadlines")).toContainText("Просрочено: 1");
+  await overdue.click();
+  await expect(page.locator(".plan-row")).toHaveCount(2);
+  await expect(page.getByLabel("Фильтр планов")).toHaveValue("all");
+  await group.getByRole("button", { name: /В ближайшие 7 дней/ }).click();
+  await expect(page.getByLabel("Фильтр планов")).toHaveValue("upcoming");
+  await expect(page.locator(".plan-row")).toHaveCount(1);
+  await group.getByRole("button", { name: /Готово/ }).click();
+  await expect(page.getByLabel("Фильтр планов")).toHaveValue("completed");
+  await expect(page.locator(".plan-row")).toHaveCount(2);
+  await page.getByRole("button", { name: "Сбросить поиск", exact: true }).first().click();
+  await expect(page.getByLabel("Фильтр планов")).toHaveValue("all");
+  for (const width of [320, 390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+});
+
 test("built-in and custom templates insert editable whole briefs with fresh IDs; blank task remains", async ({
   page,
 }) => {
