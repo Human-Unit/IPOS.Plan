@@ -17,9 +17,13 @@ function MigrateLegacySystemTheme() {
     try {
       storedLegacy = localStorage.getItem("ipos-plan-theme") === "system";
     } catch { /* Storage can be unavailable in private browsing. */ }
-    if (theme === "system" || storedLegacy) {
+    // An older class may remain even after next-themes has normalized its
+    // state/storage: only the configured classes "light" and "dark" are
+    // removed by that library, so an orphan "system" must be cleared here.
+    const root = document.documentElement;
+    if (theme === "system" || storedLegacy || root.classList.contains("system")) {
       setTheme("dark");
-      document.documentElement.classList.remove("system");
+      root.classList.remove("system");
     }
   }, [theme, setTheme]);
   return null;
