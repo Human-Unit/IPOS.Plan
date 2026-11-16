@@ -201,6 +201,7 @@ export function EditorScreen({ id }: { id: string }) {
             <PlanEmblem size={26} />
             <span className="editor-brand-label">IPOS.Plan</span>
           </span>
+          <span className="editor-context-title" title={plan.title}>{plan.title}</span>
           <ThemeControl />
           <motion.span
             animate={{ opacity: error ? [0.65, 1] : 1 }}
@@ -241,6 +242,7 @@ export function EditorScreen({ id }: { id: string }) {
           <Button
             size="sm"
             variant="outline"
+            data-editor-action="preview"
             aria-label={preview ? "Редактировать" : "Предпросмотр"}
             disabled={busy}
             title={
@@ -271,6 +273,7 @@ export function EditorScreen({ id }: { id: string }) {
             <Button
               size="sm"
               variant="ghost"
+              data-editor-action="focus"
               aria-pressed={focusMode}
               aria-label={focusMode ? "Выйти из режима фокуса" : "Режим фокуса"}
               title={
@@ -319,6 +322,7 @@ export function EditorScreen({ id }: { id: string }) {
           />
           <Button
             size="sm"
+            data-editor-action="share"
             aria-label="Поделиться"
             disabled={busy}
             onClick={() =>
