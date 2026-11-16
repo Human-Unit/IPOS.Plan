@@ -101,6 +101,6 @@
   .editor-actions [data-slot="button"] { min-height: 42px; }
   .experience-switch [data-slot="toggle-group-item"] { min-height: 40px; }
 }
-@media screen and (min-width: 1200px) and (max-width: 1479px) {
-  .editor-context-title { display: none; }
+@media screen and (min-width: 1280px) and (max-width: 1479px) {
+  .editor-context-title { max-width: min(17vw, 180px); }
 }
