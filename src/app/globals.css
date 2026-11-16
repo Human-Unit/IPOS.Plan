@@ -153,6 +153,13 @@ body {
   color: var(--foreground);
   font: 14px/1.5 var(--font-ui);
 }
+/* Browser-native details follow the same light/dark semantic tokens. */
+@media screen {
+  ::selection { background: var(--secondary); color: var(--foreground); }
+  input, textarea, [contenteditable="true"] { caret-color: var(--primary); }
+  html { scrollbar-color: var(--ui-border) var(--canvas); }
+  a { text-underline-offset: 3px; }
+}
 button,
 input,
 select,
