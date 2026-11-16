@@ -224,3 +224,88 @@ test("editor toolbar has stable action order on small screens and shows plan con
   await expect(page.getByRole("status").filter({ hasText: "Сохранено локально" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test("approved Reels comp assembles navigable panels and an editable brief", async ({ page }) => {
+  const reels: PortablePlan = {
+    schemaVersion: 1,
+    title: "План съёмок Reels",
+    blocks: [
+      { id: "reel-first", type: "task", props: { taskId: "first" } },
+      { id: "reel-second", type: "task", props: { taskId: "second" } },
+      { id: "reel-divider", type: "divider" },
+      {
+        id: "reel-reference",
+        type: "reference",
+        props: {
+          url: "https://www.instagram.com/reel/De7A9ZWoaht/",
+          title: "Референс первого ролика",
+          note: "Повторяющиеся встречи в разных местах университета",
+        },
+      },
+    ],
+    tasks: {
+      first: {
+        id: "first", title: "Один и тот же студент",
+        description: "В университете тысячи людей, но один студент встречается повсюду.",
+        assignee: "Амина", status: "in_progress", priority: "medium",
+      },
+      second: {
+        id: "second", title: "Первый вышел с экзамена",
+        description: "Шуточное интервью у первого вышедшего с экзамена.",
+        assignee: "Азиза и Акмал", status: "todo", priority: "medium",
+      },
+    },
+  };
+  await page.setViewportSize({ width: 1672, height: 941 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Импорт JSON", exact: true }).click();
+  await page.getByLabel("JSON плана", { exact: true }).fill(JSON.stringify(reels));
+  await page.getByRole("button", { name: "Проверить и посмотреть" }).click();
+  await page.getByRole("button", { name: "Подтвердить импорт" }).click();
+
+  const workspace = page.locator(".editor-workspace.mode-workspace");
+  const outline = workspace.locator(".workspace-outline");
+  const paper = workspace.locator(".plan-paper");
+  const inspector = workspace.locator(".workspace-inspector");
+  await expect(outline).toBeVisible();
+  await expect(paper).toBeVisible();
+  await expect(paper.getByLabel("Название плана", { exact: true })).toHaveValue(reels.title);
+  await expect(paper.locator(".brief-fact-deadline dd").first()).toContainText("Не указан");
+  await paper.getByRole("button", { name: "Свойства задачи: Один и тот же студент", exact: true }).click();
+  await expect(inspector).toBeVisible();
+  await expect(outline.locator(".outline-topline h2")).toHaveText("Структура");
+  await expect(inspector).toHaveAttribute("data-task-selected", "true");
+  await expect(inspector).toContainText("Свойства задачи");
+  await expect(inspector.getByLabel("Название задачи", { exact: true })).toHaveValue("Один и тот же студент");
+  await expect(page.locator('.task-brief[data-selected="true"]')).toHaveCount(1);
+
+  const geometry = await page.evaluate(() =>
+    [".workspace-outline", ".editor-workspace.mode-workspace .plan-paper", ".workspace-inspector"]
+      .map((selector) => {
+        const box = document.querySelector(selector)!.getBoundingClientRect();
+        return { left: box.left, right: box.right, width: box.width, top: box.top };
+      }),
+  );
+  expect(geometry[0].right).toBeLessThan(geometry[1].left);
+  expect(geometry[1].right).toBeLessThan(geometry[2].left);
+  expect(geometry[0].width).toBeGreaterThan(270);
+  expect(geometry[1].width).toBeGreaterThan(600);
+  expect(geometry[2].width).toBeGreaterThan(300);
+
+  const inlineStatus = paper.locator('select.task-status').first();
+  await expect(inlineStatus).toHaveValue("in_progress");
+  await inlineStatus.selectOption("review");
+  await expect(inspector.getByLabel("Статус", { exact: true })).toHaveValue("review");
+  await expect(page.getByRole("status").filter({ hasText: "Сохранено локально" })).toBeVisible();
+  await page.reload();
+  await expect(page.locator('select.task-status').first()).toHaveValue("review");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(".workspace-outline")).toHaveCount(0);
+  await expect(page.locator(".workspace-inspector")).toHaveCount(0);
+  await page.getByRole("button", { name: "Структура", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("dialog").locator(".outline-topline h2")).toHaveText("Структура");
+  await page.getByRole("dialog").getByRole("button", { name: "Закрыть", exact: true }).click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

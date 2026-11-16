@@ -1,0 +1,95 @@
+/* Approved editor comp / region 02 — document structure navigator. */
+@media screen {
+  .plan-outline .outline-topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--ui-border);
+  }
+  .plan-outline .outline-topline h2 {
+    margin: 0;
+    color: var(--foreground);
+    font: 700 21px/1.3 var(--font-heading);
+    letter-spacing: -0.03em;
+  }
+  .plan-outline .outline-topline [data-slot="button"] {
+    flex: 0 0 44px;
+    width: 44px;
+    height: 44px;
+    border-color: var(--ui-border);
+  }
+  .plan-outline .outline-topline svg { width: 19px; height: 19px; }
+  .plan-outline .outline-tabs {
+    margin: 0 0 18px;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-control-radius);
+    background: var(--subtle-surface);
+  }
+  .plan-outline .outline-tabs [data-slot="toggle-group-item"] {
+    min-height: 34px;
+    font-size: var(--ui-label);
+  }
+  .plan-outline .outline-item {
+    min-height: 43px;
+    padding: 10px 11px;
+    border-radius: var(--ui-control-radius);
+    color: var(--ui-text);
+    font-size: var(--ui-label);
+    transition: color var(--motion-fast), background-color var(--motion-fast);
+  }
+  .plan-outline .outline-item[aria-current="location"] {
+    background: var(--secondary);
+    color: var(--primary);
+    box-shadow: inset 3px 0 0 var(--primary);
+  }
+  .plan-outline .outline-task-title { align-items: start; }
+  .plan-outline .outline-task-title .outline-number {
+    flex-basis: 25px;
+    color: var(--primary);
+    font-weight: 700;
+  }
+  .plan-outline .outline-task-status { margin-top: 3px; }
+  .plan-outline .quick-insert { margin-top: 24px; }
+}
+@media screen and (min-width: 1200px) {
+  .editor-workspace.mode-workspace { gap: 16px; }
+  .editor-workspace.mode-workspace .workspace-controls {
+    min-height: 42px;
+    padding: 0 8px 10px;
+    border-bottom: 0;
+  }
+  .editor-workspace.mode-workspace .workspace-outline {
+    top: 106px;
+    min-height: calc(100dvh - 160px);
+    max-height: calc(100dvh - 116px);
+    padding: 23px 20px 30px;
+    border: 1px solid var(--ui-border);
+    border-radius: 14px;
+    background: var(--background);
+    box-shadow: 0 2px 8px rgb(23 32 51 / 4%);
+  }
+  .editor-workspace.mode-workspace .workspace-outline .workspace-resize-handle {
+    right: -9px;
+  }
+}
+@media screen and (min-width: 1440px) {
+  .editor-stage { padding: 26px 16px 56px; }
+  .editor-workspace.mode-workspace.outline-open.inspector-open:not(.focus-mode) {
+    grid-template-columns: var(--ipos-outline-width, 304px) minmax(0, 1fr) var(--ipos-inspector-width, 360px);
+  }
+  .editor-workspace.mode-workspace.outline-open:not(.inspector-open):not(.focus-mode) {
+    grid-template-columns: var(--ipos-outline-width, 304px) minmax(0, 1fr);
+  }
+  .editor-workspace.mode-workspace.inspector-open:not(.outline-open):not(.focus-mode) {
+    grid-template-columns: minmax(0, 1fr) var(--ipos-inspector-width, 360px);
+  }
+}
+@media screen and (max-width: 767px) {
+  .plan-outline .outline-topline { margin-bottom: 14px; padding-bottom: 14px; }
+  .plan-outline .outline-topline h2 { font-size: 19px; }
+  .plan-outline .outline-item { min-height: 44px; }
+}

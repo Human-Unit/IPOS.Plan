@@ -10,6 +10,8 @@ import {
   Plus,
   Trash2,
   Paperclip,
+  UserRound,
+  CalendarDays,
 } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import { Badge } from "@/components/ui/badge";
@@ -215,14 +217,14 @@ export function TaskCard({
           ) : null}
           <dl className="brief-facts">
             <div className="brief-fact-deadline" data-deadline={editable ? deadline.kind : undefined}>
-              <dt>Дедлайн</dt>
+              <dt><CalendarDays className="brief-fact-icon" size={15} aria-hidden="true" />Дедлайн</dt>
               <dd>
                 {task.deadline ? <time dateTime={task.deadline}>{task.deadline.split("-").reverse().join(".")}</time> : "Не указан"}
                 {editable && deadline.days !== undefined && <small className="deadline-hint">{deadline.label}</small>}
               </dd>
             </div>
             <div>
-              <dt>Ответственные</dt>
+              <dt><UserRound className="brief-fact-icon" size={15} aria-hidden="true" />Ответственные</dt>
               <dd>{task.assignee || "Не назначены"}</dd>
             </div>
             <div className="brief-priority">

@@ -177,6 +177,7 @@ test("Russian search, task navigation and local deadline counts work at five vie
 test("dashboard workload indicators filter actual plans without mutating them", async ({ page }) => {
   await page.clock.setFixedTime(new Date("2026-10-22T09:00:00Z"));
   await page.goto("/");
+  await expect(page.locator(".plan-row")).toHaveCount(1);
   const fixture = productivityFixture(new URL(page.url()).origin);
   await page.getByRole("button", { name: "Импорт JSON", exact: true }).click();
   await page.getByLabel("JSON плана", { exact: true }).fill(JSON.stringify(fixture));
@@ -212,7 +213,8 @@ test("built-in and custom templates insert editable whole briefs with fresh IDs;
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Новый план", exact: true }).click();
+  await page.getByRole("region", { name: "Контент-планы" })
+    .getByRole("button", { name: "Новый план", exact: true }).click();
   await page.getByRole("button", { name: "Шаблоны", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "Задача из шаблона" });
   await dialog.getByLabel("Шаблон", { exact: true }).selectOption("builtin-3");
