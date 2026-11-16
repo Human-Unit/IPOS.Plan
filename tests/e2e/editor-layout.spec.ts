@@ -271,6 +271,7 @@ test("approved Reels comp assembles navigable panels and an editable brief", asy
   await expect(paper).toBeVisible();
   await expect(paper.getByLabel("Название плана", { exact: true })).toHaveValue(reels.title);
   await expect(paper.locator(".brief-fact-deadline dd").first()).toContainText("Не указан");
+  await paper.getByRole("button", { name: "Свойства задачи: Один и тот же студент", exact: true }).click();
   await expect(inspector).toBeVisible();
   await expect(outline.locator(".outline-topline h2")).toHaveText("Структура");
   await expect(inspector).toHaveAttribute("data-task-selected", "true");
@@ -291,13 +292,13 @@ test("approved Reels comp assembles navigable panels and an editable brief", asy
   expect(geometry[1].width).toBeGreaterThan(600);
   expect(geometry[2].width).toBeGreaterThan(300);
 
-  const inlineStatus = paper.locator('.brief-fact-status select').first();
+  const inlineStatus = paper.locator('select.task-status').first();
   await expect(inlineStatus).toHaveValue("in_progress");
   await inlineStatus.selectOption("review");
   await expect(inspector.getByLabel("Статус", { exact: true })).toHaveValue("review");
   await expect(page.getByRole("status").filter({ hasText: "Сохранено локально" })).toBeVisible();
   await page.reload();
-  await expect(page.locator('.brief-fact-status select').first()).toHaveValue("review");
+  await expect(page.locator('select.task-status').first()).toHaveValue("review");
 
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator(".workspace-outline")).toHaveCount(0);
