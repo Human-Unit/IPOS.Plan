@@ -46,7 +46,7 @@ Coordinates indicate visual relationships, **not** fixed-position pixel CSS. Pre
 
 ## Breakpoints and manual acceptance
 
-- At **1672/1440 px**, verify 3 columns with a readable central document; opening the first task may reveal properties.
+- At **1672/1440 px**, verify 3 columns with a readable central document; **select a task** to reveal its properties. The layout never changes the current selection without user input.
 - At **1200–1439 px**, opening a second panel is optional; verify adequate document width and panel close controls.
 - At **768/390/320 px**, preserve the working document and accessible drawers. No horizontal scroll, clipped controls, or disappearing share/save.
 - Test both themes, keyboard focus, long Russian titles and assignees, status editing, local persistence on reload, focus mode and reduced motion.
