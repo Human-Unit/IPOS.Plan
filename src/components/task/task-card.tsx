@@ -12,7 +12,6 @@ import {
   Paperclip,
   UserRound,
   CalendarDays,
-  CircleDot,
 } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import { Badge } from "@/components/ui/badge";
@@ -227,24 +226,6 @@ export function TaskCard({
             <div>
               <dt><UserRound className="brief-fact-icon" size={15} aria-hidden="true" />Ответственные</dt>
               <dd>{task.assignee || "Не назначены"}</dd>
-            </div>
-            <div className="brief-fact-status">
-              <dt><CircleDot className="brief-fact-icon" size={15} aria-hidden="true" />Статус</dt>
-              <dd>
-                {editable ? (
-                  <select
-                    className="brief-inline-status"
-                    data-status={task.status}
-                    aria-label={`Статус задачи: ${task.title}`}
-                    value={task.status}
-                    onChange={(event) => change({ status: event.target.value as Task["status"] })}
-                  >
-                    {statuses.map((status) => (
-                      <option key={status} value={status}>{statusLabels[status]}</option>
-                    ))}
-                  </select>
-                ) : <span className="brief-inline-status" data-status={task.status}>{statusLabels[task.status]}</span>}
-              </dd>
             </div>
             <div className="brief-priority">
               <dt>Приоритет</dt>
