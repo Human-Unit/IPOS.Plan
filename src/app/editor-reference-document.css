@@ -1,7 +1,6 @@
 /* Approved editor comp / region 03 — editorial plan and task briefs. */
 /* Keep this presentation strictly on screen and in Workspace mode.
    Document view and A4 print keep their established geometry and data. */
-.brief-fact-status { display: none; }
 @media screen {
   .editor-workspace.mode-workspace .plan-paper {
     min-height: calc(100dvh - 160px);
@@ -12,13 +11,20 @@
     box-shadow: 0 2px 8px rgb(23 32 51 / 4%);
   }
   .editor-workspace.mode-workspace .plan-cover {
+    position: relative;
+    padding-right: 52px;
     display: block;
     margin-bottom: 28px;
     padding-bottom: 4px;
     border-bottom: 0;
   }
   .editor-workspace.mode-workspace .plan-cover .plan-emblem {
-    display: none;
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 40px;
+    height: 40px;
   }
   .editor-workspace.mode-workspace .plan-cover > div {
     display: flex;
@@ -110,7 +116,6 @@
     color: inherit;
     letter-spacing: inherit;
   }
-  .editor-workspace.mode-workspace .brief-title-group > .task-status { display: none; }
   .editor-workspace.mode-workspace .brief-body { gap: 15px; }
   .editor-workspace.mode-workspace .task-description-input,
   .editor-workspace.mode-workspace .brief-description-text {
@@ -137,8 +142,7 @@
   }
   .editor-workspace.mode-workspace .brief-facts > div:first-child { order: 3; }
   .editor-workspace.mode-workspace .brief-facts > div:nth-child(2) { order: 1; }
-  .editor-workspace.mode-workspace .brief-facts > .brief-fact-status { display: flex; order: 2; }
-  .editor-workspace.mode-workspace .brief-facts > .brief-priority { order: 4; }
+  .editor-workspace.mode-workspace .brief-facts > .brief-priority { order: 2; }
   .editor-workspace.mode-workspace .brief-facts dt {
     display: inline-flex;
     align-items: center;
@@ -156,20 +160,6 @@
     display: inline-block;
     color: var(--ui-secondary);
   }
-  .editor-workspace.mode-workspace select.brief-inline-status {
-    display: inline-block;
-    width: auto;
-    min-width: 0;
-    min-height: 31px;
-    padding: 4px 9px;
-    border: 1px solid var(--ui-border);
-    border-radius: var(--ui-control-radius);
-    background: var(--background);
-    color: var(--primary);
-    font: 600 12px/1.4 var(--font-ui);
-  }
-  .editor-workspace.mode-workspace select.brief-inline-status[data-status="done"] { color: var(--success); }
-  .editor-workspace.mode-workspace select.brief-inline-status[data-status="review"] { color: var(--warning); }
   .editor-workspace.mode-workspace .brief-insert {
     gap: 4px;
     padding-top: 10px;
@@ -205,5 +195,5 @@
   .editor-workspace.mode-workspace .brief-facts > div { flex: 1 1 140px; }
 }
 @media print {
-  .brief-fact-icon, .brief-fact-status { display: none !important; }
+  .brief-fact-icon { display: none !important; }
 }
