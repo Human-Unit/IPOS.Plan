@@ -197,6 +197,18 @@ export default function PlanRenderer({
   const [panel, setPanel] = useState<"outline" | "inspector">();
   const [outlineVisible, setOutlineVisible] = useState(true);
   const [inspectorVisible, setInspectorVisible] = useState(false);
+  // On wide screens, open the first real task to show the document + properties
+  // relationship from the approved comp; never create or modify plan data.
+  useEffect(() => {
+    if (!editable || !window.matchMedia("(min-width: 1440px)").matches) return;
+    const first = editor.document.find((node) => node.type === "brief");
+    if (!first) return;
+    const frame = requestAnimationFrame(() => {
+      setSelectedId((current) => current ?? first.id);
+      setInspectorVisible(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [editable, editor]);
   const root = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const fileTarget = useRef<string | undefined>(undefined);
@@ -273,8 +285,8 @@ export default function PlanRenderer({
     while (node && node.type !== "brief") node = editor.getParentBlock(node);
     return node?.id;
   };
-  const [outlineWidth, setOutlineWidth] = useState(208);
-  const [inspectorWidth, setInspectorWidth] = useState(280);
+  const [outlineWidth, setOutlineWidth] = useState(296);
+  const [inspectorWidth, setInspectorWidth] = useState(336);
   const [widthsLoaded, setWidthsLoaded] = useState(false);
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -309,6 +321,8 @@ export default function PlanRenderer({
   const selected = selectedNode
     ? serializeBriefs([selectedNode as unknown as EditorNode])[0]
     : undefined;
+  const selectedTask =
+    selected?.type === "task" ? plan.tasks[selected.props.taskId] : undefined;
   const selectBlock = (id: string, openProperties = true) => {
     setSelectedId(id);
     if (openProperties) setInspectorVisible(true);
@@ -892,6 +906,7 @@ export default function PlanRenderer({
             key="inspector"
             className="workspace-inspector"
             aria-label="Свойства выбранного блока"
+            data-task-selected={selectedTask ? "true" : undefined}
           >
             <WorkspaceResizeHandle
               label="Изменить ширину панели свойств"
@@ -908,7 +923,17 @@ export default function PlanRenderer({
               onChange={setInspectorWidth}
             />
             <div className="inspector-panel-header">
-              <span>Свойства</span>
+              <div className="inspector-heading">
+                <SlidersHorizontal size={21} aria-hidden="true" />
+                <div>
+                  <strong>{selectedTask ? "Свойства задачи" : "Свойства"}</strong>
+                  {selectedTask && (
+                    <small>
+                      {String(taskOrder.get(selectedId ?? "") ?? 1).padStart(2, "0")} · {selectedTask.title}
+                    </small>
+                  )}
+                </div>
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
