@@ -106,7 +106,7 @@ export function matchesTask(task: Task, filter: TaskFilter, today: string) {
     return info.days !== undefined && info.days >= 0 && info.days <= 7;
   return filter.deadline === "all" || info.kind === filter.deadline;
 }
-export type PlanFilter = "all" | "unfinished" | "overdue" | "recent";
+export type PlanFilter = "all" | "unfinished" | "overdue" | "upcoming" | "completed" | "recent";
 export function matchesPlan(
   plan: Plan,
   query: string,
@@ -126,6 +126,12 @@ export function matchesPlan(
   if (filter === "unfinished") return tasks.some(unfinished);
   if (filter === "overdue")
     return tasks.some((t) => deadlineInfo(t, today).kind === "overdue");
+  if (filter === "upcoming")
+    return tasks.some((task) => {
+      const info = deadlineInfo(task, today);
+      return info.days !== undefined && info.days >= 0 && info.days <= 7;
+    });
+  if (filter === "completed") return tasks.some((task) => task.status === "done");
   if (filter === "recent") {
     const age = ordinal(today) - ordinal(localDate(new Date(plan.updatedAt)));
     return age >= 0 && age <= 6;
