@@ -269,6 +269,8 @@ test("approved Reels comp assembles navigable panels and an editable brief", asy
   const inspector = workspace.locator(".workspace-inspector");
   await expect(outline).toBeVisible();
   await expect(paper).toBeVisible();
+  await expect(paper.getByLabel("Название плана", { exact: true })).toHaveValue(reels.title);
+  await expect(paper.locator(".brief-fact-deadline dd").first()).toContainText("Не указан");
   await expect(inspector).toBeVisible();
   await expect(outline.locator(".outline-topline h2")).toHaveText("Структура");
   await expect(inspector).toHaveAttribute("data-task-selected", "true");
