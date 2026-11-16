@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import type { PortablePlan } from "../../src/lib/schema/plan";
 import { planAction } from "./actions";
+import { demoPlan } from "../../src/features/plans/demo";
 
 const brief: PortablePlan = {
   schemaVersion: 1,
@@ -190,4 +191,36 @@ test("editorial brief, responsive inspectors and unchanged portable data", async
     section.getByRole("img", { name: "Обновлённая подпись", exact: true }),
   ).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test("editor toolbar has stable action order on small screens and shows plan context on desktop", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: demoPlan.title, exact: true }).click();
+  await page.locator(".bn-editor").waitFor();
+
+  const preview = page.locator('[data-editor-action="preview"]');
+  const more = page.locator('[data-editor-action="more"]');
+  const share = page.locator('[data-editor-action="share"]');
+  const focus = page.locator('[data-editor-action="focus"]');
+
+  for (const width of [320, 390, 767]) {
+    await page.setViewportSize({ width, height: 844 });
+    for (const action of [preview, more, share, focus]) await expect(action).toBeVisible();
+    const [p, m, s, f] = await Promise.all(
+      [preview, more, share, focus].map(async (action) => (await action.boundingBox())!),
+    );
+    expect(p.x + p.width / 2).toBeLessThan(m.x + m.width / 2);
+    expect(m.x + m.width / 2).toBeLessThan(s.x + s.width / 2);
+    expect(Math.abs(p.y - m.y)).toBeLessThan(3);
+    expect(Math.abs(m.y - s.y)).toBeLessThan(3);
+    expect(f.y + f.height / 2).toBeLessThan(p.y + p.height / 2);
+    await expect(page.locator(".editor-context-title")).toBeHidden();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  }
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(page.locator(".editor-context-title")).toBeVisible();
+  await expect(page.locator(".editor-context-title")).toHaveText(demoPlan.title);
+  await expect(page.getByRole("status").filter({ hasText: "Сохранено локально" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
