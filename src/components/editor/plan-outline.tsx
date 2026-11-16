@@ -91,6 +91,19 @@ export function PlanOutline({
   let number = 0;
   return (
     <div className="plan-outline">
+      <div className="outline-topline">
+        <h2>{activeSection === "structure" ? "Структура" : "Задачи"}</h2>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          aria-label="Добавить задачу"
+          title="Добавить задачу"
+          onClick={() => add("task")}
+        >
+          <Plus aria-hidden="true" />
+        </Button>
+      </div>
       <ToggleGroup
         type="single"
         value={activeSection}
