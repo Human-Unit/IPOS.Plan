@@ -39,7 +39,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ImportDialog } from "@/features/import/import-dialog";
 import { BackupMenu } from "@/features/backup/backup-menu";
 import { Input } from "@/components/ui/input";
-import { matchesPlan, taskStats, type PlanFilter } from "./productivity";
+import { deadlineInfo, matchesPlan, taskStats, type PlanFilter } from "./productivity";
 import { useLocalDate } from "./use-local-date";
 import {
   ACTIVIST_PREFIX,
@@ -136,19 +136,23 @@ export function Dashboard() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        <div className="library-stats" aria-label="Задачи во всей библиотеке">
-          <span>
-            <ChangingNumber value={stats.unfinished} ready={plans !== undefined} /> Не завершено
-          </span>
-          <span data-warning={stats.overdue > 0 || undefined}>
-            <ChangingNumber value={stats.overdue} ready={plans !== undefined} /> Просрочено
-          </span>
-          <span>
-            <ChangingNumber value={stats.upcoming} ready={plans !== undefined} /> В ближайшие 7 дней
-          </span>
-          <span>
-            <ChangingNumber value={stats.completed} ready={plans !== undefined} /> Готово
-          </span>
+        <div className="library-stats" role="group" aria-label="Задачи во всей библиотеке">
+          <button type="button" aria-pressed={filter === "unfinished"} onClick={() => setFilter(filter === "unfinished" ? "all" : "unfinished")}>
+            <ChangingNumber value={stats.unfinished} ready={plans !== undefined} />
+            <span>Не завершено</span>
+          </button>
+          <button type="button" data-warning={stats.overdue > 0 || undefined} aria-pressed={filter === "overdue"} onClick={() => setFilter(filter === "overdue" ? "all" : "overdue")}>
+            <ChangingNumber value={stats.overdue} ready={plans !== undefined} />
+            <span>Просрочено</span>
+          </button>
+          <button type="button" aria-pressed={filter === "upcoming"} onClick={() => setFilter(filter === "upcoming" ? "all" : "upcoming")}>
+            <ChangingNumber value={stats.upcoming} ready={plans !== undefined} />
+            <span>В ближайшие 7 дней</span>
+          </button>
+          <button type="button" aria-pressed={filter === "completed"} onClick={() => setFilter(filter === "completed" ? "all" : "completed")}>
+            <ChangingNumber value={stats.completed} ready={plans !== undefined} />
+            <span>Готово</span>
+          </button>
         </div>
         <section className="plan-list" data-filtered={Boolean(query || filter !== "all")} aria-label="Сохранённые планы">
           <div className="library-heading">
@@ -189,6 +193,8 @@ export function Dashboard() {
             <option value="all">Все планы</option>
             <option value="unfinished">С незавершёнными задачами</option>
             <option value="overdue">С просроченными задачами</option>
+            <option value="upcoming">С задачами на ближайшие 7 дней</option>
+            <option value="completed">С выполненными задачами</option>
             <option value="recent">Изменены за 7 дней</option>
           </select>
           {(query || filter !== "all") && (
@@ -211,6 +217,11 @@ export function Dashboard() {
           {visiblePlans?.map((plan) => {
             const tasks = Object.values(plan.tasks);
             const done = tasks.filter((task) => task.status === "done").length;
+            const overdue = tasks.filter((task) => deadlineInfo(task, today).kind === "overdue").length;
+            const upcoming = tasks.filter((task) => {
+              const info = deadlineInfo(task, today);
+              return info.days !== undefined && info.days >= 0 && info.days <= 7;
+            }).length;
             return (
               <motion.article className="plan-row" key={plan.id}
                 layout={reducedMotion ? false : "position"}
@@ -235,6 +246,12 @@ export function Dashboard() {
                     <span>Задач: {tasks.length}</span>
                     <span>Готово: {done}</span>
                   </div>
+                  {(overdue > 0 || upcoming > 0) && (
+                    <div className="plan-row-deadlines" aria-label="Сроки задач">
+                      {overdue > 0 && <span data-overdue>Просрочено: {overdue}</span>}
+                      {upcoming > 0 && <span>На ближайшие 7 дней: {upcoming}</span>}
+                    </div>
+                  )}
                   <p
                     className="plan-row-summary"
                     title={tasks.map((task) => task.title).join(" · ")}
