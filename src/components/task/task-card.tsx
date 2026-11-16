@@ -231,9 +231,19 @@ export function TaskCard({
             <div className="brief-fact-status">
               <dt><CircleDot className="brief-fact-icon" size={15} aria-hidden="true" />Статус</dt>
               <dd>
-                <span className="brief-inline-status" data-status={task.status}>
-                  {statusLabels[task.status]}
-                </span>
+                {editable ? (
+                  <select
+                    className="brief-inline-status"
+                    data-status={task.status}
+                    aria-label={`Статус задачи: ${task.title}`}
+                    value={task.status}
+                    onChange={(event) => change({ status: event.target.value as Task["status"] })}
+                  >
+                    {statuses.map((status) => (
+                      <option key={status} value={status}>{statusLabels[status]}</option>
+                    ))}
+                  </select>
+                ) : <span className="brief-inline-status" data-status={task.status}>{statusLabels[task.status]}</span>}
               </dd>
             </div>
             <div className="brief-priority">
