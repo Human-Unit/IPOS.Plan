@@ -197,18 +197,6 @@ export default function PlanRenderer({
   const [panel, setPanel] = useState<"outline" | "inspector">();
   const [outlineVisible, setOutlineVisible] = useState(true);
   const [inspectorVisible, setInspectorVisible] = useState(false);
-  // On wide screens, open the first real task to show the document + properties
-  // relationship from the approved comp; never create or modify plan data.
-  useEffect(() => {
-    if (!editable || !window.matchMedia("(min-width: 1440px)").matches) return;
-    const first = editor.document.find((node) => node.type === "brief");
-    if (!first) return;
-    const frame = requestAnimationFrame(() => {
-      setSelectedId((current) => current ?? first.id);
-      setInspectorVisible(true);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [editable, editor]);
   const root = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const fileTarget = useRef<string | undefined>(undefined);
