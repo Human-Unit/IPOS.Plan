@@ -328,7 +328,8 @@ test("portable files, paste, drop, replacement, JSON, snapshot and DOCX preserve
   expect(bytes.toString("utf8")).toContain("word/media/export-");
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
   await page.getByRole("button", { name: "Поделиться", exact: true }).click();
-  const link = await page.getByLabel("Ссылка на снимок").inputValue();
+  await page.locator(".share-alternatives > summary").click();
+  const link = await page.getByLabel("Самодостаточная ссылка").inputValue();
   const viewer = await context.newPage();
   await viewer.goto(link);
   await expect(

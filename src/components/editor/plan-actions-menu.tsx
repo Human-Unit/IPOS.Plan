@@ -34,6 +34,7 @@ export function PlanActionsMenu({
           size="icon"
           variant="ghost"
           disabled={disabled}
+          data-editor-action="more"
           aria-label="Другие действия"
           title="История, импорт, экспорт и печать"
         >

@@ -148,6 +148,15 @@ describe("derived search and filters", () => {
       expect(matchesPlan(p, query, "all", "2026-10-22")).toBe(true);
     expect(matchesPlan(p, "", "unfinished", "2026-10-22")).toBe(true);
     expect(matchesPlan(p, "", "overdue", "2026-10-22")).toBe(false);
+    expect(matchesPlan(p, "", "upcoming", "2026-10-22")).toBe(true);
+    expect(matchesPlan(p, "", "upcoming", "2026-11-01")).toBe(false);
+    expect(matchesPlan(p, "", "completed", "2026-10-22")).toBe(false);
+    expect(matchesPlan({
+      ...p, tasks: { a: { ...task, status: "done" as const } },
+    }, "", "completed", "2026-10-22")).toBe(true);
+    expect(matchesPlan({
+      ...p, tasks: { a: { ...task, status: "cancelled" as const } },
+    }, "", "upcoming", "2026-10-22")).toBe(false);
     expect(matchesPlan(p, "", "recent", "2026-10-22")).toBe(true);
     expect(matchesPlan(p, "", "recent", "2026-10-30")).toBe(false);
     expect(p.tasks.a).toEqual(task);

@@ -115,10 +115,11 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
   ).toBeVisible();
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
   await page.getByRole("button", { name: "Поделиться", exact: true }).click();
-  const shareUrl = await page.getByLabel("Ссылка на снимок").inputValue();
+  await page.locator(".share-alternatives > summary").click();
+  const shareUrl = await page.getByLabel("Самодостаточная ссылка").inputValue();
   expect(shareUrl).toContain("/view#p=");
   expect(new URL(shareUrl).search).toBe("");
-  await page.getByRole("button", { name: "Копировать ссылку" }).click();
+  await page.getByRole("button", { name: "Скопировать", exact: true }).click();
   await expect(
     page.getByText("Ссылка скопирована", { exact: true }),
   ).toBeVisible();

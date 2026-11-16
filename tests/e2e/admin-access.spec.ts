@@ -4,7 +4,11 @@ test("admin workspace requires a signed session", async ({ page }) => {
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/admin\/login$/);
   await expect(page.getByRole("heading", { name: "Вход в админку" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Вход в админку" })).toBeVisible();
+  await expect(page.locator(".admin-login-brand")).toContainText("IPOS.Plan");
+  await expect(page.getByText("Черновики планов остаются в этом браузере.", { exact: false })).toBeVisible();
+  await expect(page.getByRole("link", { name: "К контент-планам" })).toBeVisible();
+  await page.setViewportSize({ width: 320, height: 680 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 
 test("bad credentials do not create a session", async ({ page }) => {

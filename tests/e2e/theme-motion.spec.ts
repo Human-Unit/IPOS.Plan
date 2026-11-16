@@ -4,6 +4,14 @@ import { planAction } from "./actions";
 
 async function theme(page: Page, _label: string, effective: "light" | "dark") {
   const toggle = page.getByRole("switch", { name: "Тёмная тема", exact: true });
+  // Wait for hydration: SSR defaults the control to "dark" while the early
+  // next-themes script has already applied a stored "light" class to html.
+  // Reading aria-checked before the control hydrates can skip the click.
+  await expect.poll(async () => {
+    const checked = await toggle.getAttribute("aria-checked");
+    const isDark = await page.locator("html").evaluate((node) => node.classList.contains("dark"));
+    return checked === String(isDark);
+  }).toBe(true);
   if ((await toggle.getAttribute("aria-checked")) !== String(effective === "dark"))
     await toggle.click();
   await expect(page.locator("html")).toHaveClass(effective);

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { ArrowUpRight, FilePlus2, FileText, LogOut, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, FilePlus2, FileText, LogOut } from "lucide-react";
 import { db } from "@/lib/db/database";
 import { createPlan } from "@/features/plans/repository";
 import { ThemeControl } from "@/components/theme/theme-control";
@@ -52,7 +52,6 @@ export function AdminWorkspace() {
       </nav>
     </header>
     <main className="admin-workspace">
-      <div className="admin-eyebrow"><ShieldCheck size={16} aria-hidden="true" /> Пространство администратора</div>
       <div className="admin-workspace-head">
         <div>
           <h1>Мои планы</h1>
