@@ -79,10 +79,10 @@
 @media screen and (min-width: 1440px) {
   .editor-stage { padding: 26px 16px 56px; }
   .editor-workspace.mode-workspace.outline-open.inspector-open:not(.focus-mode) {
-    grid-template-columns: var(--ipos-outline-width, 312px) minmax(0, 1fr) var(--ipos-inspector-width, 360px);
+    grid-template-columns: var(--ipos-outline-width, 304px) minmax(0, 1fr) var(--ipos-inspector-width, 360px);
   }
   .editor-workspace.mode-workspace.outline-open:not(.inspector-open):not(.focus-mode) {
-    grid-template-columns: var(--ipos-outline-width, 312px) minmax(0, 1fr);
+    grid-template-columns: var(--ipos-outline-width, 304px) minmax(0, 1fr);
   }
   .editor-workspace.mode-workspace.inspector-open:not(.outline-open):not(.focus-mode) {
     grid-template-columns: minmax(0, 1fr) var(--ipos-inspector-width, 360px);
