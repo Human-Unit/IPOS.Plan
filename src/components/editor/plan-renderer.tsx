@@ -273,7 +273,7 @@ export default function PlanRenderer({
     while (node && node.type !== "brief") node = editor.getParentBlock(node);
     return node?.id;
   };
-  const [outlineWidth, setOutlineWidth] = useState(312);
+  const [outlineWidth, setOutlineWidth] = useState(304);
   const [inspectorWidth, setInspectorWidth] = useState(360);
   const [widthsLoaded, setWidthsLoaded] = useState(false);
   useEffect(() => {
