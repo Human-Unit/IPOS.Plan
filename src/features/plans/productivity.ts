@@ -1,5 +1,5 @@
 import type { Task } from "@/lib/schema/task";
-import type { Plan } from "@/lib/schema/plan";
+import { flattenBlocks, type Plan } from "@/lib/schema/plan";
 import { priorityLabels, statusLabels } from "@/lib/labels";
 export const normalizeSearch = (text: string) =>
   text.normalize("NFKC").toLocaleLowerCase("ru").replaceAll("ё", "е").trim();
@@ -107,36 +107,37 @@ export function matchesTask(task: Task, filter: TaskFilter, today: string) {
   return filter.deadline === "all" || info.kind === filter.deadline;
 }
 export type PlanFilter = "all" | "unfinished" | "overdue" | "upcoming" | "completed" | "recent";
-export function matchesPlan(
-  plan: Plan,
-  query: string,
-  filter: PlanFilter,
-  today: string,
-) {
-  const tasks = Object.values(plan.tasks);
-  if (
-    !normalizeSearch(
-      [
-        plan.title,
-        ...tasks.flatMap((t) => [t.title, t.description, t.assignee]),
-      ].join(" "),
-    ).includes(normalizeSearch(query))
-  )
-    return false;
-  if (filter === "unfinished") return tasks.some(unfinished);
-  if (filter === "overdue")
-    return tasks.some((t) => deadlineInfo(t, today).kind === "overdue");
-  if (filter === "upcoming")
-    return tasks.some((task) => {
-      const info = deadlineInfo(task, today);
-      return info.days !== undefined && info.days >= 0 && info.days <= 7;
-    });
-  if (filter === "completed") return tasks.some((task) => task.status === "done");
+export function tasksInPlan(plan: Plan) {
+  const ids = new Set(flattenBlocks(plan.blocks)
+    .filter(block => block.type === "task")
+    .map(block => block.props.taskId));
+  return Array.from(ids, id => plan.tasks[id]).filter(Boolean);
+}
+
+// null means the plan is hidden. An empty list is a plan-level match.
+export function dashboardMatches(plan: Plan, tasks: Task[], query: string, filter: PlanFilter, today: string): Task[] | null {
   if (filter === "recent") {
     const age = ordinal(today) - ordinal(localDate(new Date(plan.updatedAt)));
-    return age >= 0 && age <= 6;
+    if (age < 0 || age > 6) return null;
   }
-  return true;
+  const term = normalizeSearch(query);
+  const titleMatches = normalizeSearch(plan.title).includes(term);
+  const taskFilter = filter !== "all" && filter !== "recent";
+  if (!taskFilter && titleMatches) return [];
+  const matches = tasks.filter(task => {
+    if (!titleMatches && !normalizeSearch([task.title, task.description, task.assignee].join(" ")).includes(term)) return false;
+    switch (filter) {
+      case "unfinished": return unfinished(task);
+      case "completed": return task.status === "done";
+      case "overdue": return deadlineInfo(task, today).kind === "overdue";
+      case "upcoming": {
+        const { days } = deadlineInfo(task, today);
+        return days !== undefined && days >= 0 && days <= 7;
+      }
+      default: return true;
+    }
+  });
+  return matches.length ? matches : null;
 }
 export function taskStats(tasks: Task[], today: string) {
   return tasks.reduce(

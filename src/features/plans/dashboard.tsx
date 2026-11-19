@@ -39,7 +39,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ImportDialog } from "@/features/import/import-dialog";
 import { BackupMenu } from "@/features/backup/backup-menu";
 import { Input } from "@/components/ui/input";
-import { deadlineInfo, matchesPlan, taskStats, type PlanFilter } from "./productivity";
+import { dashboardMatches, tasksInPlan, taskStats, type PlanFilter } from "./productivity";
 import { useLocalDate } from "./use-local-date";
 import {
   ACTIVIST_PREFIX,
@@ -74,11 +74,13 @@ export function Dashboard() {
   );
   const rememberedPeople = directoryNames(rosterRows ?? []);
 
-  const visiblePlans = plans?.filter((plan) =>
-    matchesPlan(plan, query, filter, today),
-  );
+  const library = plans?.map(plan => ({ plan, tasks: tasksInPlan(plan) }));
+  const visiblePlans = library?.flatMap(({ plan, tasks }) => {
+    const matches = dashboardMatches(plan, tasks, query, filter, today);
+    return matches === null ? [] : [{ plan, tasks, matches }];
+  });
   const stats = taskStats(
-    (plans ?? []).flatMap((p) => Object.values(p.tasks)),
+    (library ?? []).flatMap(entry => entry.tasks),
     today,
   );
   useEffect(() => {
@@ -214,14 +216,8 @@ export function Dashboard() {
               through rapid filter resets can leave invisible live actions. IDs
               remain stable within each result set and across Dexie updates. */}
           <AnimatePresence key={`${filter}:${query}`} initial={false} mode="popLayout">
-          {visiblePlans?.map((plan) => {
-            const tasks = Object.values(plan.tasks);
-            const done = tasks.filter((task) => task.status === "done").length;
-            const overdue = tasks.filter((task) => deadlineInfo(task, today).kind === "overdue").length;
-            const upcoming = tasks.filter((task) => {
-              const info = deadlineInfo(task, today);
-              return info.days !== undefined && info.days >= 0 && info.days <= 7;
-            }).length;
+          {visiblePlans?.map(({ plan, tasks, matches }) => {
+            const { completed: done, overdue, upcoming } = taskStats(tasks, today);
             return (
               <motion.article className="plan-row" key={plan.id}
                 layout={reducedMotion ? false : "position"}
@@ -252,7 +248,20 @@ export function Dashboard() {
                       {upcoming > 0 && <span>На ближайшие 7 дней: {upcoming}</span>}
                     </div>
                   )}
-                  <p
+                  {matches.length > 0 ? (
+                    <ul className="plan-task-matches" aria-label="Найденные задачи">
+                      {matches.map(task => (
+                        <li key={task.id}>
+                          <Link href={{ pathname: `/plan/${plan.id}`, query: { task: task.id } }}>
+                            <strong>{task.title || "Без названия"}</strong>
+                            <span>{task.assignee || "Ответственный не назначен"} · {task.deadline
+                              ? <time dateTime={task.deadline}>{task.deadline.split("-").reverse().join(".")}</time>
+                              : "Без дедлайна"}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : <p
                     className="plan-row-summary"
                     title={tasks.map((task) => task.title).join(" · ")}
                   >
@@ -263,7 +272,7 @@ export function Dashboard() {
                           .join(" · ") +
                         (tasks.length > 2 ? ` · ещё ${tasks.length - 2}` : "")
                       : "Добавьте первое задание или начните с текста"}
-                  </p>
+                  </p>}
                   <div
                     className="plan-progress"
                     role="progressbar"

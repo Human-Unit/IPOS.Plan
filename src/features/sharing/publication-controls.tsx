@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Copy, ExternalLink, Globe2, RefreshCcw, Trash2 } from "lucide-react";
 import type { PortablePlan } from "@/lib/schema/plan";
+import { slugify } from "@/lib/publications/slug";
 import { toast } from "@/lib/notifications";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,21 +27,11 @@ function readOwned(planId: string): Owned | null {
   return null;
 }
 
-function slugify(value: string) {
-  const letters: Record<string, string> = {
-    а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ё:"yo",ж:"zh",з:"z",и:"i",й:"y",
-    к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",
-    ф:"f",х:"h",ц:"ts",ч:"ch",ш:"sh",щ:"sch",ъ:"",ы:"y",ь:"",э:"e",ю:"yu",я:"ya"
-  };
-  return [...value.toLowerCase()].map(c => letters[c] ?? c).join("")
-    .normalize("NFKD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-")
-    .replace(/^-+|-+$/g,"").slice(0,40).replace(/-+$/g,"") || "plan";
-}
-
 export function PublicationControls({ planId, plan }: { planId: string; plan: PortablePlan }) {
   const [owned, setOwned] = useState<Owned | null>(() => readOwned(planId));
   const [title, setTitle] = useState(plan.title);
   const [slug, setSlug] = useState(() => slugify(plan.title));
+  const slugPrefix = slugify(slug.trim() || title);
   const [accessKey, setAccessKey] = useState(() => {
     try { return sessionStorage.getItem(sessionCodeKey) || ""; } catch { return ""; }
   });
@@ -107,7 +98,7 @@ export function PublicationControls({ planId, plan }: { planId: string; plan: Po
           "content-type": "application/json",
           ...(method === "POST" ? { "x-ipos-publish-key": accessKey } : { "x-ipos-manager-key": owned!.managerKey }),
         },
-        ...(method === "DELETE" ? {} : { body: JSON.stringify({ title, slug, document: plan }) }),
+        ...(method === "DELETE" ? {} : { body: JSON.stringify({ title, slug: slugPrefix, document: plan }) }),
       });
       const data = response.status === 204 ? {} : await response.json();
       if (!response.ok) throw new Error(data.error || "Операция не выполнена.");
@@ -177,7 +168,10 @@ export function PublicationControls({ planId, plan }: { planId: string; plan: Po
             <summary>Настроить адрес (необязательно)</summary>
             <Field>
               <FieldLabel htmlFor="publication-slug">Имя в адресе (латиница)</FieldLabel>
-              <Input id="publication-slug" value={slug} maxLength={40} disabled={busy} onChange={e => setSlug(slugify(e.target.value))} />
+              <Input id="publication-slug" value={slug} maxLength={40} disabled={busy} aria-describedby="slug-preview" spellCheck={false}
+                onChange={e => setSlug(e.target.value)}
+                onBlur={() => setSlug(slugPrefix)} />
+              <p id="slug-preview" className="muted">Начало адреса: /p/{slugPrefix}-…</p>
             </Field>
           </details>
           {needsCode && (
