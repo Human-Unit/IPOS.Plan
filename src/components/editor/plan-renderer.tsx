@@ -1,4 +1,5 @@
 "use client";
+import { useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import {
   AnimatePresence,
@@ -305,6 +306,31 @@ export default function PlanRenderer({
     () => window.matchMedia("(min-width: 1200px)").matches,
     () => false,
   );
+  const requestedTask = useSearchParams().get("task");
+  const openedTask = useRef<string | null>(null);
+  useEffect(() => {
+    if (!editable || !requestedTask || openedTask.current === requestedTask || !root.current) return;
+    const block = flattenBlocks(blocks).find(b => b.type === "task" && b.props.taskId === requestedTask);
+    if (!block?.id) return;
+    const id = block.id;
+    const container = root.current;
+    const focusBrief = () => {
+      const brief = container.querySelector<HTMLElement>(`[data-plan-block="${CSS.escape(id)}"]`);
+      if (!brief) return false;
+      openedTask.current = requestedTask;
+      setSelectedId(id);
+      brief.focus({ preventScroll: true });
+      brief.scrollIntoView({ block: "center", behavior: "instant" });
+      return true;
+    };
+    // BlockNote mounts its React node views after the editor shell.
+    if (focusBrief()) return;
+    const observer = new MutationObserver(() => {
+      if (focusBrief()) observer.disconnect();
+    });
+    observer.observe(container, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [requestedTask, blocks, editable]);
   const selectedNode = selectedId ? editor.getBlock(selectedId) : undefined;
   const selected = selectedNode
     ? serializeBriefs([selectedNode as unknown as EditorNode])[0]

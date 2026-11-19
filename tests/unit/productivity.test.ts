@@ -3,11 +3,13 @@ import {
   deadlineInfo,
   emptyTaskFilter,
   matchesTask,
-  matchesPlan,
+  dashboardMatches,
+  tasksInPlan,
   taskStats,
   localDate,
 } from "@/features/plans/productivity";
 import { newPlan } from "@/features/plans/repository";
+import type { Plan } from "@/lib/schema/plan";
 import type { Task } from "@/lib/schema/task";
 const task: Task = {
   id: "a",
@@ -137,13 +139,29 @@ describe("derived search and filters", () => {
       ).toBe(false);
     expect(matchesTask(task, emptyTaskFilter, "2026-10-22")).toBe(true);
   });
+  it("combines person and workload filters on the same brief and skips detached tasks", () => {
+    const done = { ...task, id: "b", title: "Список кадров", assignee: "Даврон", status: "done" as const };
+    const plan: Plan = {
+      ...newPlan(), title: "Съёмка",
+      tasks: { a: task, b: done, detached: { ...task, id: "detached", status: "done" } },
+      blocks: [{ type: "task", props: { taskId: "a" }, children: [{ type: "task", props: { taskId: "b" } }] }],
+    };
+    const tasks = tasksInPlan(plan);
+    expect(dashboardMatches(plan, tasks, "Амина", "completed", "2026-10-22")).toBeNull();
+    expect(dashboardMatches(plan, tasks, "Съемка", "completed", "2026-10-22")).toEqual([done]);
+    expect(dashboardMatches(plan, tasks, "Даврон", "all", "2026-10-22")).toEqual([done]);
+    expect(taskStats(tasks, "2026-10-22").completed).toBe(1);
+  });
   it("finds plan/task titles, descriptions and assignees and respects dashboard filters", () => {
-    const p = {
+    const p: Plan = {
       ...newPlan(),
       title: "Контент-план осени",
       tasks: { a: task },
+      blocks: [{ type: "task", props: { taskId: "a" } }],
       updatedAt: "2026-10-20T07:00:00Z",
     };
+    const matchesPlan = (plan: Plan, query: string, filter: Parameters<typeof dashboardMatches>[3], today: string) =>
+      dashboardMatches(plan, tasksInPlan(plan), query, filter, today) !== null;
     for (const query of ["ОСЕНИ", "студенты", "СЪЁМКА", "амина"])
       expect(matchesPlan(p, query, "all", "2026-10-22")).toBe(true);
     expect(matchesPlan(p, "", "unfinished", "2026-10-22")).toBe(true);
