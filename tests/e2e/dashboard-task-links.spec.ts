@@ -39,17 +39,17 @@ test("a custom publication address can be typed, cleared, pasted and submitted",
   await slug.press("ControlOrMeta+v");
   await expect(slug).toHaveValue("Съёмка в МГУ");
   await slug.press("Tab");
-  await expect(slug).toHaveValue("semka-v-mgu");
-  await expect(page.locator("#slug-preview")).toContainText("/p/semka-v-mgu-");
+  await expect(slug).toHaveValue("syomka-v-mgu");
+  await expect(page.locator("#slug-preview")).toContainText("/p/syomka-v-mgu-");
   await page.route("**/api/publications", route => route.fulfill({
     status: 201,
-    json: { id: "semka-v-mgu-0123456789abcdef", managerKey: "test-only" },
+    json: { id: "syomka-v-mgu-0123456789abcdef", managerKey: "test-only" },
   }));
   const publish = page.getByRole("button", { name: "Опубликовать", exact: true });
   await publish.click();
   await page.getByLabel("Код доступа к публикации").fill("test-only");
   const submitted = page.waitForRequest(request => request.url().endsWith("/api/publications"));
   await publish.click();
-  expect((await submitted).postDataJSON().slug).toBe("semka-v-mgu");
-  await expect(page.getByLabel("Ссылка на страницу")).toHaveValue(/\/p\/semka-v-mgu-0123456789abcdef$/);
+  expect((await submitted).postDataJSON().slug).toBe("syomka-v-mgu");
+  await expect(page.getByLabel("Ссылка на страницу")).toHaveValue(/\/p\/syomka-v-mgu-0123456789abcdef$/);
 });
