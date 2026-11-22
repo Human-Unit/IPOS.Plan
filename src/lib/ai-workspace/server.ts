@@ -1,67 +1,127 @@
 import "server-only";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { BlobPreconditionFailedError, get, list, put } from "@vercel/blob";
+import { z } from "zod";
 import { parseImport } from "@/lib/schema/import";
-import { assertVersion, cloudPlanId, cloudPlanRecordSchema, type CloudPlanRecord } from "./model";
 import type { PortablePlan } from "@/lib/schema/plan";
+import { cloudPlanId, cloudPlanRecordSchema, type CloudPlanRecord } from "./model";
+import { WorkspaceError } from "./http";
 
-const PREFIX = "ai-workspace/v1/";
-const pathFor = (id: string) => {
-  if (!cloudPlanId.safeParse(id).success) throw new Error("Неверный ID плана.");
-  return `${PREFIX}${id}.json`;
-};
-export const aiWorkspaceConfigured = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+const prefix = "ai-workspace/v1/";
+const fingerprint = z.string().regex(/^[a-f0-9]{64}$/);
+const storedPlanSchema = cloudPlanRecordSchema.extend({
+  creationHash: fingerprint.optional(),
+  taskRequests: z.record(z.string().regex(/^mcp-[a-f0-9]{32}$/), fingerprint).optional(),
+});
+type StoredPlan = z.infer<typeof storedPlanSchema>;
+type Stored = { record: StoredPlan; etag: string };
 
-const validate = (data: unknown): PortablePlan => {
-  const raw = JSON.stringify(data);
-  if (!raw) throw new Error("Нужен документ schemaVersion 1.");
-  return parseImport(raw);
-};
+export const hash = (value: string) => createHash("sha256").update(value).digest("hex");
+const privateToken = () => process.env.IPOS_AI_BLOB_READ_WRITE_TOKEN;
+export const aiWorkspaceConfigured = () => Boolean(privateToken());
+function storageOptions() {
+  const token = privateToken();
+  if (!token) throw new WorkspaceError(503, "Облачное хранилище не настроено.");
+  return { token };
+}
+const pathFor = (id: string) => `${prefix}${cloudPlanId.parse(id)}.json`;
 
-export async function getCloudPlan(id: string): Promise<{ record: CloudPlanRecord; etag: string } | null> {
-  const response = await get(pathFor(id), { access: "private", useCache: false });
+function validate(data: unknown): PortablePlan {
+  try {
+    const raw = JSON.stringify(data);
+    if (!raw) throw new Error("Нужен документ schemaVersion 1.");
+    return parseImport(raw);
+  } catch {
+    throw new WorkspaceError(400, "Проверьте документ schemaVersion 1 и лимит JSON в 1 МБ.");
+  }
+}
+
+export function publicPlan(record: StoredPlan): CloudPlanRecord {
+  const { id, version, createdAt, updatedAt, document } = record;
+  return { id, version, createdAt, updatedAt, document };
+}
+
+export async function getCloudPlan(id: string): Promise<Stored | null> {
+  const response = await get(pathFor(id), { ...storageOptions(), access: "private", useCache: false });
   if (!response?.stream) return null;
-  const value: unknown = JSON.parse(await new Response(response.stream).text());
-  const record = cloudPlanRecordSchema.parse(value);
-  if (record.id !== id) throw new Error("Повреждённая запись плана.");
+  const record = storedPlanSchema.parse(await new Response(response.stream).json());
+  if (record.id !== id || !response.blob.etag) throw new Error("Invalid workspace record.");
   return { record, etag: response.blob.etag };
 }
 
-export async function createCloudPlan(document: unknown): Promise<CloudPlanRecord> {
-  const portable = validate(document);
-  const id = randomUUID();
-  const timestamp = new Date().toISOString();
-  const record: CloudPlanRecord = {
-    id, version: 1, createdAt: timestamp, updatedAt: timestamp, document: portable,
-  };
-  await put(pathFor(id), JSON.stringify(record), {
-    access: "private", contentType: "application/json", addRandomSuffix: false,
-  });
-  return record;
+function creationId(key: string) {
+  const digest = hash("ipos-plan-create-v1:" + key);
+  return `${digest.slice(0, 8)}-${digest.slice(8, 12)}-8${digest.slice(13, 16)}-a${digest.slice(17, 20)}-${digest.slice(20, 32)}`;
 }
 
-export class CloudPlanConflict extends Error {
+export async function createCloudPlan(document: unknown, key?: string): Promise<CloudPlanRecord> {
+  const portable = validate(document);
+  const id = key ? creationId(key) : randomUUID();
+  const creationHash = key ? hash(JSON.stringify(portable)) : undefined;
+  const timestamp = new Date().toISOString();
+  const record: StoredPlan = {
+    id, version: 1, createdAt: timestamp, updatedAt: timestamp, document: portable, creationHash,
+  };
+  async function replay() {
+    const existing = await getCloudPlan(id);
+    if (!existing) return;
+    if (existing.record.creationHash !== creationHash)
+      throw new WorkspaceError(409, "Ключ создания уже использован для другого документа.");
+    return publicPlan(existing.record);
+  }
+  if (key) {
+    const existing = await replay();
+    if (existing) return existing;
+  }
+  try {
+    await put(pathFor(id), JSON.stringify(record), {
+      ...storageOptions(), access: "private", contentType: "application/json",
+      addRandomSuffix: false, allowOverwrite: false,
+    });
+  } catch (error) {
+    // A concurrent create or a lost acknowledgement may already have saved the record.
+    if (key) {
+      const existing = await replay();
+      if (existing) return existing;
+    }
+    throw error;
+  }
+  return publicPlan(record);
+}
+
+export class CloudPlanConflict extends WorkspaceError {
   constructor() {
-    super("Серверный план изменился. Проверьте новую версию перед сохранением.");
+    super(409, "Серверный план изменился. Проверьте новую версию перед сохранением.");
     this.name = "CloudPlanConflict";
   }
 }
-export async function updateCloudPlan(id: string, expectedVersion: number, document: unknown) {
+
+export async function updateCloudPlan(
+  id: string,
+  expectedVersion: number,
+  document: unknown,
+  taskRequest?: { id: string; hash: string },
+): Promise<CloudPlanRecord | null> {
   const portable = validate(document);
   const current = await getCloudPlan(id);
   if (!current) return null;
-  try {
-    assertVersion(expectedVersion, current.record.version);
-  } catch {
-    throw new CloudPlanConflict();
-  }
-  const next: CloudPlanRecord = {
-    ...current.record, version: expectedVersion + 1,
-    updatedAt: new Date().toISOString(), document: portable,
+  if (current.record.version !== expectedVersion) throw new CloudPlanConflict();
+
+  const next: StoredPlan = {
+    ...current.record,
+    version: current.record.version + 1,
+    updatedAt: new Date().toISOString(),
+    document: portable,
   };
+  if (taskRequest) {
+    const requests = current.record.taskRequests ?? {};
+    if (Object.keys(requests).length >= 1000)
+      throw new WorkspaceError(409, "Достигнут лимит операций добавления задач в этот план.");
+    next.taskRequests = { ...requests, [taskRequest.id]: taskRequest.hash };
+  }
   try {
     await put(pathFor(id), JSON.stringify(next), {
-      access: "private", contentType: "application/json",
+      ...storageOptions(), access: "private", contentType: "application/json",
       addRandomSuffix: false, allowOverwrite: true, ifMatch: current.etag,
     });
   } catch (error) {
@@ -70,22 +130,24 @@ export async function updateCloudPlan(id: string, expectedVersion: number, docum
     )) throw new CloudPlanConflict();
     throw error;
   }
-  return next;
+  return publicPlan(next);
 }
 
 export async function listCloudPlans(cursor?: string) {
-  const page = await list({ prefix: PREFIX, limit: 50, ...(cursor ? { cursor } : {}) });
-  const records = await Promise.all(page.blobs.map(async (blob) => {
-    const id = blob.pathname.slice(PREFIX.length).replace(/\.json$/, "");
-    if (!cloudPlanId.safeParse(id).success) return null;
-    const data = await getCloudPlan(id);
-    return data ? {
-      id, title: data.record.document.title,
-      version: data.record.version, updatedAt: data.record.updatedAt,
-    } : null;
-  }));
-  return {
-    plans: records.filter((record): record is NonNullable<typeof record> => Boolean(record)),
-    nextCursor: page.hasMore ? page.cursor : null,
-  };
+  const page = await list({ ...storageOptions(), prefix, limit: 50, ...(cursor ? { cursor } : {}) });
+  const plans = [];
+  // Bound concurrent full-document reads and keep the provider cursor opaque.
+  for (let start = 0; start < page.blobs.length; start += 5) {
+    const records = await Promise.all(page.blobs.slice(start, start + 5).map(async ({ pathname }) => {
+      const id = pathname.slice(prefix.length, -5);
+      if (!pathname.startsWith(prefix) || !pathname.endsWith(".json") || !cloudPlanId.safeParse(id).success)
+        return null;
+      const stored = await getCloudPlan(id);
+      if (!stored) return null;
+      const { version, updatedAt, document } = stored.record;
+      return { id, version, updatedAt, title: document.title };
+    }));
+    plans.push(...records.filter((record) => record !== null));
+  }
+  return { plans, nextCursor: page.hasMore ? page.cursor : null };
 }

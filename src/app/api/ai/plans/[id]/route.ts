@@ -1,56 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { isAdmin, sameOrigin } from "@/lib/admin/auth";
 import { cloudPlanId } from "@/lib/ai-workspace/model";
-import {
-  aiWorkspaceConfigured, CloudPlanConflict, getCloudPlan, updateCloudPlan,
-} from "@/lib/ai-workspace/server";
+import { aiWorkspaceConfigured, getCloudPlan, publicPlan, updateCloudPlan } from "@/lib/ai-workspace/server";
+import { expectedVersion, httpError, privateHeaders, readJson, WorkspaceError } from "@/lib/ai-workspace/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 type Context = { params: Promise<{ id: string }> };
-const noStore = { "Cache-Control": "no-store" };
 
-export async function GET(_request: NextRequest, { params }: Context) {
-  if (!(await isAdmin())) return NextResponse.json({ error: "Нужен вход в админку." }, { status: 401, headers: noStore });
-  if (!aiWorkspaceConfigured()) return NextResponse.json({ error: "Облачное хранилище не настроено." }, { status: 503, headers: noStore });
-  const { id } = await params;
-  if (!cloudPlanId.safeParse(id).success)
-    return NextResponse.json({ error: "Неверный ID плана." }, { status: 400, headers: noStore });
+const updateInput = z.strictObject({ expectedVersion, document: z.record(z.string(), z.unknown()) });
+
+async function authorizedId(request: NextRequest, context: Context) {
+  if (!(await isAdmin())) throw new WorkspaceError(401, "Нужен вход в админку.");
+  if (request.method === "PUT" && !sameOrigin(request))
+    throw new WorkspaceError(403, "Недопустимое происхождение запроса.");
+  if (!aiWorkspaceConfigured()) throw new WorkspaceError(503, "Облачное хранилище не настроено.");
+  const { id } = await context.params;
+  if (!cloudPlanId.safeParse(id).success) throw new WorkspaceError(400, "Неверный ID плана.");
+  return id;
+}
+
+export async function GET(request: NextRequest, context: Context) {
   try {
-    const plan = await getCloudPlan(id);
-    return plan
-      ? NextResponse.json(plan.record, { headers: noStore })
-      : NextResponse.json({ error: "План не найден." }, { status: 404, headers: noStore });
-  } catch {
-    return NextResponse.json({ error: "Не удалось загрузить план." }, { status: 500, headers: noStore });
+    const plan = await getCloudPlan(await authorizedId(request, context));
+    if (!plan) throw new WorkspaceError(404, "План не найден.");
+    return NextResponse.json(publicPlan(plan.record), { headers: privateHeaders });
+  } catch (error) {
+    return httpError(error);
   }
 }
 
-export async function PUT(request: NextRequest, { params }: Context) {
-  if (!(await isAdmin())) return NextResponse.json({ error: "Нужен вход в админку." }, { status: 401, headers: noStore });
-  if (!sameOrigin(request)) return NextResponse.json({ error: "Недопустимое происхождение запроса." }, { status: 403, headers: noStore });
-  if (!aiWorkspaceConfigured()) return NextResponse.json({ error: "Облачное хранилище не настроено." }, { status: 503, headers: noStore });
-  if (request.headers.get("content-type")?.split(";")[0] !== "application/json")
-    return NextResponse.json({ error: "Ожидается JSON." }, { status: 415, headers: noStore });
-  if (Number(request.headers.get("content-length") || 0) > 1_500_000)
-    return NextResponse.json({ error: "План слишком большой." }, { status: 413, headers: noStore });
-  const { id } = await params;
-  if (!cloudPlanId.safeParse(id).success)
-    return NextResponse.json({ error: "Неверный ID плана." }, { status: 400, headers: noStore });
+export async function PUT(request: NextRequest, context: Context) {
   try {
-    const raw = await request.text();
-    if (Buffer.byteLength(raw) > 1_500_000)
-      return NextResponse.json({ error: "План слишком большой." }, { status: 413, headers: noStore });
-    const body = JSON.parse(raw) as { expectedVersion?: number; document?: unknown };
-    const updated = await updateCloudPlan(id, body.expectedVersion!, body.document);
-    return updated
-      ? NextResponse.json(updated, { headers: noStore })
-      : NextResponse.json({ error: "План не найден." }, { status: 404, headers: noStore });
+    const id = await authorizedId(request, context);
+    const { expectedVersion, document } = await readJson(request, updateInput);
+    const updated = await updateCloudPlan(id, expectedVersion, document);
+    if (!updated) throw new WorkspaceError(404, "План не найден.");
+    return NextResponse.json(updated, { headers: privateHeaders });
   } catch (error) {
-    if (error instanceof CloudPlanConflict)
-      return NextResponse.json({ error: error.message }, { status: 409, headers: noStore });
-    return NextResponse.json({
-      error: error instanceof Error ? error.message : "Не удалось обновить план.",
-    }, { status: 400, headers: noStore });
+    return httpError(error);
   }
 }

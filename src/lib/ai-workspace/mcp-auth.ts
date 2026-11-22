@@ -1,20 +1,35 @@
 import "server-only";
 import { createHash, timingSafeEqual } from "node:crypto";
 
-/** Single-owner MVP. Upgrade to scoped OAuth before sharing access with a team. */
-export function mcpAuthorized(value: string | null): boolean {
-  const expected = process.env.IPOS_MCP_API_TOKEN;
-  if (!expected || expected.length < 40 || !value || value.length > 300) return false;
-  const provided = value.match(/^Bearer ([A-Za-z0-9_\-]{40,256})$/)?.[1];
-  if (!provided) return false;
-  const digest = (s: string) => createHash("sha256").update(s).digest();
-  return timingSafeEqual(digest(provided), digest(expected));
+const digest = (value: string) => createHash("sha256").update(value).digest();
+const tokenPattern = /^[A-Za-z0-9_-]{40,256}$/;
+const validToken = (value: string | undefined): value is string =>
+  typeof value === "string" && tokenPattern.test(value);
+
+export function mcpConfigured(): boolean {
+  return validToken(process.env.IPOS_MCP_API_TOKEN) ||
+    validToken(process.env.IPOS_MCP_WRITE_TOKEN);
 }
 
-/** Deny browser cross-origin requests unless origins are explicitly configured. */
+export function mcpAccess(value: string | null): "read" | "write" | undefined {
+  if (!value || value.length > 263) return;
+  const provided = value.match(/^Bearer ([A-Za-z0-9_-]{40,256})$/i)?.[1];
+  if (!provided) return;
+  const read = process.env.IPOS_MCP_API_TOKEN;
+  const write = process.env.IPOS_MCP_WRITE_TOKEN;
+  // A key configured for both roles retains only read access.
+  if (validToken(read) && timingSafeEqual(digest(provided), digest(read))) return "read";
+  if (validToken(write) && timingSafeEqual(digest(provided), digest(write))) return "write";
+}
+
+export function mcpAuthorized(value: string | null): boolean {
+  return mcpAccess(value) !== undefined;
+}
+
 export function mcpOriginAllowed(origin: string | null): boolean {
-  if (!origin) return true; // Server-to-server MCP clients normally send no Origin.
+  if (origin === null) return true;
+  if (!origin || origin === "null") return false;
   const allowed = (process.env.IPOS_MCP_ALLOWED_ORIGINS ?? "")
-    .split(",").map((s) => s.trim()).filter(Boolean);
+    .split(",").map((value) => value.trim()).filter(Boolean);
   return allowed.includes(origin);
 }
