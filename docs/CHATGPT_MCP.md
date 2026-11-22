@@ -61,9 +61,11 @@ Rotate `IPOS_MCP_API_TOKEN` if it is accidentally disclosed.
 7. If local edits should take precedence, click **Отправить локальные
    изменения**; a stale server version returns 409 instead of overwriting.
 
-Important: creating a new cloud-only plan via MCP does **not** create a new
-IndexedDB browser plan. The dashboard bridge for importing such new server
-plans is a follow-up feature.
+Important: creating a new cloud-only plan via MCP does **not** automatically
+create a new IndexedDB browser plan. Use **Из GPT** on the dashboard, review
+that server plan, and click **Создать локальную копию**. This opt-in import
+creates a new local plan and stores its cloud ID mapping; no existing draft
+is overwritten.
 
 ## HTTP API (admin cookie only)
 
