@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   if (!aiWorkspaceConfigured()) return NextResponse.json({ error: "Облачное хранилище не настроено." }, { status: 503, headers: noStore });
   try {
     const cursor = request.nextUrl.searchParams.get("cursor") || undefined;
-    if (cursor && (cursor.length > 2000 || /[^a-zA-Z0-9_\-+=/.]/.test(cursor)))
+    if (cursor && cursor.length > 2000)
       return NextResponse.json({ error: "Некорректный cursor." }, { status: 400, headers: noStore });
     return NextResponse.json(await listCloudPlans(cursor), { headers: noStore });
   } catch {
