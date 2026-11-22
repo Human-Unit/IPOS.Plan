@@ -292,7 +292,7 @@ export function EditorScreen({ id }: { id: string }) {
             </Button>
           )}
           {!preview && (
-            <Button size="sm" variant="outline" disabled={busy} title="Синхронизация плана с ChatGPT" onClick={() => void run(async () => { await flush(); setDialog("ai-sync"); })}>
+            <Button size="sm" variant="outline" disabled={busy} aria-label="Синхронизация с ChatGPT" title="Синхронизация плана с ChatGPT" onClick={() => void run(async () => { await flush(); setDialog("ai-sync"); })}>
               <Bot data-icon="inline-start" />
               <span className="toolbar-desktop-label">GPT</span>
             </Button>

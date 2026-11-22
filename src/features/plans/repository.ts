@@ -1,4 +1,5 @@
 import { db, type Activity, type Revision } from "@/lib/db/database";
+import { bindingKey, bindingSchema, type CloudBinding } from "@/lib/ai-workspace/binding";
 import { activityChanges } from "./activity-changes";
 import { toPortable, type Plan, type PortablePlan } from "@/lib/schema/plan";
 export const uid = () => crypto.randomUUID();
@@ -29,10 +30,21 @@ function revision(plan: Plan, title: string): Revision {
     snapshot: structuredClone(plan),
   };
 }
-export async function createPlan(data?: PortablePlan, type = "PLAN_CREATED") {
+export async function saveCloudBinding(localId: string, binding: CloudBinding) {
+  const key = bindingKey(localId);
+  await db.transaction("rw", db.plans, db.settings, async () => {
+    const current = bindingSchema.safeParse((await db.settings.get(key))?.value).data;
+    if (!(await db.plans.get(localId)) || (current && (current.id !== binding.id || current.version > binding.version)))
+      throw new Error("Локальная привязка изменилась. Откройте план снова.");
+    await db.settings.put({ key, value: binding });
+  });
+}
+
+export async function createPlan(data?: PortablePlan, type = "PLAN_CREATED", binding?: CloudBinding) {
   const plan = newPlan(data ? toPortable(data) : undefined);
-  await db.transaction("rw", db.plans, db.activity, async () => {
+  await db.transaction("rw", db.plans, db.activity, db.settings, async () => {
     await db.plans.add(plan);
+    if (binding) await saveCloudBinding(plan.id, binding);
     await db.activity.add(
       event(
         plan.id,
@@ -78,9 +90,10 @@ export async function replacePlan(
   plan: Plan,
   data: PortablePlan,
   type: "PLAN_IMPORTED" | "PLAN_RESTORED",
+  binding?: CloudBinding,
 ) {
   const portable = toPortable(data);
-  return db.transaction("rw", db.plans, db.revisions, db.activity, async () => {
+  return db.transaction("rw", db.plans, db.revisions, db.activity, db.settings, async () => {
     const current = await db.plans.get(plan.id);
     if (!current || current.version !== plan.version)
       throw new Error("План изменился. Перезагрузите страницу перед заменой.");
@@ -97,6 +110,7 @@ export async function replacePlan(
       updatedAt: now(),
     };
     await db.plans.put(next);
+    if (binding) await saveCloudBinding(next.id, binding);
     await db.activity.add(
       event(
         plan.id,

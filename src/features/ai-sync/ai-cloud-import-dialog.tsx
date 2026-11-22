@@ -2,74 +2,64 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { db } from "@/lib/db/database";
 import { createPlan } from "@/features/plans/repository";
-import type { PortablePlan } from "@/lib/schema/plan";
+import type { CloudPlanRecord } from "@/lib/ai-workspace/model";
+import { cloudPageSchema, cloudRequest, CloudRequestError, readCloudPlan, type CloudPage } from "./client";
 import { PlanRenderer } from "@/components/plan/renderer";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from "@/components/ui/dialog";
 
-type Item = { id: string; title: string; updatedAt: string; version: number };
-type Cloud = Item & { document: PortablePlan };
-type Page = { plans: Item[]; nextCursor: string | null };
+type Item = CloudPage["plans"][number];
 type Props = { onClose: () => void; onImported: (localId: string) => void };
 
-async function getJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, { cache: "no-store", credentials: "same-origin" });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result?.error || `Ошибка запроса: ${response.status}`);
-  return result as T;
-}
 
 export function AiCloudImportDialog({ onClose, onImported }: Props) {
   const [items, setItems] = useState<Item[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
-  const [selected, setSelected] = useState<Cloud>();
+  const [selected, setSelected] = useState<CloudPlanRecord>();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<Error>();
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let mounted = true;
-    void getJson<Page>("/api/ai/plans")
+    void cloudRequest(cloudPageSchema, "/api/ai/plans")
       .then((page) => {
         if (mounted) {
           setItems(page.plans);
           setCursor(page.nextCursor);
         }
       })
-      .catch((e) => { if (mounted) setError(e instanceof Error ? e.message : "Не удалось получить планы."); })
+      .catch((e) => { if (mounted) setError(e instanceof Error ? e : new Error("Не удалось получить планы.")); })
       .finally(() => { if (mounted) setLoaded(true); });
     return () => { mounted = false; };
   }, []);
 
   const run = async (job: () => Promise<void>) => {
     setBusy(true);
-    setError("");
+    setError(undefined);
     try { await job(); }
-    catch (e) { setError(e instanceof Error ? e.message : "Ошибка."); }
+    catch (e) { setError(e instanceof Error ? e : new Error("Ошибка.")); }
     finally { setBusy(false); }
   };
 
   const more = () => void run(async () => {
     if (!cursor) return;
-    const page = await getJson<Page>(`/api/ai/plans?cursor=${encodeURIComponent(cursor)}`);
+    const page = await cloudRequest(cloudPageSchema, "/api/ai/plans?cursor=" + encodeURIComponent(cursor));
     setItems((old) => [...old, ...page.plans.filter((item) => !old.some((before) => before.id === item.id))]);
     setCursor(page.nextCursor);
   });
 
   const choose = (id: string) => void run(async () => {
-    const cloud = await getJson<Cloud>(`/api/ai/plans/${encodeURIComponent(id)}`);
+    const cloud = await readCloudPlan(id);
     setSelected(cloud);
   });
 
   const importSelected = () => void run(async () => {
     if (!selected) return;
     // Creating a new local plan never replaces or overwrites existing IndexedDB drafts.
-    const local = await createPlan(selected.document, "PLAN_IMPORTED");
-    await db.settings.put({
-      key: `ai-sync:plan:${local.id}`,
-      value: { id: selected.id, version: selected.version },
+    const local = await createPlan(selected.document, "PLAN_IMPORTED", {
+      id: selected.id, version: selected.version,
     });
     onImported(local.id);
   });
@@ -107,13 +97,15 @@ export function AiCloudImportDialog({ onClose, onImported }: Props) {
                     </li>
                   ))}
                 </ul>
-              ) : <p>Облачных планов пока нет.</p>}
+              ) : !error && <p>Облачных планов пока нет.</p>}
               {cursor && <Button variant="outline" disabled={busy} onClick={more}>Показать ещё</Button>}
             </>
           )}
           {error && (
             <p role="alert">
-              {error} <Link href="/admin/login" target="_blank" rel="noopener noreferrer">Войти в админку</Link>
+              {error.message} {error instanceof CloudRequestError && error.status === 401 && (
+                <Link href="/admin/login" target="_blank" rel="noopener noreferrer">Войти в админку</Link>
+              )}
             </p>
           )}
         </DialogBody>

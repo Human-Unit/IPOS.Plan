@@ -4,38 +4,32 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Plan, PortablePlan } from "@/lib/schema/plan";
 import { toPortable } from "@/lib/schema/plan";
+import { bindingKey, bindingSchema, type CloudBinding } from "@/lib/ai-workspace/binding";
+import { cloudPlanRecordSchema, type CloudPlanRecord } from "@/lib/ai-workspace/model";
+import { saveCloudBinding } from "@/features/plans/repository";
+import { cloudRequest, planPath, readCloudPlan } from "./client";
 import { db } from "@/lib/db/database";
 import { PlanRenderer } from "@/components/plan/renderer";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogBody, DialogFooter } from "@/components/ui/dialog";
 
-type CloudRecord = { id: string; version: number; updatedAt: string; document: PortablePlan };
-type Binding = { id: string; version: number };
+type Review = { remote: CloudPlanRecord; local: Plan };
 type Props = {
   plan: Plan;
   flush: () => Promise<Plan>;
-  replace: (data: PortablePlan, kind: "PLAN_IMPORTED" | "PLAN_RESTORED") => Promise<Plan>;
+  replace: (
+    data: PortablePlan,
+    kind: "PLAN_IMPORTED",
+    sync: { expectedLocalVersion: number; binding: CloudBinding },
+  ) => Promise<Plan>;
   onClose: () => void;
 };
 
-const keyFor = (id: string) => `ai-sync:plan:${id}`;
-async function readBinding(id: string): Promise<Binding | undefined> {
-  const row = await db.settings.get(keyFor(id));
-  const data = row?.value;
-  if (data && typeof data === "object" && "id" in data && "version" in data) {
-    const candidate = data as { id: unknown; version: unknown };
-    if (typeof candidate.id === "string" && Number.isSafeInteger(candidate.version) && Number(candidate.version) > 0)
-      return { id: candidate.id, version: Number(candidate.version) };
-  }
+async function readBinding(id: string) {
+  const row = await db.settings.get(bindingKey(id));
+  return bindingSchema.safeParse(row?.value).data;
 }
-async function saveBinding(localId: string, binding: Binding) {
-  await db.settings.put({ key: keyFor(localId), value: binding });
-}
-async function responseJson(response: Response): Promise<CloudRecord> {
-  const data = await response.json();
-  if (!response.ok) throw new Error(data?.error || `Ошибка сервера: ${response.status}`);
-  return data as CloudRecord;
-}
+
 function summary(local: PortablePlan, remote: PortablePlan) {
   const oldTasks = local.tasks, newTasks = remote.tasks;
   const before = new Set(Object.keys(oldTasks));
@@ -47,14 +41,13 @@ function summary(local: PortablePlan, remote: PortablePlan) {
 }
 
 export function AiSyncDialog({ plan, flush, replace, onClose }: Props) {
-  const [binding, setBinding] = useState<Binding>();
+  const [binding, setBinding] = useState<CloudBinding>();
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [remote, setRemote] = useState<CloudRecord>();
+  const [review, setReview] = useState<Review>();
   const [confirmed, setConfirmed] = useState(false);
-  const [serverHasUpdates, setServerHasUpdates] = useState(false);
   useEffect(() => {
     let mounted = true;
     void readBinding(plan.id).then((value) => {
@@ -72,56 +65,69 @@ export function AiSyncDialog({ plan, flush, replace, onClose }: Props) {
   };
   const activate = () => void run(async () => {
     const saved = toPortable(await flush());
-    const result = await responseJson(await fetch("/api/ai/plans", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      credentials: "same-origin", body: JSON.stringify({ document: saved }),
-    }));
-    const next = { id: result.id, version: result.version };
-    await saveBinding(plan.id, next);
+    const record = await cloudRequest(cloudPlanRecordSchema, "/api/ai/plans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ document: saved, idempotencyKey: plan.id }),
+    });
+    // The create request can be replayed after a lost response. Keep v1 as
+    // the baseline so a later cloud change still needs review.
+    const next = { id: record.id, version: 1 };
+    await saveCloudBinding(plan.id, next);
     setBinding(next);
     setMessage("Копия этого плана сохранена в приватном облачном пространстве.");
   });
+
   const check = () => void run(async () => {
     if (!binding) return;
-    const result = await responseJson(await fetch(`/api/ai/plans/${encodeURIComponent(binding.id)}`, { cache: "no-store", credentials: "same-origin" }));
-    const changed = result.version !== binding.version;
-    setRemote(result);
-    setServerHasUpdates(changed);
+    setReview(undefined);
     setConfirmed(false);
-    setMessage(changed ? "Обнаружены изменения на сервере. Проверьте их перед применением." : "Серверный план не изменился.");
+    const local = await flush();
+    const remote = await readCloudPlan(binding.id);
+    if (remote.version < binding.version)
+      throw new Error("Сервер вернул более раннюю версию. Проверьте подключение.");
+    if (remote.version > binding.version) {
+      setReview({ local, remote });
+      setMessage("Обнаружены изменения на сервере. Проверьте их перед применением.");
+    } else {
+      setMessage("Серверный план не изменился.");
+    }
   });
+
   const push = () => void run(async () => {
     if (!binding) return;
-    // The server rejects a stale expectedVersion even if the local editor
-    // was updated since this dialog opened.
     const saved = toPortable(await flush());
-    const result = await responseJson(await fetch(`/api/ai/plans/${encodeURIComponent(binding.id)}`, {
-      method: "PUT", headers: { "Content-Type": "application/json" },
-      credentials: "same-origin",
+    const record = await cloudRequest(cloudPlanRecordSchema, planPath(binding.id), {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ expectedVersion: binding.version, document: saved }),
-    }));
-    const next = { id: result.id, version: result.version };
-    await saveBinding(plan.id, next);
+    });
+    if (record.id !== binding.id || record.version !== binding.version + 1)
+      throw new Error("Сервер вернул неожиданную версию. Проверьте изменения из GPT.");
+    const next = { id: record.id, version: record.version };
+    await saveCloudBinding(plan.id, next);
     setBinding(next);
-    setRemote(undefined);
-    setServerHasUpdates(false);
-    setMessage("Изменения отправлены. Открытые локальные версии не изменены.");
+    setMessage("Изменения отправлены.");
   });
+
   const apply = () => void run(async () => {
-    if (!binding || !remote || !serverHasUpdates || !confirmed) return;
-    // Make sure remote has not changed during review and do not import into
-    // a different plan. replace() saves a local revision before replacement.
-    const latest = await responseJson(await fetch(`/api/ai/plans/${encodeURIComponent(binding.id)}`, { cache: "no-store", credentials: "same-origin" }));
-    if (latest.version !== remote.version) throw new Error("Серверный план изменился во время просмотра. Проверьте ещё раз.");
-    await replace(remote.document, "PLAN_IMPORTED");
+    if (!binding || !review || !confirmed) return;
+    const { local, remote } = review;
+    const latest = await readCloudPlan(binding.id);
+    if (latest.version !== remote.version) {
+      setReview(undefined);
+      setConfirmed(false);
+      throw new Error("Серверный план изменился во время просмотра. Проверьте ещё раз.");
+    }
     const next = { id: latest.id, version: latest.version };
-    await saveBinding(plan.id, next);
+    await replace(remote.document, "PLAN_IMPORTED", { expectedLocalVersion: local.version, binding: next });
     setBinding(next);
-    setRemote(undefined);
-    setServerHasUpdates(false);
+    setReview(undefined);
+    setConfirmed(false);
     setMessage("Серверная версия применена. Предыдущая локальная версия сохранена в истории.");
   });
-  const changes = remote ? summary(toPortable(plan), remote.document) : undefined;
+
+  const changes = review ? summary(toPortable(review.local), review.remote.document) : undefined;
   return (
     <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose(); }}>
       <DialogContent className="wide-dialog">
@@ -143,17 +149,17 @@ export function AiSyncDialog({ plan, flush, replace, onClose }: Props) {
               <p>Подключённая копия · версия {binding.version}</p>
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" disabled={busy} onClick={check}>Проверить изменения из GPT</Button>
-                <Button variant="outline" disabled={busy || serverHasUpdates} onClick={push}>Отправить локальные изменения</Button>
+                <Button variant="outline" disabled={busy || Boolean(review)} onClick={push}>Отправить локальные изменения</Button>
               </div>
-              {remote && serverHasUpdates && (
+              {review && (
                 <section aria-label="Предпросмотр серверных изменений">
-                  <h3>Изменения · версия {remote.version}</h3>
+                  <h3>Изменения · версия {review.remote.version}</h3>
                   <p>Добавлено: {changes?.added.length ?? 0}, изменено: {changes?.changed.length ?? 0}, удалено: {changes?.removed.length ?? 0}. Возможны изменения текста и структуры документа.</p>
                   <div style={{ maxHeight: 320, overflow: "auto" }}>
-                    <PlanRenderer plan={remote.document} showCover />
+                    <PlanRenderer plan={review.remote.document} showCover />
                   </div>
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
+                    <input type="checkbox" disabled={busy} checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
                     Я проверил серверную версию и хочу заменить локальный документ.
                   </label>
                   <Button disabled={!confirmed || busy} onClick={apply}>Применить серверную версию</Button>
