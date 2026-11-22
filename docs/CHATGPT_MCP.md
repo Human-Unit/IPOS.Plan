@@ -1,135 +1,66 @@
-# ChatGPT ↔ IPOS.Plan: AI workspace (initial MVP)
+# ChatGPT и IPOS.Plan через MCP
 
-Status: **source implementation on a feature branch, not a deployed or connected ChatGPT plugin**.
-This scope is a single-owner proof-of-concept. Follow-up work: official MCP SDK,
-OAuth/OIDC, account isolation, comprehensive integration tests, and a connector
-installation/release checklist.
+Интеграция реализована в исходном коде для одного владельца. Локальные проверки используют тестовые данные и моки. Подключение действующего ChatGPT и проверка на личном облачном хранилище остаются отдельным этапом.
 
-## Why there is a separate workspace
+## Архитектура и доступ
 
-IPOS.Plan remains a **local-first** product. Normal drafts, activity, tasks and
-history are in the browser's Dexie IndexedDB database. A server cannot access
-this data. A public `/p/[id]` publication is a read-only snapshot and must not
-be used as a mutable draft.
+IPOS.Plan хранит черновики, историю и версии в IndexedDB. Приватная серверная копия хранится в отдельном приватном Blob store по пути `ai-workspace/v1/<uuid>.json`. Публичная публикация `/p/[id]` использует отдельное хранилище. [Режимы доступа Vercel Blob](https://vercel.com/docs/vercel-blob#private-and-public-storage).
 
-The new AI workspace is a *different*, private storage namespace in Vercel Blob:
+- `/api/ai/plans` и `/api/ai/plans/<uuid>` требуют действующей подписанной сессии владельца. POST и PUT проверяют Origin.
+- `POST /api/mcp` использует `createMcpHandler` из `@modelcontextprotocol/server` 2.4.0. Поддерживается Streamable HTTP с `initialize` для протокола 2025-11-25 и `server/discover` для 2026-07-28. [MCP SDK и версии протокола](https://ts.sdk.modelcontextprotocol.io/v2/protocol-versions).
+- Права определяются на сервере для каждого запроса. Ключ чтения открывает только два инструмента чтения. Ключ записи открывает шесть инструментов, включая чтение.
+- Запись проверяет `expectedVersion` и атомарно сравнивает ETag. Лимит JSON-документа составляет 1 000 000 байт, лимит конверта запроса составляет 1 500 000 байт. Ошибка Blob возвращается без текста провайдера.
 
-- `ai-workspace/v1/<uuid>.json` — private, versioned portable schema-v1 document;
-- no existing local plan is uploaded without the user clicking to connect it;
-- the editor records a local `ai-sync:plan:<localPlanId>` mapping in Dexie settings;
-- browser sync uses the existing admin session, server route permissions and
-  same-origin check; MCP uses a dedicated bearer token (single owner);
-- server writes use ETag compare-and-swap and expectedVersion, conflict = HTTP 409;
-- a cloud update is **never applied to IndexedDB automatically**; preview and
-  explicit confirmation are required. `replacePlan` saves a local revision.
+## Настройки сервера
 
-## Runtime environment
+| Переменная | Назначение |
+| --- | --- |
+| `IPOS_AI_BLOB_READ_WRITE_TOKEN` | Токен отдельного **приватного** Blob store. Если приватные копии уже существуют, используйте токен того же хранилища. |
+| `IPOS_ADMIN_PASSWORD`, `IPOS_ADMIN_SESSION_SECRET` | Вход владельца для браузерной синхронизации. См. [ADMIN.md](./ADMIN.md). |
+| `IPOS_MCP_API_TOKEN` | Ключ чтения технического MCP-клиента, 40–256 символов base64url. |
+| `IPOS_MCP_WRITE_TOKEN` | Отдельный ключ чтения и записи, 40–256 символов base64url. |
+| `IPOS_MCP_ALLOW_REPLACE` | Значение `true` разрешает подтверждённую полную замену серверного документа. По умолчанию операция заблокирована. |
+| `IPOS_MCP_ALLOWED_ORIGINS` | Необязательный серверный список доверенных Origin через запятую. Он не включает браузерный CORS. Серверный клиент может отправлять запросы без Origin. |
 
-Required to enable private plan API (server-side environment only):
+Храните ключи только на сервере или в настройках авторизованного технического клиента. Генерируйте независимые случайные ключи. Существующая переменная `BLOB_READ_WRITE_TOKEN` относится к публикации. При совпадении двух MCP-ключей применяются права чтения.
 
-```ini
-BLOB_READ_WRITE_TOKEN=<private Vercel Blob RW token>
-```
+## Инструменты
 
-Required to enable the preliminary MCP endpoint, additionally:
+| Инструмент | Параметры и поведение |
+| --- | --- |
+| `ipos_list_plans` | Список записей с пагинацией. Значение `nextCursor` передаётся как есть. |
+| `ipos_get_plan` | `planId`. Возвращает полный документ schemaVersion 1 и его версию. |
+| `ipos_create_plan` | `title`, `idempotencyKey`. Создаёт пустой серверный план. |
+| `ipos_add_task` | `planId`, `expectedVersion`, `idempotencyKey`, `title`. Дополнительно `description` для сценария, `assignee` для имён, `referenceUrl` для ссылки, `priority` и явно заданный `deadline`. |
+| `ipos_update_task` | `planId`, `taskId`, `expectedVersion`, `patch`. Дедлайн можно убрать через `deadline: null`. |
+| `ipos_replace_plan` | `planId`, `expectedVersion`, `confirmReplace: true`, полный `document`. Требует отдельного разрешения владельца в настройках сервера. |
 
-```ini
-IPOS_MCP_API_TOKEN=<random private token at least 40 characters>
-```
+Ключ повтора имеет длину 8–100 символов. Используйте один ключ на намерение создать план или добавить конкретную задачу. Повтор с тем же ключом возвращает существующий идентификатор. Для новых записей повтор с другим содержимым возвращает конфликт. При конфликте версии сначала прочитайте актуальный документ. Повторное сообщение в ChatGPT, которому клиент присвоит новый ключ, считается новой операцией. Сервер не делает вывод о намерении из похожего текста.
 
-Optional for browser cross-origin MCP callers; use only vetted origins:
+Если пользователь не дал дату, оставьте дедлайн пустым. Для двух Reels создайте один план и последовательно добавьте две задачи с разными ключами, используя версию из предыдущего ответа. Пишите сценарии в `description`, имена в `assignee`, предоставленные ссылки в `referenceUrl`. Запросы чтения не идут по этим ссылкам.
 
-```ini
-IPOS_MCP_ALLOWED_ORIGINS=https://your-authorized-client.example
-```
+## Синхронизация с браузером
 
-Do not expose these values in `NEXT_PUBLIC_*`, Git history, screenshots, query
-parameters, JSON imports or an MCP tool result. The existing admin password,
-session cookie and publication-management keys are *not* MCP bearer tokens.
-Rotate `IPOS_MCP_API_TOKEN` if it is accidentally disclosed.
+1. Войдите в админку на том же домене и откройте конкретный локальный план.
+2. В редакторе нажмите **GPT**, затем **Подключить этот план**. Сервер получает только выбранный сохранённый документ.
+3. После изменения серверной копии откройте **Проверить изменения из GPT**. Диалог показывает версию, сводку задач и полный предварительный просмотр.
+4. Подтвердите замену флажком и нажмите **Применить серверную версию**. Если локальная или серверная версия успела измениться, повторите проверку. Применение, запись предыдущей версии и обновление привязки происходят в одной транзакции IndexedDB.
+5. Для отправки последующих локальных правок используйте **Отправить локальные изменения**. Конфликт возвращает 409 и требует перечитать серверный документ.
 
-## User workflow (one plan at a time)
+Для плана, созданного через MCP, откройте **Из GPT** на главной странице, выберите документ и проверьте его. **Создать локальную копию** сохраняет отдельный редактируемый план с привязкой к источнику. Формат JSON и схема IndexedDB сохраняются.
 
-1. Log in through `/admin/login` (on the **same domain**).
-2. Open an existing local plan and select **GPT** in the editor.
-3. Click **Подключить этот план**. This uploads only the currently selected
-   saved portable plan to the private AI workspace, creating server version 1.
-4. Use an authorized MCP client for the tools below.
-5. Back in the editor, open **GPT → Проверить изменения из GPT**.
-6. Review the entire remote document; explicitly confirm before applying.
-   The former local version is saved via the existing import/revision path.
-7. If local edits should take precedence, click **Отправить локальные
-   изменения**; a stale server version returns 409 instead of overwriting.
+## Подключение через личную инфраструктуру
 
-Important: creating a new cloud-only plan via MCP does **not** automatically
-create a new IndexedDB browser plan. Use **Из GPT** on the dashboard, review
-that server plan, and click **Создать локальную копию**. This opt-in import
-creates a new local plan and stores its cloud ID mapping; no existing draft
-is overwritten.
+Текущие bearer-ключи предназначены для авторизованного технического MCP-клиента. Они не реализуют OAuth. Для проверки запустите приложение на своём сервере и передайте подходящий ключ техническому клиенту. Старый MCP-клиент отправляет `initialize` с версией `2025-11-25`, затем `notifications/initialized` и `tools/list`. Для Streamable HTTP используйте `Accept: application/json, text/event-stream`.
 
-## HTTP API (admin cookie only)
+Для подключения ChatGPT нужен защищённый HTTPS endpoint и полноценный OAuth. Предлагаемая схема для реализации перед подключением:
 
-- `GET /api/ai/plans?cursor=...` — page of up to 50 private plans;
-- `POST /api/ai/plans` — `{ "document": <PortablePlan> }`;
-- `GET /api/ai/plans/<uuid>` — private record `{id,version,document,...}`;
-- `PUT /api/ai/plans/<uuid>` — `{ "expectedVersion": 1, "document": <PortablePlan> }`.
+1. Владелец выбирает личный OAuth-провайдер и регистрирует callback URI, показанный в настройках плагина.
+2. Endpoint публикует OAuth Protected Resource Metadata с адресом сервера авторизации. В ответе 401 поле `WWW-Authenticate` указывает на этот документ.
+3. Сервер авторизации поддерживает Authorization Code с PKCE S256. MCP-сервер проверяет подпись или интроспекцию access token, срок действия, issuer, audience/resource и scopes `plans:read` и `plans:write`.
+4. После проверки OAuth заменяет источник прав, который сейчас представлен bearer-ключами. Перед доступом нескольких владельцев понадобится хранить записи по идентификатору владельца, проверять владение для чтения и записи и отдельно мигрировать существующие копии.
+5. В настройках ChatGPT добавьте HTTPS URL личного сервера и пройдите OAuth. Проверьте чтение, пользовательское подтверждение записи, отзыв доступа и отказ для чужой учётной записи. [Руководство OpenAI по OAuth для плагинов](https://developers.openai.com/plugins/build/auth).
 
-No public CORS, no anonymous access. POST/PUT require same-origin checks and
-the signed admin cookie. Both use `parseImport` with full document schema
-validation and preserve the existing 1 MiB portable format.
+До production проверьте отдельное приватное хранилище с тестовыми данными, лимиты запросов и вызовов, журнал операций без тел документов и ключей, отзыв доступа и реальные вызовы из ChatGPT. Полная замена должна оставаться выключенной, пока политика подтверждения и восстановления не проверена. Утверждать поддержку нескольких владельцев можно только после проверки изоляции.
 
-## MCP endpoint (single-owner technical preview)
-
-`POST /api/mcp` uses stateless Streamable HTTP JSON-RPC and a dedicated
-`Authorization: Bearer ...` token. Implemented tool names:
-
-- `ipos_list_plans`, `ipos_get_plan` (read only);
-- `ipos_create_plan` (new empty server plan);
-- `ipos_add_task` (idempotency key, optional Instagram reference; deadline is
-  omitted unless provided);
-- `ipos_update_task` (selectively edit task fields);
-- `ipos_replace_plan` (whole document, marked destructive).
-
-Tool responses include a current server version. Write calls require
-`expectedVersion`; clients should read the latest record first.
-
-This minimal handler supports 2025-era stateless MCP initialize/tools/list/
-tools/call. **It is not an official-SDK server, does not provide OAuth, and is
-not yet certified against ChatGPT's current MCP connector protocol. Do not
-treat creating an endpoint as proof it works in ChatGPT.** Replace the minimal
-adapter with the maintained `mcp-handler` 2 / MCP SDK v2 transport and
-OAuth 2.1 before production rollout or multi-user access.
-
-Example of authorized protocol smoke test (replace credentials in your shell
-environment, not in history):
-
-```bash
-curl --fail-with-body -sS -X POST "https://YOUR_DEPLOYMENT/api/mcp" \
-  -H "Authorization: Bearer ${IPOS_MCP_API_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json, text/event-stream" \
-  --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"smoke","version":"1.0"}}}'
-```
-
-Expected high-level response: `result.serverInfo.name="ipos-plan"` and
-`result.capabilities.tools`. Continue with `notifications/initialized`,
-`tools/list`, and `tools/call` only after verifying authorization.
-
-## Safety and verification before merge/deploy
-
-- [ ] `npm ci && npm run lint && npm run typecheck && npm test && npm run build`
-- [ ] Validate JSON schema, malformed taskId/deadline, 1 MiB size limit
-- [ ] Test anonymous `401`, foreign Origin `403`, conflicts `409`, invalid
-      input and missing records
-- [ ] Check exact-once idempotency for retry of `ipos_add_task`
-- [ ] Verify ETag stale write rejection against actual Vercel Blob
-- [ ] Manual editor: activate, make local/remote changes, preview, accept,
-      check prior local revision and A4/JSON/DOCX exports
-- [ ] Test same-origin admin cookie after login and rate-limit requests
-- [ ] Test the MCP protocol using an MCP Inspector/current ChatGPT connector
-- [ ] Confirm no automatic upload of other IndexedDB plans
-- [ ] Use a non-production Blob store for acceptance, never real user drafts
-
-See `PRODUCT.md`, `docs/PLAN_SCHEMA.md`, and GitHub issue #33 for later
-OAuth/roles/shared-workspace design. Do not deploy this preview without
-integration testing and an explicit security review.
+Локально прошли lint, проверка типов, сборка, 112 unit-тестов и 45 браузерных сценариев с локальным ответом для шрифтов. Два браузерных теста с учётными данными владельца пропущены. Детали и аудит рисков описаны в [отчёте MCP](reports/2026-11-22-chatgpt-mcp.md).
