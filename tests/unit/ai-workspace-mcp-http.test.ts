@@ -80,7 +80,7 @@ beforeEach(() => {
   vi.stubEnv("IPOS_AI_BLOB_READ_WRITE_TOKEN", "mock-only");
 });
 
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
 describe("MCP through the SDK with private storage mocked", () => {
   it("authenticates before storage, rejects unlisted Origin, and separates tool permissions", async () => {
@@ -199,4 +199,42 @@ describe("browser API with the same mock", () => {
     vi.stubEnv("IPOS_AI_BLOB_READ_WRITE_TOKEN", "");
     expect((await list(new NextRequest(base + "/api/ai/plans"))).status).toBe(503);
   });
+  it("does not accept old technical keys when OAuth mode is selected but incomplete", async () => {
+    vi.stubEnv("IPOS_MCP_AUTH_MODE", "oauth");
+    const response = await POST(rpc({ jsonrpc: "2.0", id: 1, method: "tools/list" }, writeToken));
+    expect(response.status).toBe(503);
+    expect(blobs.size).toBe(0);
+  });
+
+  it("checks OAuth introspection on every request and restricts tools to granted scopes", async () => {
+    vi.stubEnv("IPOS_MCP_AUTH_MODE", "oauth");
+    vi.stubEnv("IPOS_MCP_OAUTH_ISSUER", "https://login.personal.example/");
+    vi.stubEnv("IPOS_MCP_RESOURCE_URL", "https://ipos.personal.example/api/mcp");
+    vi.stubEnv("IPOS_MCP_OAUTH_INTROSPECTION_URL", "https://login.personal.example/introspect");
+    vi.stubEnv("IPOS_MCP_OAUTH_CLIENT_ID", "owner-personal-app");
+    vi.stubEnv("IPOS_MCP_OAUTH_CLIENT_SECRET", "only-local-test-secret");
+    vi.stubEnv("IPOS_MCP_OAUTH_OWNER_SUB", "only-personal-owner");
+    const claims = {
+      active: true, iss: "https://login.personal.example/",
+      aud: "https://ipos.personal.example/api/mcp",
+      sub: "only-personal-owner", exp: Math.floor(Date.now() / 1000) + 180,
+      client_id: "chatgpt-personal", scope: "plans:read",
+    };
+    const provider = vi.fn(async () => new Response(JSON.stringify(claims), {
+      headers: { "Content-Type": "application/json" },
+    }));
+    vi.stubGlobal("fetch", provider);
+    // The old static write token has no special privileges in OAuth mode.
+    const readOnly = await jsonRpc(await POST(rpc({
+      jsonrpc: "2.0", id: 1, method: "tools/list",
+    }, writeToken)));
+    expect(readOnly.result.tools.map((item: { name: string }) => item.name)).toEqual(["ipos_list_plans", "ipos_get_plan"]);
+    expect(provider).toHaveBeenCalledTimes(1);
+    const deny = await call("ipos_create_plan", { title: "Should not create", idempotencyKey: "oauth-read-only" });
+    expect(deny.wire.error || deny.wire.result?.isError).toBeTruthy();
+    expect(blobs.size).toBe(0);
+    const badAuth = await POST(rpc({ jsonrpc: "2.0", id: 2, method: "tools/list" }, "x"));
+    expect(badAuth.status).toBe(401);
+  });
+
 });
