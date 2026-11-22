@@ -45,7 +45,7 @@ test("connects one local plan only after confirmation and applies only the revie
     }
   });
   await page.goto("/");
-  await page.getByRole("button", { name: "Новый план", exact: true }).click();
+  await page.locator(".dashboard-actions").getByRole("button", { name: "Новый план", exact: true }).click();
   await page.locator(".bn-editor").waitFor();
   await page.getByRole("button", { name: "Синхронизация с ChatGPT", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: /Подключение к ChatGPT/ });
