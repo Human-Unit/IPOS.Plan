@@ -1,0 +1,22 @@
+[
+  {
+    "check": "focus-ring",
+    "target": ".focus-visible\\:outline-none:focus-visible",
+    "reason": "Existing vendor/editor CSS loaded globally; this selector has no matching dashboard control. Main-page keyboard focus is visible in the production Tab check. Editor focus styling is outside this page redesign."
+  },
+  {
+    "check": "focus-ring",
+    "target": ".bn-snapshot-name:focus",
+    "reason": "Existing vendor/editor CSS loaded globally; this selector has no matching dashboard control. Main-page keyboard focus is visible in the production Tab check. Editor focus styling is outside this page redesign."
+  },
+  {
+    "check": "focus-ring",
+    "target": ".bn-shadcn .bn-editor:focus-visible",
+    "reason": "Existing vendor/editor CSS loaded globally; this selector has no matching dashboard control. Main-page keyboard focus is visible in the production Tab check. Editor focus styling is outside this page redesign."
+  },
+  {
+    "check": "moment-none",
+    "target": "(the page)",
+    "reason": "The user requests less empty space and readable operational content on the existing dashboard. A decorative marketing scroll section would delay plan retrieval and conflict with that scope; existing functional motion is retained."
+  }
+]

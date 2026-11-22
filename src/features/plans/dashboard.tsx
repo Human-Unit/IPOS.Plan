@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import "./dashboard.css";
 import { AnimatePresence, motion, useAnimationControls, useReducedMotion } from "motion/react";
 import { ChangingNumber } from "@/components/ui/changing-number";
 import { motionEase, motionTiming } from "@/lib/motion";
@@ -103,14 +104,15 @@ export function Dashboard() {
     });
   return (
     <>
-      <header className="app-bar">
+      <header className="app-bar dashboard-app-bar">
+        <a className="skip-link dashboard-skip-link" href="#plan-library">Перейти к планам</a>
         <Brand />
         <div className="app-bar-tools"><Link className="admin-entry" href="/admin"><ShieldCheck size={16} aria-hidden="true" /><span>Админка</span></Link><span className="local-indicator">
           <span />
           Локальное пространство
         </span><ThemeControl /></div>
       </header>
-      <main className="dashboard">
+      <main className="dashboard dashboard-main">
         <motion.section
           initial={false}
           animate={heroAnimation}
@@ -118,17 +120,33 @@ export function Dashboard() {
           className="dashboard-heading dashboard-hero"
           aria-labelledby="dashboard-title"
         >
-          <div className="dashboard-hero-copy">
-            <h1 id="dashboard-title">Контент-планы</h1>
-            <p className="dashboard-hero-description">
-              От идеи и задания — к готовому медиапроекту.
-            </p>
+          <div className="dashboard-overview-heading">
+            <div className="dashboard-hero-copy">
+              <h1 id="dashboard-title">Контент-планы</h1>
+              <p className="dashboard-hero-description">
+                Задачи, тексты и сроки медиасектора — в одном плане.
+              </p>
+            </div>
+            <div className="dashboard-actions">
+              <Button data-primary-action disabled={busy} onClick={create}>
+                <Plus data-icon="inline-start" />
+                Новый план
+              </Button>
+            </div>
           </div>
-          <div className="dashboard-actions">
-            <Button data-primary-action disabled={busy} onClick={create}>
-              <Plus data-icon="inline-start" />
-              Новый план
-            </Button>
+          <div className="library-stats" aria-label="Задачи во всей библиотеке">
+            <span>
+              <ChangingNumber value={stats.unfinished} ready={plans !== undefined} /> Не завершено
+            </span>
+            <span data-warning={stats.overdue > 0 || undefined}>
+              <ChangingNumber value={stats.overdue} ready={plans !== undefined} /> Просрочено
+            </span>
+            <span>
+              <ChangingNumber value={stats.upcoming} ready={plans !== undefined} /> В ближайшие 7 дней
+            </span>
+            <span>
+              <ChangingNumber value={stats.completed} ready={plans !== undefined} /> Готово
+            </span>
           </div>
         </motion.section>
         {error && (
@@ -136,29 +154,15 @@ export function Dashboard() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        <div className="library-stats" aria-label="Задачи во всей библиотеке">
-          <span>
-            <ChangingNumber value={stats.unfinished} ready={plans !== undefined} /> Не завершено
-          </span>
-          <span data-warning={stats.overdue > 0 || undefined}>
-            <ChangingNumber value={stats.overdue} ready={plans !== undefined} /> Просрочено
-          </span>
-          <span>
-            <ChangingNumber value={stats.upcoming} ready={plans !== undefined} /> В ближайшие 7 дней
-          </span>
-          <span>
-            <ChangingNumber value={stats.completed} ready={plans !== undefined} /> Готово
-          </span>
-        </div>
-        <section className="plan-list" data-filtered={Boolean(query || filter !== "all")} aria-label="Сохранённые планы">
+        <section id="plan-library" tabIndex={-1} className="plan-list" data-filtered={Boolean(query || filter !== "all")} aria-label="Сохранённые планы">
           <div className="library-heading">
             <div className="list-label">
-              <h2>
-                Сохранённые планы{" "}
+              <div className="library-title-line">
+                <h2>Сохранённые планы</h2>
                 <span role="status" aria-label="Найдено планов">
                   {visiblePlans?.length ?? "…"} / {plans?.length ?? "…"}
                 </span>
-              </h2>
+              </div>
               <span>Обновлены недавно</span>
             </div>
             <div className="library-utilities">
@@ -174,23 +178,29 @@ export function Dashboard() {
           role="search"
           aria-label="Поиск по библиотеке"
         >
-          <Input
-            type="search"
-            aria-label="Поиск планов"
-            placeholder="План, задача или ответственный…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <select
-            aria-label="Фильтр планов"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as PlanFilter)}
-          >
-            <option value="all">Все планы</option>
-            <option value="unfinished">С незавершёнными задачами</option>
-            <option value="overdue">С просроченными задачами</option>
-            <option value="recent">Изменены за 7 дней</option>
-          </select>
+          <label className="dashboard-search-field">
+            <span>Поиск по библиотеке</span>
+            <Input
+              type="search"
+              aria-label="Поиск планов"
+              placeholder="План, задача или ответственный…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </label>
+          <label className="dashboard-filter-field">
+            <span>Показать планы</span>
+            <select
+              aria-label="Фильтр планов"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value as PlanFilter)}
+            >
+              <option value="all">Все планы</option>
+              <option value="unfinished">С незавершёнными задачами</option>
+              <option value="overdue">С просроченными задачами</option>
+              <option value="recent">Изменены за 7 дней</option>
+            </select>
+          </label>
           {(query || filter !== "all") && (
             <Button
               variant="ghost"
@@ -218,7 +228,7 @@ export function Dashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={reducedMotion ? { opacity: 1 } : { opacity: 0, y: -3 }}
                 transition={{ duration: reducedMotion ? 0 : motionTiming.surface, ease: motionEase }}
-                whileHover={reducedMotion ? undefined : { y: -1 }}
+                whileHover={reducedMotion ? undefined : { y: -2 }}
               >
                 <span className="plan-row-icon" aria-hidden="true">
                   <FileText size={24} />
