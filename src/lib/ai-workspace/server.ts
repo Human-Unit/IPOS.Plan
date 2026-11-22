@@ -12,7 +12,11 @@ const pathFor = (id: string) => {
 };
 export const aiWorkspaceConfigured = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 
-const validate = (data: unknown) => parseImport(JSON.stringify(data)) as PortablePlan;
+const validate = (data: unknown): PortablePlan => {
+  const raw = JSON.stringify(data);
+  if (!raw) throw new Error("Нужен документ schemaVersion 1.");
+  return parseImport(raw);
+};
 
 export async function getCloudPlan(id: string): Promise<{ record: CloudPlanRecord; etag: string } | null> {
   const response = await get(pathFor(id), { access: "private", useCache: false });
