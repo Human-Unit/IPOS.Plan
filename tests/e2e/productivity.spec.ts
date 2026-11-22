@@ -183,6 +183,7 @@ test("dashboard workload indicators filter actual plans without mutating them", 
   await page.getByLabel("JSON плана", { exact: true }).fill(JSON.stringify(fixture));
   await page.getByRole("button", { name: "Проверить и посмотреть" }).click();
   await page.getByRole("button", { name: "Подтвердить импорт" }).click();
+  await expect(page).toHaveURL(/\/plan\/[^/#?]+$/);
   await page.goto("/");
   await expect(page.locator(".plan-row")).toHaveCount(2);
   const group = page.getByRole("group", { name: "Задачи во всей библиотеке" });
