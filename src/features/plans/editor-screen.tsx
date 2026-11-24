@@ -182,7 +182,7 @@ export function EditorScreen({ id }: { id: string }) {
   return (
     <>
       <header
-        className={`${preview ? "preview-bar" : "editor-bar"}${focusMode ? " is-focus" : ""}`}
+        className={`cobalt-editor-bar ${preview ? "preview-bar" : "editor-bar"}${focusMode ? " is-focus" : ""}`}
       >
         <div className="editor-identity">
           <Button
@@ -359,7 +359,7 @@ export function EditorScreen({ id }: { id: string }) {
           </Button>
         </nav>
       </header>
-      <main className={`editor-stage${focusMode ? " focus-stage" : ""}`}>
+      <main className={`editor-stage cobalt-editor-stage${focusMode ? " focus-stage" : ""}`}>
         {error && (
           <Alert variant="destructive">
             <AlertDescription>
