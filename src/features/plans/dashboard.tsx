@@ -204,6 +204,16 @@ export function Dashboard() {
           </div>
           <div className="dashboard-library-surface">
             <nav className="dashboard-filters" aria-label="Фильтры планов">
+              <select
+                className="dashboard-filter-select"
+                aria-label="Фильтр планов"
+                value={filter}
+                onChange={(event) => setFilter(event.target.value as PlanFilter)}
+              >
+                {planFilters.map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
               {planFilters.map(({ value, label }) => (
                 <button
                   type="button"
@@ -251,6 +261,15 @@ export function Dashboard() {
                     <span>Задач: {tasks.length}</span>
                     <span>Готово: {done}</span>
                   </div>
+                  {(() => {
+                    const { overdue, upcoming } = taskStats(tasks, today);
+                    return (overdue > 0 || upcoming > 0) ? (
+                      <div className="plan-row-deadlines" aria-label="Сроки задач">
+                        {overdue > 0 && <span data-overdue>Просрочено: {overdue}</span>}
+                        {upcoming > 0 && <span>На ближайшие 7 дней: {upcoming}</span>}
+                      </div>
+                    ) : null;
+                  })()}
                   {matches.length > 0 ? (
                     <ul className="plan-task-matches" aria-label="Найденные задачи">
                       {matches.slice(0, 3).map((task) => (
