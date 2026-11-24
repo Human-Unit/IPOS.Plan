@@ -21,6 +21,7 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: npm run mcp:preflight:test
       - name: Independently validate DOCX archive and OOXML
         run: |
           python3 - <<'PY'
