@@ -149,8 +149,25 @@
   margin: 0 0 18px;
   border-bottom: 1px solid var(--ui-border);
 }
-.dashboard-main .library-stats > span { display: flex; gap: 8px; align-items: baseline; padding-inline: 16px; }
-.dashboard-main .library-stats > span:first-child { padding-left: 0; }
+.dashboard-main .library-stats > button { display: flex; gap: 8px; align-items: baseline; padding-inline: 16px; }
+.dashboard-main .library-stats > button:first-child { padding-left: 0; }
+.dashboard-main .library-stats > button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  min-height: 44px;
+}
+.dashboard-main .library-stats > button[aria-pressed="true"] {
+  color: var(--primary);
+}
+.dashboard-main .library-stats > button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -3px;
+  border-radius: 4px;
+}
+
 .dashboard-main .library-stats strong { margin: 0; font: 720 21px/1.3 var(--font-heading); font-variant-numeric: tabular-nums; }
 .dashboard-main > [data-slot="alert"] { margin-bottom: 12px; }
 .dashboard-main .plan-list { padding: 0; overflow: visible; background: transparent; border: 0; }
@@ -266,7 +283,7 @@
     margin: 10px 0 0;
     padding: 5px 0 9px;
   }
-  .dashboard-main .library-stats > span { padding: 0; gap: 6px; border: 0; }
+  .dashboard-main .library-stats > button { padding: 0; gap: 6px; border: 0; }
   .dashboard-main .library-stats strong { font-size: 18px; }
   .dashboard-main .list-label h2 { font-size: 18px; }
   .dashboard-main .library-heading { flex-wrap: nowrap; gap: 5px; margin-bottom: 8px; }
