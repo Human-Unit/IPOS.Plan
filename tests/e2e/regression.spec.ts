@@ -11,7 +11,7 @@ test("stale tab never overwrites and can export its unsaved copy", async ({
   context,
 }) => {
   await page.goto("/");
-  await page.getByRole("link", { name: demoPlan.title }).click();
+  await page.getByRole("link", { name: demoPlan.title, exact: true }).click();
   await page.getByLabel("Название плана", { exact: true }).waitFor();
   const other = await context.newPage();
   await other.goto(page.url());
@@ -41,7 +41,7 @@ test("references and slash blocks persist; deleted task supports undo", async ({
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
-  await page.getByRole("link", { name: demoPlan.title }).click();
+  await page.getByRole("link", { name: demoPlan.title, exact: true }).click();
   await page
     .getByRole("region", {
       name: "Задача: Подготовить текст анонса",

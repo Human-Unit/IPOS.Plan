@@ -1,13 +1,13 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./dashboard.css";
-import { AnimatePresence, motion, useAnimationControls, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ChangingNumber } from "@/components/ui/changing-number";
 import { motionEase, motionTiming } from "@/lib/motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Plus, Copy, Trash2, ArrowUpRight, Upload, FileText, ChevronDown, ShieldCheck } from "lucide-react";
+import { Plus, Copy, Trash2, ArrowUpRight, Upload, FileText, ChevronDown, FolderOpen, Search, ShieldCheck } from "lucide-react";
 import { toast } from "@/lib/notifications";
 import { db } from "@/lib/db/database";
 import { createPlan, deletePlan, duplicatePlan } from "./repository";
@@ -42,20 +42,22 @@ import { BackupMenu } from "@/features/backup/backup-menu";
 import { Input } from "@/components/ui/input";
 import { matchesPlan, taskStats, type PlanFilter } from "./productivity";
 import { useLocalDate } from "./use-local-date";
+import { DashboardOpening } from "./dashboard-opening";
 import {
   ACTIVIST_PREFIX,
   directoryNames,
   syncDirectoryFromPlans,
 } from "@/features/activists/directory";
+const planFilters = [
+  { value: "all", label: "Все планы" },
+  { value: "unfinished", label: "Не завершено" },
+  { value: "overdue", label: "Просрочено" },
+  { value: "recent", label: "Недавние" },
+] as const satisfies ReadonlyArray<{ value: PlanFilter; label: string }>;
+
 export function Dashboard() {
   const router = useRouter();
   const reducedMotion = useReducedMotion();
-  const heroAnimation = useAnimationControls();
-  useEffect(() => {
-    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    heroAnimation.set({ opacity: 0.8, y: 4 });
-    void heroAnimation.start({ opacity: 1, y: 0 });
-  }, [heroAnimation]);
   const plans = useLiveQuery(() =>
     db.plans.orderBy("updatedAt").reverse().toArray(),
   );
@@ -63,9 +65,15 @@ export function Dashboard() {
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState<Plan>();
   const [importing, setImporting] = useState(false);
+  const [filesOpen, setFilesOpen] = useState(false);
+  const filesToggle = useRef<HTMLButtonElement>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<PlanFilter>("all");
   const today = useLocalDate();
+  const resetFilters = () => {
+    setQuery("");
+    setFilter("all");
+  };
   const rosterRows = useLiveQuery(
     () =>
       db.settings
@@ -107,33 +115,13 @@ export function Dashboard() {
       <header className="app-bar dashboard-app-bar">
         <a className="skip-link dashboard-skip-link" href="#plan-library">Перейти к планам</a>
         <Brand />
-        <div className="app-bar-tools"><Link className="admin-entry" href="/admin"><ShieldCheck size={16} aria-hidden="true" /><span>Админка</span></Link><span className="local-indicator">
+        <div className="app-bar-tools"><Link className="admin-entry" href="/admin" aria-label="Админка"><ShieldCheck size={16} aria-hidden="true" /><span>Админка</span></Link><span className="local-indicator">
           <span />
           Локальное пространство
         </span><ThemeControl /></div>
       </header>
       <main className="dashboard dashboard-main">
-        <motion.section
-          initial={false}
-          animate={heroAnimation}
-          transition={{ duration: motionTiming.entrance, ease: motionEase }}
-          className="dashboard-heading dashboard-hero"
-          aria-labelledby="dashboard-title"
-        >
-          <div className="dashboard-overview-heading">
-            <div className="dashboard-hero-copy">
-              <h1 id="dashboard-title">Контент-планы</h1>
-              <p className="dashboard-hero-description">
-                Задачи, тексты и сроки медиасектора — в одном плане.
-              </p>
-            </div>
-            <div className="dashboard-actions">
-              <Button data-primary-action disabled={busy} onClick={create}>
-                <Plus data-icon="inline-start" />
-                Новый план
-              </Button>
-            </div>
-          </div>
+        <DashboardOpening recentPlan={plans?.[0]} busy={busy} onCreate={create} />
           <div className="library-stats" aria-label="Задачи во всей библиотеке">
             <span>
               <ChangingNumber value={stats.unfinished} ready={plans !== undefined} /> Не завершено
@@ -148,7 +136,6 @@ export function Dashboard() {
               <ChangingNumber value={stats.completed} ready={plans !== undefined} /> Готово
             </span>
           </div>
-        </motion.section>
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -163,56 +150,67 @@ export function Dashboard() {
                   {visiblePlans?.length ?? "…"} / {plans?.length ?? "…"}
                 </span>
               </div>
-              <span>Обновлены недавно</span>
             </div>
-            <div className="library-utilities">
-              <BackupMenu />
-              <Button variant="outline" disabled={busy} onClick={() => setImporting(true)}>
-                <Upload data-icon="inline-start" />
-                Импорт JSON
-              </Button>
-            </div>
-          </div>
-        <div
-          className="library-search"
-          role="search"
-          aria-label="Поиск по библиотеке"
-        >
-          <label className="dashboard-search-field">
-            <span>Поиск по библиотеке</span>
-            <Input
-              type="search"
-              aria-label="Поиск планов"
-              placeholder="План, задача или ответственный…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </label>
-          <label className="dashboard-filter-field">
-            <span>Показать планы</span>
-            <select
-              aria-label="Фильтр планов"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value as PlanFilter)}
-            >
-              <option value="all">Все планы</option>
-              <option value="unfinished">С незавершёнными задачами</option>
-              <option value="overdue">С просроченными задачами</option>
-              <option value="recent">Изменены за 7 дней</option>
-            </select>
-          </label>
-          {(query || filter !== "all") && (
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setQuery("");
-                setFilter("all");
+            <div
+              className="dashboard-library-tools"
+              onKeyDown={(event) => {
+                if (event.key === "Escape" && !event.defaultPrevented && filesOpen &&
+                    event.target instanceof Node && event.currentTarget.contains(event.target)) {
+                  setFilesOpen(false);
+                  filesToggle.current?.focus();
+                }
               }}
             >
-              Сбросить поиск
-            </Button>
-          )}
-        </div>
+              <div className="library-search" role="search" aria-label="Поиск по библиотеке">
+                <label htmlFor="dashboard-plan-search">Поиск планов</label>
+                <Search size={16} aria-hidden="true" />
+                <Input
+                  type="search"
+                  id="dashboard-plan-search"
+                  placeholder="Поиск"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </div>
+              <Button
+                ref={filesToggle}
+                className="dashboard-files-toggle"
+                variant="outline"
+                aria-expanded={filesOpen}
+                aria-controls="dashboard-file-actions"
+                onClick={() => setFilesOpen((open) => !open)}
+              >
+                <FolderOpen data-icon="inline-start" />
+                Файлы
+              </Button>
+              <div className="library-utilities" id="dashboard-file-actions" data-open={filesOpen}>
+                <BackupMenu />
+                <Button variant="outline" disabled={busy} onClick={() => setImporting(true)}>
+                  <Upload data-icon="inline-start" />
+                  Импорт JSON
+                </Button>
+              </div>
+            </div>
+          </div>
+          <div className="dashboard-library-surface">
+            <nav className="dashboard-filters" aria-label="Фильтры планов">
+              {planFilters.map(({ value, label }) => (
+                <button
+                  type="button"
+                  className="dashboard-filter"
+                  key={value}
+                  aria-pressed={filter === value}
+                  onClick={() => setFilter(value)}
+                >
+                  {label}
+                </button>
+              ))}
+              {(query || filter !== "all") && Boolean(visiblePlans?.length) && (
+                <Button className="dashboard-reset" variant="ghost" onClick={resetFilters}>
+                  Сбросить поиск
+                </Button>
+              )}
+            </nav>
           {!plans && !error && <Skeleton className="h-28 w-full" />}
           {/* Search replaces the result set immediately. Retaining old results
               through rapid filter resets can leave invisible live actions. IDs
@@ -228,7 +226,6 @@ export function Dashboard() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={reducedMotion ? { opacity: 1 } : { opacity: 0, y: -3 }}
                 transition={{ duration: reducedMotion ? 0 : motionTiming.surface, ease: motionEase }}
-                whileHover={reducedMotion ? undefined : { y: -2 }}
               >
                 <span className="plan-row-icon" aria-hidden="true">
                   <FileText size={24} />
@@ -257,6 +254,9 @@ export function Dashboard() {
                         (tasks.length > 2 ? ` · ещё ${tasks.length - 2}` : "")
                       : "Добавьте первое задание или начните с текста"}
                   </p>
+                </div>
+                <time className="dashboard-row-date" dateTime={plan.updatedAt}>{formatDate(plan.updatedAt)}</time>
+                <div className="dashboard-row-progress">
                   <div
                     className="plan-progress"
                     role="progressbar"
@@ -272,6 +272,7 @@ export function Dashboard() {
                       transition={{ duration: reducedMotion ? 0 : motionTiming.surface }}
                     />
                   </div>
+                  <span aria-hidden="true">{done} из {tasks.length}</span>
                 </div>
                 <div className="plan-row-actions">
                   <Button
@@ -307,13 +308,7 @@ export function Dashboard() {
           {Boolean(plans?.length) && visiblePlans?.length === 0 && (
             <div className="search-empty" role="status">
               <p>Планы не найдены. Измените запрос или фильтр.</p>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setQuery("");
-                  setFilter("all");
-                }}
-              >
+              <Button variant="ghost" onClick={resetFilters}>
                 Сбросить поиск
               </Button>
             </div>
@@ -338,6 +333,7 @@ export function Dashboard() {
               </EmptyContent>
             </Empty>
           )}
+          </div>
         </section>
         <details className="activist-directory">
           <summary>

@@ -5,6 +5,9 @@ import { ThemeProvider, useTheme } from "next-themes";
 import { MotionConfig } from "motion/react";
 import { surfaceTransition } from "@/lib/motion";
 
+// Resolve legacy storage to dark in the bootstrap script and provider alike.
+const themeClasses = { light: "light", dark: "dark", system: "dark" };
+
 // Existing visitors might have stored the old third option. Migrate it to
 // dark once; system/device theme is not an application preference anymore.
 function MigrateLegacySystemTheme() {
@@ -20,6 +23,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     <ThemeProvider
       attribute="class"
       themes={["light", "dark"]}
+      value={themeClasses}
       defaultTheme="dark"
       enableSystem={false}
       storageKey="ipos-plan-theme"

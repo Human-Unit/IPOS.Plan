@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## IPOS.Plan design and UX guidance
 
-For any UI, visual design, responsive layout, component, or UX changes, read `docs/design/IPOS_DESIGN_PLAYBOOK.md` **before editing**. Use its evidence-led audit workflow and test matrix.
+For any UI, visual design, responsive layout, component, or UX changes, read [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md), and the [IPOS.Plan design playbook](docs/design/IPOS_DESIGN_PLAYBOOK.md) before editing. Use the playbook’s evidence-led audit workflow and test matrix. Use the Ghost Admin interaction patterns recorded in DESIGN.md as the dashboard and editor reference, with the Student Council visual identity.
 
 The Paykar documents at `docs/design/paykar-reference/` are **reference examples only**. Do not apply their green brand, commerce routes, backend rules, or old project commands to IPOS.Plan. Preserve IPOS's local IndexedDB storage, BlockNote editing, immutable sharing, JSON/DOCX export, A4 print and responsive interaction behavior.
 

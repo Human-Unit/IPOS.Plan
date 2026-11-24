@@ -1,0 +1,153 @@
+:root {
+  --cobalt-ink: #101f5c;
+  --cobalt-canvas: #e9edf7;
+  --cobalt-cover: #173abf;
+  --cobalt-on-dark: #fff;
+  --cobalt-muted-on-dark: #e2eaff;
+  --cobalt-line-on-dark: rgb(255 255 255 / 31%);
+  --cobalt-ease: cubic-bezier(.18, .76, .26, 1);
+}
+
+@media screen {
+  :root.dark { --cobalt-canvas: #0b1229; }
+  :is(.dashboard-app-bar, .cobalt-reader-bar, .cobalt-editor-bar) {
+    background: var(--cobalt-ink);
+    color: var(--cobalt-on-dark);
+    border-bottom-color: var(--cobalt-line-on-dark);
+  }
+  :is(.dashboard-app-bar, .cobalt-reader-bar, .cobalt-editor-bar)
+    :is(.brand-name, .editor-plan-name, .admin-entry) { color: var(--cobalt-on-dark); }
+  :is(.dashboard-app-bar, .cobalt-reader-bar, .cobalt-editor-bar)
+    :is(.brand-description, .local-indicator, .save-status) { color: var(--cobalt-muted-on-dark); }
+  :is(.dashboard-app-bar, .cobalt-reader-bar) .local-indicator > span { background: #9db8ff; }
+  :is(.dashboard-app-bar, .cobalt-reader-bar) .brand-description,
+  .cobalt-editor-bar .editor-identity > [data-slot="button"]:first-child {
+    border-color: var(--cobalt-line-on-dark);
+  }
+  :is(.dashboard-app-bar, .cobalt-reader-bar, .cobalt-editor-bar)
+    :is(a, [data-slot="button"], [data-slot="toggle-group-item"]):focus-visible {
+    outline: 2px solid var(--cobalt-on-dark);
+    outline-offset: 2px;
+  }
+  .cobalt-editor-bar .save-status[data-state="saved"]::before { background: #9ad5b4; }
+  .cobalt-editor-bar .save-status[data-state="error"] { color: #ffbac4; }
+  .cobalt-editor-bar .save-status[data-state="error"]::before { background: #ffbac4; }
+  .cobalt-editor-bar .editor-actions [data-variant="outline"],
+  .cobalt-editor-bar .experience-switch {
+    color: var(--cobalt-on-dark);
+    border-color: var(--cobalt-line-on-dark);
+    background: transparent;
+  }
+  .cobalt-editor-bar .experience-switch [data-state="on"] {
+    color: var(--cobalt-on-dark);
+    background: rgb(255 255 255 / 18%);
+  }
+  .cobalt-editor-bar [data-variant="ghost"]:hover,
+  .cobalt-editor-bar .editor-actions [data-variant="outline"]:hover {
+    color: var(--cobalt-on-dark);
+    background: rgb(255 255 255 / 14%);
+  }
+  .cobalt-editor-bar .editor-actions [aria-label="Поделиться"] {
+    background: white;
+    color: #1734b4;
+  }
+  .cobalt-editor-bar .editor-actions [aria-label="Поделиться"]:hover { background: #e8eeff; }
+  .cobalt-editor-stage, .viewer-stage { background: var(--cobalt-canvas); }
+  .cobalt-editor-stage .workspace-outline {
+    padding: 12px;
+    background: var(--background);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--ui-panel-radius);
+  }
+
+  .cobalt-editor-stage .workspace-outline .quick-insert {
+    margin-inline: 2px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cobalt-editor-stage .workspace-outline .quick-insert [data-slot="button"] {
+    height: auto;
+    min-height: 36px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: left;
+  }
+  :is(.cobalt-editor-stage, .inspector-drawer) .block-inspector .field-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  :is(.viewer-stage, .cobalt-editor-stage:has(.preview-notice)) .cover-eyebrow {
+    display: none;
+  }
+
+  :is(.cobalt-editor-stage, .viewer-stage) .plan-paper {
+    --cover-gutter: 48px;
+    --cover-top: 40px;
+    border-radius: 10px;
+  }
+  .cobalt-editor-stage .mode-workspace .plan-paper {
+    --cover-gutter: 32px;
+    --cover-top: 28px;
+  }
+  :is(.cobalt-editor-stage, .viewer-stage) .plan-paper > .plan-cover {
+    isolation: isolate;
+    overflow: hidden;
+    align-items: center;
+    margin: calc(-1 * var(--cover-top)) calc(-1 * var(--cover-gutter)) 21px;
+    padding: 25px var(--cover-gutter);
+    border: 0;
+    border-radius: 9px 9px 0 0;
+    background: var(--cobalt-cover);
+    color: var(--cobalt-on-dark);
+  }
+  :is(.cobalt-editor-stage, .viewer-stage) .plan-cover::after {
+    content: "";
+    position: absolute;
+    inset: -12% -1% -51% 66%;
+    z-index: -1;
+    pointer-events: none;
+    background: rgb(135 168 255 / 23%);
+    mask: url("/brand/student-council-emblem.svg") center / contain no-repeat;
+    transform: rotate(-11deg);
+  }
+  :is(.cobalt-editor-stage, .viewer-stage) .plan-cover :is(h1, .cover-title) {
+    color: var(--cobalt-on-dark);
+    overflow-wrap: anywhere;
+    caret-color: var(--cobalt-on-dark);
+  }
+  :is(.cobalt-editor-stage, .viewer-stage) .plan-cover :is(.cover-eyebrow, .cover-meta) {
+    color: var(--cobalt-muted-on-dark);
+  }
+  .cobalt-editor-stage .plan-cover .cover-title:focus-visible {
+    outline: 2px solid var(--cobalt-on-dark);
+    outline-offset: 2px;
+  }
+  .cobalt-editor-stage .task-brief[data-selected="true"] {
+    background: var(--secondary);
+    border-radius: 8px;
+  }
+
+  @media (max-width: 767px) {
+    :is(.cobalt-editor-stage, .viewer-stage) .plan-paper,
+    .cobalt-editor-stage .mode-workspace .plan-paper {
+      --cover-gutter: 18px;
+      --cover-top: 24px;
+    }
+    :is(.cobalt-editor-stage, .viewer-stage) .plan-paper > .plan-cover {
+      padding-block: 17px;
+      margin-bottom: 15px;
+      border-radius: 8px 8px 0 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .cobalt-inspector-heading { animation: cobalt-value-in 200ms var(--cobalt-ease) both; }
+    :is(.cobalt-editor-stage, .viewer-stage) .plan-paper > .plan-cover::after {
+      animation: cobalt-cover-unfold 540ms var(--cobalt-ease) both;
+    }
+    .cobalt-editor-stage .task-brief { transition: background-color 220ms var(--cobalt-ease); }
+  }
+}
+
+@keyframes cobalt-value-in { from { opacity: .65; transform: translateY(4px); } }
+@keyframes cobalt-cover-unfold {
+  from { opacity: .65; transform: translateX(12px) rotate(-16deg); }
+}

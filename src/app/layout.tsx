@@ -4,6 +4,7 @@ import "./surfaces.css";
 import "./dashboard-hero.css";
 import "./workspace.css";
 import "./document.css";
+import "./cobalt-surfaces.css";
 import "./print.css";
 import { AppProviders } from "@/components/theme/app-providers";
 import { Toaster } from "@/components/ui/sonner";

@@ -34,7 +34,7 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
     if (m.type() === "error") errors.push(m.text());
   });
   await page.goto("/");
-  await expect(page.getByRole("link", { name: demoPlan.title })).toBeVisible();
+  await expect(page.getByRole("link", { name: demoPlan.title, exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Новый план", exact: true }).click();
   await page.locator(".bn-editor").waitFor();
   await page
@@ -115,10 +115,11 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
   ).toBeVisible();
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
   await page.getByRole("button", { name: "Поделиться", exact: true }).click();
-  const shareUrl = await page.getByLabel("Ссылка на снимок").inputValue();
+  await page.getByText("Другой способ: ссылка без публикации", { exact: true }).click();
+  const shareUrl = await page.getByLabel("Самодостаточная ссылка").inputValue();
   expect(shareUrl).toContain("/view#p=");
   expect(new URL(shareUrl).search).toBe("");
-  await page.getByRole("button", { name: "Копировать ссылку" }).click();
+  await page.getByRole("button", { name: "Скопировать", exact: true }).click();
   await expect(
     page.getByText("Ссылка скопирована", { exact: true }),
   ).toBeVisible();
@@ -213,7 +214,7 @@ test("dashboard import, duplicate, delete, empty state and mobile", async ({
   page,
 }) => {
   await page.goto("/");
-  await expect(page.getByRole("link", { name: demoPlan.title })).toBeVisible();
+  await expect(page.getByRole("link", { name: demoPlan.title, exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Импорт JSON" }).click();
   await page.getByLabel("Файл .json · до 1 МБ").setInputFiles({
     name: "plan.json",
@@ -232,7 +233,7 @@ test("dashboard import, duplicate, delete, empty state and mobile", async ({
     .getByRole("button", { name: `Дублировать ${demoPlan.title}` })
     .click();
   await expect(
-    page.getByRole("link", { name: `${demoPlan.title} — копия` }),
+    page.getByRole("link", { name: `${demoPlan.title} — копия`, exact: true }),
   ).toBeVisible();
   for (const width of [1440, 768, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
