@@ -190,6 +190,26 @@
   background: var(--background);
 }
 .dashboard-filters { display: flex; flex-wrap: wrap; gap: 1px 12px; padding: 0 14px; border-bottom: 1px solid var(--ui-border); }
+.dashboard-filter-select {
+  min-height: 44px;
+  min-width: 132px;
+  max-width: 100%;
+  margin: 4px 0 4px auto;
+  padding: 8px 10px;
+  border: 1px solid var(--ui-border);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 13px;
+  cursor: pointer;
+}
+.dashboard-filter-select:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.dashboard-main .plan-row-deadlines { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--ui-secondary); }
+.dashboard-main .plan-row-deadlines [data-overdue] { color: var(--destructive); }
+.dashboard-main .plan-task-matches { display: grid; gap: 3px; padding: 0; margin: 2px 0 0; list-style: none; min-width: 0; }
+.dashboard-main .plan-task-matches a { display: flex; flex-wrap: wrap; gap: 4px 12px; min-width: 0; font-size: 12px; overflow-wrap: anywhere; }
+.dashboard-main .plan-task-matches a strong { font-weight: 650; }
+.dashboard-main .plan-task-matches a span { color: var(--ui-secondary); }
 .dashboard-filter {
   position: relative;
   min-height: 44px;
@@ -311,6 +331,8 @@
   .dashboard-main .library-utilities[data-open="true"] { display: grid; }
   .dashboard-main .library-utilities [data-slot="button"] { justify-content: flex-start; font-size: 14px; }
   .dashboard-filters { padding-inline: 8px; gap: 0 7px; }
+  .dashboard-filter { display: none; }
+  .dashboard-filter-select { flex: 1; width: 100%; min-width: 0; margin: 4px 0; }
   .dashboard-filter { font-size: 12px; padding-inline: 1px; }
   .dashboard-main .plan-row { grid-template-columns: 28px minmax(0, 1fr) 88px; padding: 6px 6px 6px 9px; gap: 5px; }
   .dashboard-main .plan-row-icon { width: 27px; height: 34px; }
