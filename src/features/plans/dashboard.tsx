@@ -54,7 +54,7 @@ const planFilters = [
   { value: "unfinished", label: "Не завершено" },
   { value: "overdue", label: "Просрочено" },
   { value: "upcoming", label: "На этой неделе" },
-  { value: "completed", label: "Готово" },
+  { value: "completed", label: "Выполненные" },
   { value: "recent", label: "Недавние" },
 ] as const satisfies ReadonlyArray<{ value: PlanFilter; label: string }>;
 
