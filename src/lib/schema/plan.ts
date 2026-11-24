@@ -204,7 +204,7 @@ export const portablePlanSchema = z
             });
           ids.add(b.id);
         }
-        if (b.type === "task" && !plan.tasks[b.props.taskId])
+        if (b.type === "task" && !Object.hasOwn(plan.tasks, b.props.taskId))
           ctx.addIssue({
             code: "custom",
             message: `Задача ${b.props.taskId} отсутствует`,

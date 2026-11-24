@@ -6,7 +6,7 @@ import { motionEase, motionTiming } from "@/lib/motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Plus, Copy, Trash2, ArrowUpRight, Upload, FileText, ChevronDown, ShieldCheck } from "lucide-react";
+import { Plus, Copy, Trash2, ArrowUpRight, Upload, FileText, ChevronDown, ShieldCheck, Bot } from "lucide-react";
 import { toast } from "@/lib/notifications";
 import { db } from "@/lib/db/database";
 import { createPlan, deletePlan, duplicatePlan } from "./repository";
@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ImportDialog } from "@/features/import/import-dialog";
+import { AiCloudImportDialog } from "@/features/ai-sync/ai-cloud-import-dialog";
 import { BackupMenu } from "@/features/backup/backup-menu";
 import { Input } from "@/components/ui/input";
 import { dashboardMatches, tasksInPlan, taskStats, type PlanFilter } from "./productivity";
@@ -62,6 +63,7 @@ export function Dashboard() {
   const [busy, setBusy] = useState(false);
   const [deleting, setDeleting] = useState<Plan>();
   const [importing, setImporting] = useState(false);
+  const [importingCloud, setImportingCloud] = useState(false);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<PlanFilter>("all");
   const today = useLocalDate();
@@ -169,6 +171,10 @@ export function Dashboard() {
             </div>
             <div className="library-utilities">
               <BackupMenu />
+              <Button variant="outline" disabled={busy} onClick={() => setImportingCloud(true)}>
+                <Bot data-icon="inline-start" />
+                Из GPT
+              </Button>
               <Button variant="outline" disabled={busy} onClick={() => setImporting(true)}>
                 <Upload data-icon="inline-start" />
                 Импорт JSON
@@ -426,6 +432,12 @@ export function Dashboard() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      )}
+      {importingCloud && (
+        <AiCloudImportDialog
+          onClose={() => setImportingCloud(false)}
+          onImported={(localId) => { setImportingCloud(false); router.push(`/plan/${localId}`); }}
+        />
       )}
       {importing && (
         <ImportDialog

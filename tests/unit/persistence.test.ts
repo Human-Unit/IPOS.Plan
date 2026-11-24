@@ -347,3 +347,23 @@ describe("IndexedDB repository", () => {
     expect(await db.plans.count()).toBe(0);
   });
 });
+
+it("imports and applies a cloud plan with one binding update and the former local revision", async () => {
+  const binding = { id: crypto.randomUUID(), version: 1 };
+  const old = await createPlan(demoPlan, "PLAN_IMPORTED", binding);
+  const key = "ai-sync:plan:" + old.id;
+  expect((await db.settings.get(key))?.value).toEqual(binding);
+
+  const otherTab = await savePlan({ ...old, title: "Правка в другой вкладке" });
+  const incoming = { ...demoPlan, title: "Вариант из GPT" };
+  const next = { ...binding, version: 2 };
+  await expect(replacePlan(old, incoming, "PLAN_IMPORTED", next)).rejects.toThrow(/изменился/);
+  expect(await db.plans.get(old.id)).toEqual(otherTab);
+  expect((await db.settings.get(key))?.value).toEqual(binding);
+  expect(await db.revisions.where({ planId: old.id }).count()).toBe(0);
+
+  await replacePlan(otherTab, incoming, "PLAN_IMPORTED", next);
+  expect((await db.settings.get(key))?.value).toEqual(next);
+  expect((await db.plans.get(old.id))?.title).toBe(incoming.title);
+  expect((await db.revisions.where({ planId: old.id }).first())?.snapshot).toEqual(otherTab);
+});
