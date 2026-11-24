@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight, History, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Plan } from "@/lib/schema/plan";
+import { tasksInPlan } from "./productivity";
 
 type Props = {
   recentPlan?: Plan;
@@ -10,7 +11,7 @@ type Props = {
 };
 
 export function DashboardOpening({ recentPlan, busy, onCreate }: Props) {
-  const tasks = recentPlan ? Object.values(recentPlan.tasks) : [];
+  const tasks = recentPlan ? tasksInPlan(recentPlan) : [];
   const done = tasks.filter((task) => task.status === "done").length;
   const progress = tasks.length ? (done / tasks.length) * 100 : 0;
 
