@@ -128,19 +128,19 @@ export function Dashboard() {
       </header>
       <main className="dashboard dashboard-main">
         <DashboardOpening recentPlan={plans?.[0]} busy={busy} onCreate={create} />
-          <div className="library-stats" aria-label="Задачи во всей библиотеке">
-            <span>
+          <div className="library-stats" role="group" aria-label="Задачи во всей библиотеке">
+            <button type="button" aria-pressed={filter === "unfinished"} onClick={() => setFilter(filter === "unfinished" ? "all" : "unfinished")}>
               <ChangingNumber value={stats.unfinished} ready={plans !== undefined} /> Не завершено
-            </span>
-            <span data-warning={stats.overdue > 0 || undefined}>
+            </button>
+            <button type="button" data-warning={stats.overdue > 0 || undefined} aria-pressed={filter === "overdue"} onClick={() => setFilter(filter === "overdue" ? "all" : "overdue")}>
               <ChangingNumber value={stats.overdue} ready={plans !== undefined} /> Просрочено
-            </span>
-            <span>
+            </button>
+            <button type="button" aria-pressed={filter === "upcoming"} onClick={() => setFilter(filter === "upcoming" ? "all" : "upcoming")}>
               <ChangingNumber value={stats.upcoming} ready={plans !== undefined} /> В ближайшие 7 дней
-            </span>
-            <span>
+            </button>
+            <button type="button" aria-pressed={filter === "completed"} onClick={() => setFilter(filter === "completed" ? "all" : "completed")}>
               <ChangingNumber value={stats.completed} ready={plans !== undefined} /> Готово
-            </span>
+            </button>
           </div>
         {error && (
           <Alert variant="destructive">
