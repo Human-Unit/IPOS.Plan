@@ -272,7 +272,7 @@ export function Dashboard() {
                   })()}
                   {matches.length > 0 ? (
                     <ul className="plan-task-matches" aria-label="Найденные задачи">
-                      {matches.slice(0, 3).map((task) => (
+                      {matches.map((task) => (
                         <li key={task.id}>
                           <Link href={{ pathname: `/plan/${plan.id}`, query: { task: task.id } }}>
                             <strong>{task.title || "Без названия"}</strong>
