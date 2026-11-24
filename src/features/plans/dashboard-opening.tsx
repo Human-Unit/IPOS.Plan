@@ -36,11 +36,11 @@ export function DashboardOpening({ recentPlan, busy, onCreate }: Props) {
         </div>
         {recentPlan && (
           <div className="recent-plan-stack">
-            <Link className="recent-plan" aria-label={`Открыть последний изменённый план: ${recentPlan.title || "Без названия"}`} href={`/plan/${recentPlan.id}`}>
+            <Link className="recent-plan" aria-label="Открыть последний изменённый план" aria-describedby={`recent-plan-title-${recentPlan.id}`} href={`/plan/${recentPlan.id}`}>
               <span className="recent-plan-label">
                 <History size={15} aria-hidden="true" /> Последнее изменение
               </span>
-              <strong>{recentPlan.title || "Без названия"}</strong>
+              <strong id={`recent-plan-title-${recentPlan.id}`}>{recentPlan.title || "Без названия"}</strong>
               {tasks[0] && <span className="recent-plan-task">{tasks[0].title}</span>}
               <span className="recent-plan-details">
                 <span className="recent-plan-progress">
