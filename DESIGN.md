@@ -253,3 +253,7 @@ Primarily **flat and ruled**: light backgrounds, tonal separation and borders co
 - Current app: `src/app/globals.css`, `surfaces.css`, `dashboard-hero.css`, `workspace.css`, `document.css`, `print.css`; `docs/design/IPOS_DESIGN_PLAYBOOK.md`.
 - Reference identity: [Student Council design baseline](https://github.com/Human-Unit/Student_Council/blob/1511752c547881df19578ca92f5469dc6b2cd204/docs/DESIGN_SYSTEM.md), [reference tokens](https://github.com/Human-Unit/Student_Council/blob/1511752c547881df19578ca92f5469dc6b2cd204/src/styles/tokens.css) and [reference site](https://student-council-ecru.vercel.app/).
 - This document describes the code-confirmed state and a conservative design direction. **It is not a claim of a live browser visual review, nor an implementation of new visual changes.**
+
+## Current approved cobalt-and-ink visual update
+
+The design update from [`design/student-council-impeccable`](https://github.com/Human-Unit/IPOS.Plan/tree/design/student-council-impeccable) at commit `1463e24` is documented in [COBALT_APPROVED.md](docs/design/COBALT_APPROVED.md) and `.impeccable/design.json`. Its code is integrated selectively on top of the newer MCP/productivity branch so that UI layout does not regress plan search, opt-in cloud import, revision safeguards, or authorization. The cobalt style does not imply that private cloud sync is automatically enabled.
