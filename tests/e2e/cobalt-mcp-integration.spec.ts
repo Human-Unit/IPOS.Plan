@@ -7,6 +7,7 @@ test("approved cobalt opening preserves plan access and GPT actions on desktop a
   await expect(page.locator(".dashboard-opening")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Контент-планы" })).toBeVisible();
   await expect(page.locator(".recent-plan")).toBeVisible();
+  await expect(page.getByRole("link", { name: demoPlan.title })).toHaveCount(1);
   await expect(page.getByRole("link", { name: demoPlan.title, exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Новый план", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Из GPT", exact: true })).toBeVisible();
