@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-24T12:41:02.4923890Z",
+  "title": "Design System: IPOS.Plan",
+  "extensions": {
+    "colorMeta": {
+      "cobalt-ink": {
+        "role": "neutral",
+        "displayName": "App bar navy"
+      },
+      "cobalt-cover": {
+        "role": "primary",
+        "displayName": "Document cover cobalt"
+      },
+      "cobalt-light-canvas": {
+        "role": "neutral",
+        "displayName": "Light dashboard and document canvas"
+      },
+      "cobalt-dark-canvas": {
+        "role": "neutral",
+        "displayName": "Dark dashboard and document canvas"
+      }
+    },
+    "shadows": [
+      {
+        "name": "latest-plan-paper",
+        "value": "0 17px 38px rgb(9 32 112 / 27%)",
+        "purpose": "Lifts the latest-plan link above the other sheets on desktop."
+      },
+      {
+        "name": "latest-plan-back-sheet",
+        "value": "0 15px 42px rgb(13 32 109 / 27%)",
+        "purpose": "Gives depth to the blue layer behind the plan link."
+      },
+      {
+        "name": "mobile-files-menu",
+        "value": "0 8px 24px rgb(10 24 68 / 16%)",
+        "purpose": "Separates the open mobile file menu from the library."
+      }
+    ],
+    "motion": [
+      {
+        "name": "cobalt-ease",
+        "value": "cubic-bezier(.18, .76, .26, 1)",
+        "purpose": "Eases paper motion, cover motion, and selection feedback."
+      },
+      {
+        "name": "opening-paper",
+        "value": "820ms / 940ms",
+        "purpose": "The two backdrop layers unfold once."
+      },
+      {
+        "name": "latest-plan-stack",
+        "value": "720ms",
+        "purpose": "The two paper sheets open behind the latest plan."
+      },
+      {
+        "name": "latest-plan-progress",
+        "value": "490ms with 220ms delay",
+        "purpose": "Fills the progress meter from the left to the actual completion percentage."
+      },
+      {
+        "name": "latest-plan-hover",
+        "value": "240ms",
+        "purpose": "Lifts the linked paper on hover."
+      },
+      {
+        "name": "cover-seal",
+        "value": "540ms",
+        "purpose": "Settles the institutional seal into the cover on screen."
+      },
+      {
+        "name": "inspector-heading",
+        "value": "200ms",
+        "purpose": "Settles the inspector heading when it appears."
+      },
+      {
+        "name": "selection",
+        "value": "220ms",
+        "purpose": "Animates the dashboard filter underline and the editor task highlight."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "library-date",
+        "value": "940px"
+      },
+      {
+        "name": "mobile-dashboard-and-cover",
+        "value": "767px"
+      },
+      {
+        "name": "compact-library-heading",
+        "value": "360px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Latest plan",
+      "kind": "card",
+      "description": "Links to the latest edited plan and displays its title, first task and completion. This example uses the seeded demo plan.",
+      "html": "<div class=\"ds-recent-plan-stack\"><a class=\"ds-recent-plan\" id=\"ds-recent-plan\" href=\"#ds-recent-plan\" aria-label=\"Открыть последний изменённый план: Контент-план — День студента\"><span class=\"ds-recent-plan-label\">Последнее изменение</span><strong>Контент-план — День студента</strong><span class=\"ds-recent-plan-task\">Подготовить текст анонса</span><span class=\"ds-recent-plan-details\"><span class=\"ds-recent-plan-progress\"><span class=\"ds-recent-plan-track\" aria-hidden=\"true\"><span style=\"width:33.333%\"></span></span>1 из 3 готово</span><span class=\"ds-recent-plan-open\">Открыть <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M7 7h10v10M7 17 17 7\"/></svg></span></span></a></div>",
+      "css": ".ds-recent-plan-stack { position: relative; isolation: isolate; width: min(100% - 24px, 375px); min-width: 0; }\n.ds-recent-plan-stack::before, .ds-recent-plan-stack::after { content: \"\"; position: absolute; inset: 6% 5% 0 4%; border-radius: 4px; z-index: -1; }\n.ds-recent-plan-stack::before { background: #91affc; transform: translate(20px, 0) rotate(7deg); box-shadow: 0 15px 42px rgb(13 32 109 / 27%); }\n.ds-recent-plan-stack::after { background: #d1ddff; transform: translate(6px, 4px) rotate(3deg); }\n.ds-recent-plan { display: grid; gap: 6px; padding: 16px 19px; border-radius: 4px; background: #fbfcff; color: #172651; box-shadow: 0 17px 38px rgb(9 32 112 / 27%); text-decoration: none; font-family: var(--font-ui, Inter, Arial, sans-serif); transition: transform 240ms var(--cobalt-ease, cubic-bezier(.18, .76, .26, 1)); }\n.ds-recent-plan:hover { transform: translateY(-4px); }\n.ds-recent-plan:focus-visible { outline: 3px solid white; outline-offset: 5px; }\n.ds-recent-plan-label, .ds-recent-plan-progress, .ds-recent-plan-open { display: flex; align-items: center; gap: 6px; font-size: 13px; }\n.ds-recent-plan-label, .ds-recent-plan-task { color: #475c8a; font-size: 13px; }\n.ds-recent-plan strong { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; font: 720 24px/1.2 var(--font-heading, Montserrat, Inter, Arial, sans-serif); letter-spacing: -.03em; }\n.ds-recent-plan-task { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n.ds-recent-plan-details { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-top: 4px; border-top: 1px solid #d3ddfa; padding-top: 9px; }\n.ds-recent-plan-track { display: block; width: 52px; height: 4px; border-radius: 4px; background: #dae3fc; overflow: hidden; }\n.ds-recent-plan-track > span { display: block; height: 100%; background: #3358df; transform-origin: left; }\n.ds-recent-plan-open { color: #2445b7; font-weight: 650; }\n@media (max-width: 767px) { .ds-recent-plan-stack { width: 100%; } .ds-recent-plan-stack::before, .ds-recent-plan-stack::after { display: none; } .ds-recent-plan { grid-template-columns: minmax(0, 1fr) auto; gap: 1px 8px; padding: 7px 10px; min-height: 49px; box-shadow: none; } .ds-recent-plan-label { grid-column: 1; font-size: 12px; } .ds-recent-plan strong { grid-column: 1; font-size: 15px; } .ds-recent-plan-task, .ds-recent-plan-progress { display: none; } .ds-recent-plan-details { grid-column: 2; grid-row: 1 / 3; border: 0; padding: 0; margin: 0; } .ds-recent-plan-open { font-size: 12px; } }\n@media (prefers-reduced-motion: no-preference) { .ds-recent-plan-stack::before, .ds-recent-plan-stack::after { animation: ds-council-stack-open 720ms var(--cobalt-ease, cubic-bezier(.18, .76, .26, 1)) both; } .ds-recent-plan-track > span { animation: ds-council-progress-in 490ms var(--cobalt-ease, cubic-bezier(.18, .76, .26, 1)) 220ms both; } }\n@media (prefers-reduced-motion: reduce) { .ds-recent-plan { transition: none; } .ds-recent-plan:hover { transform: none; } }\n@keyframes ds-council-stack-open { from { transform: none; } }\n@keyframes ds-council-progress-in { from { transform: scaleX(0); } }"
+    },
+    {
+      "name": "Library filters",
+      "kind": "nav",
+      "description": "Shows the library's four filters with the default selected state and keyboard focus treatment.",
+      "html": "<nav class=\"ds-dashboard-filters\" aria-label=\"Фильтры планов\"><button type=\"button\" class=\"ds-dashboard-filter\" aria-pressed=\"true\">Все планы</button><button type=\"button\" class=\"ds-dashboard-filter\" aria-pressed=\"false\">Не завершено</button><button type=\"button\" class=\"ds-dashboard-filter\" aria-pressed=\"false\">Просрочено</button><button type=\"button\" class=\"ds-dashboard-filter\" aria-pressed=\"false\">Недавние</button></nav>",
+      "css": ".ds-dashboard-filters { display: flex; flex-wrap: wrap; gap: 1px 12px; padding: 0 14px; border-bottom: 1px solid var(--ui-border, #dce1e9); background: var(--background, #fff); }\n.ds-dashboard-filter { position: relative; min-height: 44px; padding: 5px 3px; border: 0; background: transparent; color: var(--ui-secondary, #525b6b); font: 14px var(--font-ui, Inter, Arial, sans-serif); cursor: pointer; }\n.ds-dashboard-filter::after { content: \"\"; position: absolute; inset: auto 0 0; height: 2px; background: var(--primary, #132fc1); transform: scaleX(0); transition: transform 220ms var(--cobalt-ease, cubic-bezier(.18, .76, .26, 1)); }\n.ds-dashboard-filter[aria-pressed=\"true\"] { color: var(--primary, #132fc1); font-weight: 650; }\n.ds-dashboard-filter[aria-pressed=\"true\"]::after { transform: scaleX(1); }\n.ds-dashboard-filter:focus-visible { outline: 2px solid var(--ring, #132fc1); outline-offset: -2px; }\n@media (max-width: 767px) { .ds-dashboard-filters { padding-inline: 8px; gap: 0 7px; } .ds-dashboard-filter { font-size: 12px; padding-inline: 1px; } }\n@media (max-width: 360px) { .ds-dashboard-filter { font-size: 11px; } }\n@media (prefers-reduced-motion: reduce) { .ds-dashboard-filter::after { transition: none; } }"
+    }
+  ],
+  "narrative": {
+    "overview": "The Student Council’s editorial workspace should put the work within reach on the first screen. A coordinator can recognize the right plan by title, see its progress, and open it to continue a brief. The editor keeps the document central while the outline and inspector support navigation and assignment editing. The shared reader is oriented around the document and its tasks.\n\nThe approved cobalt-and-ink direction carries a navy app bar and a full-width Council-blue opening with layered paper geometry. The last edited plan sits in front of the layers so a coordinator can resume work directly. The editor and reader share the cobalt cover.",
+    "dos": [
+      "Use the real list, titles, tasks, progress, and storage state to establish visual hierarchy.",
+      "Keep the existing Student Council identity when adapting interaction patterns from Ghost.",
+      "Preserve local storage disclosures, import and backup access, and the difference between an immutable snapshot and an editable source plan.",
+      "Verify changed workflows on rendered screens before claiming visual acceptance."
+    ]
+  }
+}

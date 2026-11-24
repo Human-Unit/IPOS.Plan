@@ -4,6 +4,7 @@ import "./surfaces.css";
 import "./dashboard-hero.css";
 import "./workspace.css";
 import "./document.css";
+import "./cobalt-surfaces.css";
 import "./editor-reference-header.css";
 import "./editor-reference-outline.css";
 import "./editor-reference-document.css";

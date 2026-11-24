@@ -27,7 +27,7 @@ export function PublishedViewer({ id }: { id: string }) {
   }, [id]);
   return (
     <>
-      <header className="app-bar"><Brand /><div className="app-bar-tools"><span className="local-indicator"><Globe2 size={14} /> Опубликовано · только просмотр</span><ThemeControl /></div></header>
+      <header className="app-bar cobalt-reader-bar"><Brand /><div className="app-bar-tools"><span className="local-indicator"><Globe2 size={14} /> Опубликовано · только просмотр</span><ThemeControl /></div></header>
       <main className="viewer-stage">
         {error ? <div className="viewer-error"><h1>Страница недоступна</h1><p role="alert">{error}</p><Button variant="outline" asChild><Link href="/">К планам</Link></Button></div>
           : page ? <>
