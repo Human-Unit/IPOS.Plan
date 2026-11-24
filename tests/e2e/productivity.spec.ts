@@ -113,13 +113,20 @@ test("Russian search, task navigation and local deadline counts work at five vie
       page.getByText("Планы не найдены.", { exact: false }),
     ).toBeVisible();
     await page
-      .getByRole("button", { name: "Сбросить поиск", exact: true })
+      .getByRole("button", { name: "Сбросить фильтры", exact: true })
       .first()
       .click();
     await page
       .getByRole("searchbox", { name: "Поиск планов", exact: true })
       .fill("МАЛИКА");
-    await expect(page.locator(".plan-row")).toHaveCount(1);
+    const resultRow = page.locator(".plan-row");
+    await expect(resultRow).toHaveCount(1);
+    await expect(resultRow).toContainText("Ответственные: Малика");
+    const overdue = stats.getByRole("button", { name: /^Просроченные задачи во всех планах:/ });
+    await overdue.press("Enter");
+    await expect(overdue).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("searchbox", { name: "Поиск планов", exact: true })).toHaveValue("");
+    await expect(resultRow).toContainText("Просрочено: Reels — Один день студента · 21.10.2026 · Амина");
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,

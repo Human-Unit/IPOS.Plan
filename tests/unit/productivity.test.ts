@@ -3,7 +3,8 @@ import {
   deadlineInfo,
   emptyTaskFilter,
   matchesTask,
-  matchesPlan,
+  matchPlan,
+  nextUnfinishedTask,
   taskStats,
   localDate,
 } from "@/features/plans/productivity";
@@ -145,11 +146,25 @@ describe("derived search and filters", () => {
       updatedAt: "2026-10-20T07:00:00Z",
     };
     for (const query of ["ОСЕНИ", "студенты", "СЪЁМКА", "амина"])
-      expect(matchesPlan(p, query, "all", "2026-10-22")).toBe(true);
-    expect(matchesPlan(p, "", "unfinished", "2026-10-22")).toBe(true);
-    expect(matchesPlan(p, "", "overdue", "2026-10-22")).toBe(false);
-    expect(matchesPlan(p, "", "recent", "2026-10-22")).toBe(true);
-    expect(matchesPlan(p, "", "recent", "2026-10-30")).toBe(false);
+      expect(matchPlan(p, query, "all", "2026-10-22")).not.toBeNull();
+    expect(matchPlan(p, "", "unfinished", "2026-10-22")).not.toBeNull();
+    expect(matchPlan(p, "", "overdue", "2026-10-22")).toBeNull();
+    expect(matchPlan(p, "", "recent", "2026-10-22")).not.toBeNull();
+    expect(matchPlan(p, "", "recent", "2026-10-30")).toBeNull();
+    const assigned = { ...task, assignee: "Александра Валерьевна Ковалёва, Иван Смирнов" };
+    const withAssignees = { ...p, tasks: { a: assigned } };
+    expect(matchPlan(withAssignees, "александра ковалева", "all", "2026-10-22"))
+      .toEqual({ task: assigned, field: "assignee" });
+    expect(matchPlan(withAssignees, "Александра Смирнов", "all", "2026-10-22")).toBeNull();
     expect(p.tasks.a).toEqual(task);
+  });
+  it("chooses the earliest unfinished deadline, then falls back to an undated task", () => {
+    const undated = { ...task, deadline: undefined };
+    const overdue = { ...task, deadline: "2026-10-20" };
+    const done = { ...task, status: "done" as const, deadline: "2026-01-01" };
+    const cancelled = { ...done, status: "cancelled" as const };
+    expect(nextUnfinishedTask([done, undated, task, cancelled, overdue])).toBe(overdue);
+    expect(nextUnfinishedTask([done, cancelled, undated])).toBe(undated);
+    expect(nextUnfinishedTask([done, cancelled])).toBeUndefined();
   });
 });

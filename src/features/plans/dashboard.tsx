@@ -40,7 +40,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ImportDialog } from "@/features/import/import-dialog";
 import { BackupMenu } from "@/features/backup/backup-menu";
 import { Input } from "@/components/ui/input";
-import { matchesPlan, taskStats, type PlanFilter } from "./productivity";
+import { deadlineInfo, matchPlan, nextUnfinishedTask, taskStats, type PlanFilter } from "./productivity";
 import { useLocalDate } from "./use-local-date";
 import { DashboardOpening } from "./dashboard-opening";
 import {
@@ -83,9 +83,11 @@ export function Dashboard() {
   );
   const rememberedPeople = directoryNames(rosterRows ?? []);
 
-  const visiblePlans = plans?.filter((plan) =>
-    matchesPlan(plan, query, filter, today),
-  );
+  const visiblePlans = plans?.flatMap((plan) => {
+    const match = matchPlan(plan, query, filter, today);
+    return match ? [{ plan, match }] : [];
+  });
+  const overdueOnly = filter === "overdue" && !query.trim();
   const stats = taskStats(
     (plans ?? []).flatMap((p) => Object.values(p.tasks)),
     today,
@@ -126,9 +128,21 @@ export function Dashboard() {
             <span>
               <ChangingNumber value={stats.unfinished} ready={plans !== undefined} /> Не завершено
             </span>
-            <span data-warning={stats.overdue > 0 || undefined}>
-              <ChangingNumber value={stats.overdue} ready={plans !== undefined} /> Просрочено
-            </span>
+            <div className="library-overdue" data-warning={stats.overdue > 0 || undefined}>
+              <button
+                type="button"
+                aria-label={`Просроченные задачи во всех планах: ${stats.overdue}`}
+                aria-pressed={overdueOnly}
+                aria-controls="plan-library"
+                disabled={!plans}
+                onClick={() => {
+                  setQuery("");
+                  setFilter(overdueOnly ? "all" : "overdue");
+                }}
+              >
+                <ChangingNumber value={stats.overdue} ready={plans !== undefined} /> <span>Просрочено</span>
+              </button>
+            </div>
             <span>
               <ChangingNumber value={stats.upcoming} ready={plans !== undefined} /> В ближайшие 7 дней
             </span>
@@ -154,24 +168,12 @@ export function Dashboard() {
             <div
               className="dashboard-library-tools"
               onKeyDown={(event) => {
-                if (event.key === "Escape" && !event.defaultPrevented && filesOpen &&
-                    event.target instanceof Node && event.currentTarget.contains(event.target)) {
+                if (event.key === "Escape" && !event.defaultPrevented && filesOpen) {
                   setFilesOpen(false);
                   filesToggle.current?.focus();
                 }
               }}
             >
-              <div className="library-search" role="search" aria-label="Поиск по библиотеке">
-                <label htmlFor="dashboard-plan-search">Поиск планов</label>
-                <Search size={16} aria-hidden="true" />
-                <Input
-                  type="search"
-                  id="dashboard-plan-search"
-                  placeholder="Поиск"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-              </div>
               <Button
                 ref={filesToggle}
                 className="dashboard-files-toggle"
@@ -191,6 +193,17 @@ export function Dashboard() {
                 </Button>
               </div>
             </div>
+            <div className="library-search" role="search" aria-label="Поиск по библиотеке">
+              <label className="sr-only" htmlFor="dashboard-plan-search">Поиск планов</label>
+              <Search size={16} aria-hidden="true" />
+              <Input
+                type="search"
+                id="dashboard-plan-search"
+                placeholder="Название, задача или имя"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </div>
           </div>
           <div className="dashboard-library-surface">
             <nav className="dashboard-filters" aria-label="Фильтры планов">
@@ -207,7 +220,7 @@ export function Dashboard() {
               ))}
               {(query || filter !== "all") && Boolean(visiblePlans?.length) && (
                 <Button className="dashboard-reset" variant="ghost" onClick={resetFilters}>
-                  Сбросить поиск
+                  Сбросить фильтры
                 </Button>
               )}
             </nav>
@@ -216,9 +229,11 @@ export function Dashboard() {
               through rapid filter resets can leave invisible live actions. IDs
               remain stable within each result set and across Dexie updates. */}
           <AnimatePresence key={`${filter}:${query}`} initial={false} mode="popLayout">
-          {visiblePlans?.map((plan) => {
+          {visiblePlans?.map(({ plan, match }) => {
             const tasks = Object.values(plan.tasks);
             const done = tasks.filter((task) => task.status === "done").length;
+            const next = nextUnfinishedTask(tasks);
+            const overdue = next?.deadline && deadlineInfo(next, today).kind === "overdue" ? next : null;
             return (
               <motion.article className="plan-row" key={plan.id}
                 layout={reducedMotion ? false : "position"}
@@ -242,18 +257,28 @@ export function Dashboard() {
                     <span>Задач: {tasks.length}</span>
                     <span>Готово: {done}</span>
                   </div>
-                  <p
-                    className="plan-row-summary"
-                    title={tasks.map((task) => task.title).join(" · ")}
-                  >
-                    {tasks.length
-                      ? tasks
-                          .slice(0, 2)
-                          .map((task) => task.title)
-                          .join(" · ") +
-                        (tasks.length > 2 ? ` · ещё ${tasks.length - 2}` : "")
-                      : "Добавьте первое задание или начните с текста"}
-                  </p>
+                  {overdue?.deadline && (
+                    <p className="plan-row-context">
+                      <strong>Просрочено:</strong> {overdue.title || "Задача без названия"}
+                      {" · "}<time dateTime={overdue.deadline}>{overdue.deadline.split("-").reverse().join(".")}</time>
+                      {overdue.assignee && ` · ${overdue.assignee}`}
+                    </p>
+                  )}
+                  {match.task && (
+                    <p className="plan-row-context">
+                      {match.field === "assignee" ? `Ответственные: ${match.task.assignee} · `
+                        : match.field === "description" ? "Совпадение в описании задачи: " : "Задача: "}
+                      {match.task.title || "Без названия"}
+                    </p>
+                  )}
+                  {!overdue && !match.task && (
+                    <p className="plan-row-summary" title={tasks.map((task) => task.title).join(" · ")}>
+                      {tasks.length
+                        ? tasks.slice(0, 2).map((task) => task.title).join(" · ") +
+                          (tasks.length > 2 ? ` · ещё ${tasks.length - 2}` : "")
+                        : "Добавьте первое задание или начните с текста"}
+                    </p>
+                  )}
                 </div>
                 <time className="dashboard-row-date" dateTime={plan.updatedAt}>{formatDate(plan.updatedAt)}</time>
                 <div className="dashboard-row-progress">
@@ -309,7 +334,7 @@ export function Dashboard() {
             <div className="search-empty" role="status">
               <p>Планы не найдены. Измените запрос или фильтр.</p>
               <Button variant="ghost" onClick={resetFilters}>
-                Сбросить поиск
+                Сбросить фильтры
               </Button>
             </div>
           )}

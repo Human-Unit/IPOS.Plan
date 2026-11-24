@@ -246,8 +246,9 @@ test("portable files, paste, drop, replacement, JSON, snapshot and DOCX preserve
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   const task = page.locator('.task-brief[data-plan-block="task-0"]');
-  await task.getByRole("button", { name: "Файл", exact: true }).click();
-  await page.getByLabel("Файл изображения", { exact: true }).setInputFiles({
+  const attach = page.waitForEvent("filechooser");
+  await task.getByRole("button", { name: "Файл", exact: true }).press("Enter");
+  await (await attach).setFiles({
     name: "seal.png",
     mimeType: "image/png",
     buffer: await readFile("public/msu-university-seal.png"),
@@ -270,10 +271,11 @@ test("portable files, paste, drop, replacement, JSON, snapshot and DOCX preserve
   await page
     .getByRole("region", { name: "Изображение: seal.png", exact: true })
     .click();
+  const replace = page.waitForEvent("filechooser");
   await page
     .getByRole("button", { name: "Заменить файлом", exact: true })
     .click();
-  await page.getByLabel("Файл изображения", { exact: true }).setInputFiles({
+  await (await replace).setFiles({
     name: "replacement.png",
     mimeType: "image/png",
     buffer: await readFile("public/msu-university-seal.png"),
@@ -328,7 +330,7 @@ test("portable files, paste, drop, replacement, JSON, snapshot and DOCX preserve
   expect(bytes.toString("utf8")).toContain("word/media/export-");
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
   await page.getByRole("button", { name: "Поделиться", exact: true }).click();
-  await page.getByText("Другой способ: ссылка без публикации", { exact: true }).click();
+  await page.getByRole("button", { name: "Ссылка на снимок", exact: true }).click();
   const link = await page.getByLabel("Самодостаточная ссылка").inputValue();
   const viewer = await context.newPage();
   await viewer.goto(link);

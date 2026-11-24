@@ -167,8 +167,6 @@ export function PublicationControls({ planId, plan }: { planId: string; plan: Po
         </>
       ) : (
         <>
-          <div className="publication-title"><Globe2 size={19} aria-hidden="true" /><strong>Опубликовать страницу</strong></div>
-          <p className="muted">Создайте короткую ссылку на документ. Любой, кому вы отправите её, сможет просмотреть страницу.</p>
           <Field>
             <FieldLabel htmlFor="publication-title">Название страницы</FieldLabel>
             <Input id="publication-title" value={title} maxLength={140} disabled={busy} onChange={e => setTitle(e.target.value)} />

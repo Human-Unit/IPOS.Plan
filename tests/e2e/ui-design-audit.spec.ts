@@ -69,7 +69,7 @@ test("seven widths keep library actions, editor drawers and portable content acc
     await search.fill("Ничего не найдено 12345");
     await expect(page.locator(".search-empty")).toBeVisible();
     await page
-      .getByRole("button", { name: "Сбросить поиск", exact: true })
+      .getByRole("button", { name: "Сбросить фильтры", exact: true })
       .first()
       .click();
     await expect(page.locator(".plan-row")).toHaveCount(2);

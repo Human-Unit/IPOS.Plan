@@ -13,6 +13,16 @@ const ordinal = (iso: string) => {
 };
 export const unfinished = (task: Task) =>
   !["done", "cancelled"].includes(task.status);
+export function nextUnfinishedTask(tasks: Task[]) {
+  let next: Task | undefined;
+  for (const task of tasks) {
+    if (
+      unfinished(task) &&
+      (!next || (task.deadline && (!next.deadline || task.deadline < next.deadline)))
+    ) next = task;
+  }
+  return next;
+}
 export type DeadlineKind =
   | "overdue"
   | "today"
@@ -107,22 +117,34 @@ export function matchesTask(task: Task, filter: TaskFilter, today: string) {
   return filter.deadline === "all" || info.kind === filter.deadline;
 }
 export type PlanFilter = "all" | "unfinished" | "overdue" | "recent";
-export function matchesPlan(
-  plan: Plan,
-  query: string,
-  filter: PlanFilter,
-  today: string,
-) {
+type PlanSearchMatch = {
+  task?: Task;
+  field?: "title" | "description" | "assignee";
+};
+
+function findPlanSearchMatch(plan: Plan, query: string): PlanSearchMatch | null {
+  const needle = normalizeSearch(query);
+  if (!needle || normalizeSearch(plan.title).includes(needle)) return {};
+
+  const words = needle.split(/\s+/);
   const tasks = Object.values(plan.tasks);
-  if (
-    !normalizeSearch(
-      [
-        plan.title,
-        ...tasks.flatMap((t) => [t.title, t.description, t.assignee]),
-      ].join(" "),
-    ).includes(normalizeSearch(query))
-  )
-    return false;
+  for (const task of tasks) {
+    const assignees = normalizeSearch(task.assignee ?? "").split(",");
+    if (assignees.some((name) => words.every((word) => name.includes(word)))) {
+      return { task, field: "assignee" };
+    }
+    if (normalizeSearch(task.title).includes(needle)) return { task, field: "title" };
+    if (normalizeSearch(task.description ?? "").includes(needle)) return { task, field: "description" };
+  }
+
+  // Retain contiguous searches that span adjoining fields or tasks.
+  const combined = [plan.title, ...tasks.flatMap((task) => [task.title, task.description, task.assignee])];
+  return normalizeSearch(combined.join(" ")).includes(needle) ? {} : null;
+}
+
+function matchesPlanFilter(plan: Plan, filter: PlanFilter, today: string) {
+  if (filter === "all") return true;
+  const tasks = Object.values(plan.tasks);
   if (filter === "unfinished") return tasks.some(unfinished);
   if (filter === "overdue")
     return tasks.some((t) => deadlineInfo(t, today).kind === "overdue");
@@ -132,6 +154,10 @@ export function matchesPlan(
   }
   return true;
 }
+export function matchPlan(plan: Plan, query: string, filter: PlanFilter, today: string) {
+  return matchesPlanFilter(plan, filter, today) ? findPlanSearchMatch(plan, query) : null;
+}
+
 export function taskStats(tasks: Task[], today: string) {
   return tasks.reduce(
     (stats, t) => {

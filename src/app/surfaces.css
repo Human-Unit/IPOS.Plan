@@ -715,13 +715,6 @@
   padding-top: 20px;
   border-top: 1px solid var(--ui-border);
 }
-.publication-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 15px;
-  color: var(--ui-text);
-}
 .publication-controls .muted {
   color: var(--ui-secondary);
   font-size: 12px;
@@ -769,8 +762,7 @@
 .publication-recovery [data-slot="button"] { margin-top: 12px; }
 
 
-/* Streamlined sharing: keep publishing as the primary task, advanced controls quiet. */
-.dialog-panel:has(.publication-controls) {
+.dialog-panel.share-dialog {
   width: min(560px, calc(100vw - 24px));
 }
 .publication-controls {
@@ -785,9 +777,6 @@
 .publication-controls > [data-slot="button"] {
   width: 100%;
   min-height: 44px;
-}
-.publication-title {
-  font-size: 17px;
 }
 .publication-state {
   display: flex;
@@ -840,16 +829,23 @@
 .publication-buttons > [data-slot="button"] {
   flex: 1 1 auto;
 }
-.share-alternatives {
-  margin-top: 12px;
+.share-methods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.share-methods [data-slot="button"] {
+  width: 100%;
+  min-height: 44px;
+  justify-content: flex-start;
+  line-height: 1.35;
 }
-.share-alternatives .muted {
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--ui-secondary);
+.share-methods [aria-expanded="true"] { background: var(--secondary); color: var(--primary); border-color: var(--primary); }
+.share-methods p, .share-method-panel > .muted { color: var(--ui-secondary); font-size: 13px; line-height: 1.5; }
+.share-methods p { margin-top: 6px; }
+.share-method-panel:not([hidden]) { display: grid; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--ui-border); }
+.share-method-panel textarea { overflow-wrap: anywhere; }
+@media (max-width: 420px) {
+  .share-methods { grid-template-columns: 1fr; }
 }
 @media (max-width: 767px) {
-  .dialog-panel:has(.publication-controls) {
+  .dialog-panel.share-dialog {
     width: calc(100vw - 24px);
   }
   .publication-advanced [data-slot="input"] {

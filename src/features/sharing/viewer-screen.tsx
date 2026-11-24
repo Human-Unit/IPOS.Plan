@@ -4,7 +4,6 @@ import Link from "next/link";
 import { LockKeyhole } from "lucide-react";
 import { decodeShare } from "@/lib/share/codec";
 import type { PortablePlan } from "@/lib/schema/plan";
-import { errorMessage } from "@/lib/labels";
 import { ThemeControl } from "@/components/theme/theme-control";
 import { Brand } from "@/components/plan/brand";
 import { PlanRenderer } from "@/components/plan/renderer";
@@ -30,11 +29,17 @@ export function ViewerScreen() {
         });
         return;
       }
+      if (typeof DecompressionStream === "undefined") {
+        setState({ error: "Этот браузер не может открыть снимок. Обновите браузер или откройте ссылку в другом." });
+        return;
+      }
       try {
         const plan = await decodeShare(token);
         if (mounted && request === serial) setState({ plan, key: token });
-      } catch (e) {
-        if (mounted && request === serial) setState({ error: errorMessage(e) });
+      } catch {
+        if (mounted && request === serial) {
+          setState({ error: "Ссылка повреждена или неполная. Попросите автора прислать полную ссылку." });
+        }
       }
     };
     void load();

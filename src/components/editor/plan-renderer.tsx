@@ -708,8 +708,7 @@ export default function PlanRenderer({
             type="file"
             accept="image/png,image/jpeg,image/webp"
             multiple
-            className="sr-only"
-            aria-label="Файл изображения"
+            hidden
             onChange={(event) => {
               const files = [...(event.target.files ?? [])];
               event.target.value = "";

@@ -23,7 +23,7 @@ colors:
 typography:
   dashboard-heading:
     fontFamily: "Montserrat, Inter, Arial, sans-serif"
-    fontSize: "clamp(38px, 4.2vw, 57px)"
+    fontSize: "clamp(36px, 4vw, 49px)"
     fontWeight: 750
     lineHeight: 1.06
   dashboard-plan-title:
@@ -75,12 +75,12 @@ Montserrat gives headings and plan names their hierarchy. Inter serves labels, c
 
 ## Layout
 
-- **Dashboard on desktop.** Keep the page title and «Новый план» in a compact overview. Align the overview, toolbar, and library to shared edges. Put search and the current filter next to the list. Let the first plan title and its real status take precedence over empty space or oversized counters.
+- **Dashboard on desktop.** Keep the page title and «Новый план» in a compact overview. Align the overview, toolbar, and library to shared edges. Put search and the current filter next to the list. The overdue count opens the overdue filter, and result rows identify the overdue task, deadline, and assignee when available. Let the first plan title and its real status take precedence over empty space or oversized counters.
 - **Dashboard on mobile.** Use a single column with readable controls and wrapping titles. Bring the first saved-plan title higher by tightening the area above the list before reducing text size or touch targets. Keep import and backup discoverable, and preserve the keyboard and visual reading order.
 - **Editor.** Give the brief a stable reading measure. Keep outline and task inspector beside it where space allows and use the existing narrow-screen panel behavior when width is scarce. Keep the plan title, save state, mode, and share action easy to locate.
 - **Reader and print.** Use the existing A4-oriented document surface, with the brief, references, and tasks in reading order. Keep document controls and editor chrome outside the print area. Use the current print stylesheet as the authority on page geometry.
 
-The dashboard opening spans the viewport. Its content and the library align to a 1248px grid with 32px desktop and 14px mobile gutters. Mobile places task totals below the library and groups import and backup under «Файлы». Desktop gives those two frequently used actions direct access. Follow the [design playbook](docs/design/IPOS_DESIGN_PLAYBOOK.md) for the responsive and workflow acceptance matrix. Check both themes, long Russian titles, a populated plan list, empty and filtered results, save errors, and short-height dialogs.
+The dashboard opening spans the viewport. Its content and the library align to a 1248px grid with 32px desktop and 14px mobile gutters. Mobile puts task totals above the library, gives search its own row and groups import and backup under «Файлы». Desktop gives those two frequently used actions direct access. Follow the [design playbook](docs/design/IPOS_DESIGN_PLAYBOOK.md) for the responsive and workflow acceptance matrix. Check both themes, long Russian titles, a populated plan list, empty and filtered results, save errors, and short-height dialogs.
 
 ## Elevation & Depth
 
@@ -98,6 +98,7 @@ Use the established radii for controls, panels, and the overview. Keep the logo 
 | Plan row | Lead with the title as the open action. Follow with update time, task counts, and useful progress context. Give duplicate and delete accessible names and independent targets. Keep confirmation for deletion. |
 | Dashboard states | Give a fresh empty library a create or import action. Give a no-match result a reset action. Explain storage and load errors where the user can recover. |
 | Editor controls | Keep formatting contextual to the current block or selection. Keep task properties in the inspector and keep save feedback visible. Preserve existing shortcuts and undo. |
+| Sharing | Show the snapshot and public-page choices together with their consequences before displaying their controls. |
 | Shared reader | Present the contents as read-only. Distinguish an unavailable publication and an invalid snapshot with clear recovery guidance. |
 | Buttons and focus | Lead with one primary action per decision group. Make keyboard focus visible and use touch targets of at least 44px for dashboard controls. |
 

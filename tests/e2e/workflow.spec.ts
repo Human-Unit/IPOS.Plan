@@ -115,11 +115,19 @@ test("create, slash heading, tasks, persistence, JSON, snapshot and restore", as
   ).toBeVisible();
   await page.getByRole("button", { name: "Закрыть", exact: true }).click();
   await page.getByRole("button", { name: "Поделиться", exact: true }).click();
-  await page.getByText("Другой способ: ссылка без публикации", { exact: true }).click();
+  const snapshotMethod = page.getByRole("button", { name: "Ссылка на снимок", exact: true });
+  const publicationMethod = page.getByRole("button", { name: "Публичная страница", exact: true });
+  await expect(snapshotMethod).toBeVisible();
+  await expect(publicationMethod).toBeVisible();
+  await expect(page.getByRole("button", { name: "Опубликовать", exact: true })).toBeHidden();
+  await publicationMethod.click();
+  await expect(page.getByRole("button", { name: "Опубликовать", exact: true })).toBeVisible();
+  await snapshotMethod.click();
+  await expect(page.getByRole("button", { name: "Опубликовать", exact: true })).toBeHidden();
   const shareUrl = await page.getByLabel("Самодостаточная ссылка").inputValue();
   expect(shareUrl).toContain("/view#p=");
   expect(new URL(shareUrl).search).toBe("");
-  await page.getByRole("button", { name: "Скопировать", exact: true }).click();
+  await page.getByRole("button", { name: "Скопировать ссылку", exact: true }).click();
   await expect(
     page.getByText("Ссылка скопирована", { exact: true }),
   ).toBeVisible();
@@ -272,8 +280,8 @@ test("invalid or missing share snapshot is a useful error", async ({
     page.getByRole("heading", { name: "Не удалось открыть снимок" }),
   ).toBeVisible();
   await page.goto("/view#p=invalid");
-  await expect(
-    page.getByRole("heading", { name: "Не удалось открыть снимок" }),
-  ).toBeVisible();
+  const alert = page.getByRole("main").getByRole("alert");
+  await expect(alert).toContainText("Ссылка повреждена или неполная");
+  await expect(alert).toContainText("Попросите автора прислать полную ссылку.");
   await noOverflow(page);
 });

@@ -142,6 +142,9 @@
   padding-left: 16px;
   color: var(--muted-foreground);
 }
+.plan-paper blockquote.bn-inline-content {
+  color: var(--muted-foreground);
+}
 .plan-paper .bn-inline-content a {
   color: var(--primary);
   text-underline-offset: 3px;
