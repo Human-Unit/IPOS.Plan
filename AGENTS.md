@@ -15,3 +15,5 @@ For any UI, visual design, responsive layout, component, or UX changes, read `do
 The Paykar documents at `docs/design/paykar-reference/` are **reference examples only**. Do not apply their green brand, commerce routes, backend rules, or old project commands to IPOS.Plan. Preserve IPOS's local IndexedDB storage, BlockNote editing, immutable sharing, JSON/DOCX export, A4 print and responsive interaction behavior.
 
 For a design review, inspect actual screenshots first and distinguish observed defects from code-only hypotheses; do not claim browser acceptance without a real rendered check. Do not treat copying reference docs as authorization to redesign runtime UI.
+
+For the approved cobalt-and-ink layout, also read `docs/design/COBALT_APPROVED.md` and `.impeccable/design.json`. Preserve MCP sync/import UI, existing task search semantics, local IndexedDB safety and OAuth controls when porting design-only branches. The reference branch `design/student-council-impeccable` predates later MCP/productivity work; avoid wholesale replacement of newer components.
