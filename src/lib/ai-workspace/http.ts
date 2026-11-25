@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-export const maxRequestBytes = 1_500_000;
+import { JsonBodyError, maxDocumentRequestBytes, readBoundedJson } from "@/lib/http/request-json";
+
+export const maxRequestBytes = maxDocumentRequestBytes;
 export const privateHeaders = {
   "Cache-Control": "no-store",
   "X-Content-Type-Options": "nosniff",
@@ -28,33 +30,12 @@ export function httpError(error: unknown) {
 }
 
 export async function readJson<T>(request: Request, schema: z.ZodType<T>): Promise<T> {
-  if (request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json")
-    throw new WorkspaceError(415, "Ожидается application/json.");
-  if (Number(request.headers.get("content-length")) > maxRequestBytes)
-    throw new WorkspaceError(413, "Запрос слишком большой.");
-  const reader = request.body?.getReader();
-  if (!reader) throw new WorkspaceError(400, "Нужно передать JSON.");
-  const decoder = new TextDecoder("utf-8", { fatal: true });
-  let bytes = 0;
-  let raw = "";
   let value: unknown;
   try {
-    for (;;) {
-      const { done, value: chunk } = await reader.read();
-      if (done) break;
-      bytes += chunk.byteLength;
-      if (bytes > maxRequestBytes) {
-        void reader.cancel().catch(() => undefined);
-        throw new WorkspaceError(413, "Запрос слишком большой.");
-      }
-      raw += decoder.decode(chunk, { stream: true });
-    }
-    value = JSON.parse(raw + decoder.decode());
+    value = await readBoundedJson(request, maxRequestBytes);
   } catch (error) {
-    if (error instanceof WorkspaceError) throw error;
-    throw new WorkspaceError(400, "Некорректный JSON.");
-  } finally {
-    reader.releaseLock();
+    if (error instanceof JsonBodyError) throw new WorkspaceError(error.status, error.message);
+    throw error;
   }
   const result = schema.safeParse(value);
   if (!result.success) throw new WorkspaceError(400, "Проверьте поля запроса.");
