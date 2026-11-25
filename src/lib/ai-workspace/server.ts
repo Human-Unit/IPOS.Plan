@@ -135,19 +135,32 @@ export async function updateCloudPlan(
 
 export async function listCloudPlans(cursor?: string) {
   const page = await list({ ...storageOptions(), prefix, limit: 50, ...(cursor ? { cursor } : {}) });
-  const plans = [];
-  // Bound concurrent full-document reads and keep the provider cursor opaque.
-  for (let start = 0; start < page.blobs.length; start += 5) {
-    const records = await Promise.all(page.blobs.slice(start, start + 5).map(async ({ pathname }) => {
-      const id = pathname.slice(prefix.length, -5);
-      if (!pathname.startsWith(prefix) || !pathname.endsWith(".json") || !cloudPlanId.safeParse(id).success)
-        return null;
-      const stored = await getCloudPlan(id);
-      if (!stored) return null;
-      const { version, updatedAt, document } = stored.record;
-      return { id, version, updatedAt, title: document.title };
-    }));
-    plans.push(...records.filter((record) => record !== null));
+  type Summary = Pick<CloudPlanRecord, "id" | "version" | "updatedAt"> & { title: string };
+  const plans = new Array<Summary | undefined>(page.blobs.length);
+  let nextIndex = 0;
+  let failed = false;
+
+  // Refill each read slot as it finishes. A slow Blob must not delay the
+  // next batch of independent reads. Store results at provider-list indexes.
+  async function readNextPlans() {
+    try {
+      while (!failed && nextIndex < page.blobs.length) {
+        const index = nextIndex++;
+        const { pathname } = page.blobs[index];
+        const id = pathname.slice(prefix.length, -5);
+        if (!pathname.startsWith(prefix) || !pathname.endsWith(".json") || !cloudPlanId.safeParse(id).success)
+          continue;
+        const stored = await getCloudPlan(id);
+        if (!stored) continue;
+        const { version, updatedAt, document } = stored.record;
+        plans[index] = { id, version, updatedAt, title: document.title };
+      }
+    } catch (error) {
+      failed = true;
+      throw error;
+    }
   }
-  return { plans, nextCursor: page.hasMore ? page.cursor : null };
+
+  await Promise.all(Array.from({ length: Math.min(5, page.blobs.length) }, readNextPlans));
+  return { plans: plans.filter((plan) => plan !== undefined), nextCursor: page.hasMore ? page.cursor : null };
 }

@@ -25,7 +25,7 @@ Preserve Cobalt & Ink, IndexedDB and the schema-v1 document contract, BlockNote,
 | Dependencies | Run both npm audits and review advisory ranges. Apply supported selective updates on Node 24 with the same full gate. Record any deferred peer conflicts. | Verified locally |
 | Security | Inventory admin, publication, workspace and MCP boundaries. Demonstrate existing authorization, safe response headers/errors and input limits with focused tests. Document a persistent limiter and revocation decision with any external prerequisites. | App code verified locally. Durable WAF and per-session revocation deferred. |
 | Data reliability | Prove atomic failures do not partially save data. Cover stale tabs, interrupted autosave, backup restore, malformed/duplicate/large inputs and mocked Blob version conflicts. | Verified locally |
-| Performance | Measure static and runtime JS, dashboard/search/IndexedDB/BlockNote/image timing, memory and mobile on repeatable fixtures. Measure private listing cost using isolated mocks and justify any metadata index. Keep production storage unchanged. | Pending |
+| Performance | Measure static and runtime JS, dashboard/search/IndexedDB/BlockNote/image timing, memory and mobile on repeatable fixtures. Measure private listing cost using isolated mocks and justify any metadata index. Keep production storage unchanged. | Verified locally and in storage mocks |
 | Activists | Port useful #16 capabilities individually. Validate local profiles, assignment history/navigation and old backups. Preserve portable assignee text. | Phase 3 |
 | Calendar | Weekly/monthly views distinguish task deadlines from publication dates. Verify filters, direct navigation and mobile. | Phase 3 |
 | Kanban | Specify a backward-compatible stage mapping. Verify keyboard and pointer changes operate on the same task records. | Phase 3 |
@@ -84,3 +84,39 @@ Stacked on the [server-hardening PR](https://github.com/Human-Unit/IPOS.Plan/pul
 Added real-browser regressions for sharing while an IndexedDB write is in flight and retrying a draft after an interrupted write. Existing coverage verifies transactional rollback, invalid and oversized JSON, duplicate IDs, same-browser stale-tab conflicts, backup restoration, publication updates, and isolated private Blob compare-and-swap. Forced browser termination can still interrupt asynchronous persistence, and cloud/provider behavior remains mock-verified only.
 
 - Clean install, lint, typecheck, 133 unit, four MCP preflight, 52 browser tests, production build and independent DOCX verification passed. Captured source dashboard/editor and updated snapshot at all five widths in both themes. [Desktop snapshot](docs/reports/phase2-data/snapshot-desktop.png) · [Dark mobile snapshot](docs/reports/phase2-data/snapshot-mobile.png)
+
+## Performance milestone
+
+Stacked on the [autosave reliability PR](https://github.com/Human-Unit/IPOS.Plan/pull/40). Private listing formerly waited for the slowest read in each five-record batch. It now refills each completed read slot and preserves the provider's result order and opaque cursor. It stops scheduling work on a failed read and surfaces the same error. The five-read limit and existing authorization, storage paths and data formats are unchanged.
+
+| Isolated mock fixture | Before | After |
+|---|---:|---:|
+| Virtual elapsed time, 15 records, three 120 ms reads and twelve 10 ms reads | 360 ms | 140 ms |
+| Full document reads | 15 | 15 |
+| Peak concurrent reads | 5 | 5 |
+| Mock response data | 3,140 bytes | 3,140 bytes |
+
+Run the benchmark with `IPOS_PERF_REPORT=1` and `npm test -- tests/unit/cloud-listing-performance.test.ts --silent=false`. The 61% reduction is for this synthetic schedule. No provider latency or production throughput claim follows from it.
+
+### Metadata index decision
+
+Listing still downloads each document, so a metadata index is justified if measured private inventories show document transfer dominates. An index would contain only plan ID, title, version, and update time plus a consistency marker. The document remains authoritative. A later design must explicitly select a transactional index or a repairable summary with bounded staleness and fallback reads, account for partial dual writes, preserve access and cursor semantics, and measure data transfer under authorized synthetic Vercel usage. Keep existing storage untouched until a separate compatibility and migration review.
+
+### Browser measurement conditions
+
+Chromium, local production build, Node 24, 101 fixture plans in a fresh profile per viewport. Warm Dashboard/search/editor upper medians exclude the first of five samples. IndexedDB indexed read median uses five reads and one transaction for the 100 writes. The upload number is one real PNG upload to visible bitmap. Heap numbers are V8 JavaScript KiB only. The admin endpoint timing is a local response diagnostic. Production Vercel function timings, private Blob latency, and production throughput were not measured.
+
+| Local fixture metric | Desktop before → after | Mobile before → after |
+|---|---:|---:|
+| Dashboard ready | 118.2 → 113.2 ms | 127.5 → 88.9 ms |
+| Search visible result | 75.3 → 44.6 ms | 69.0 → 45.0 ms |
+| BlockNote ready | 433.3 → 841.4 ms | 863.5 → 397.7 ms |
+| IndexedDB indexed read | 2.4 → 2.3 ms | 2.5 → 2.2 ms |
+| IndexedDB 100-plan write | 4.8 → 4.8 ms | 5.0 → 6.0 ms |
+| Fixture image to visible | 150.6 → 99.2 ms | Desktop exercised |
+| Dashboard / editor V8 heap | 46,067 / 47,804 → 34,131 / 41,954 KiB | 52,297 / 55,764 → 48,341 / 35,834 KiB |
+| Decoded dashboard / editor JS | 1,086,632 / 2,314,512 bytes in both builds | Same |
+
+Local admin-session probe was 3.5 → 2.7 ms. The browser measures vary between short runs. This server-only change leaves client bundles unchanged, and the browser sample does not support a UI-speed or heap improvement claim. To repeat the Chromium fixture, start the local production build and run `node scripts/measure-local-performance.mjs` from the checkout.
+
+- Final clean install, lint, typecheck, 136 unit cases, four MCP preflight cases, 52 Chromium cases and production build passed. Independent DOCX ZIP/OOXML validation passed. Final browser captures verified both themes at all five required widths. [Dark tablet dashboard](docs/reports/phase2-performance/dashboard-tablet-dark.png)
