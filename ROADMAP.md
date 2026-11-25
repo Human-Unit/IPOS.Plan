@@ -24,7 +24,7 @@ Preserve Cobalt & Ink, IndexedDB and the schema-v1 document contract, BlockNote,
 | Baseline | Record exact main SHA and Node version. Run clean install, lint, typecheck, unit/MCP/build/browser and independent DOCX validation. Capture the current UI in both themes at the specified widths. | Recorded |
 | Dependencies | Run both npm audits and review advisory ranges. Apply supported selective updates on Node 24 with the same full gate. Record any deferred peer conflicts. | Verified locally |
 | Security | Inventory admin, publication, workspace and MCP boundaries. Demonstrate existing authorization, safe response headers/errors and input limits with focused tests. Document a persistent limiter and revocation decision with any external prerequisites. | App code verified locally. Durable WAF and per-session revocation deferred. |
-| Data reliability | Prove atomic failures do not partially save data. Cover stale tabs, interrupted autosave, backup restore, malformed/duplicate/large inputs and mocked Blob version conflicts. | Pending |
+| Data reliability | Prove atomic failures do not partially save data. Cover stale tabs, interrupted autosave, backup restore, malformed/duplicate/large inputs and mocked Blob version conflicts. | Verified locally |
 | Performance | Measure static and runtime JS, dashboard/search/IndexedDB/BlockNote/image timing, memory and mobile on repeatable fixtures. Measure private listing cost using isolated mocks and justify any metadata index. Keep production storage unchanged. | Pending |
 | Activists | Port useful #16 capabilities individually. Validate local profiles, assignment history/navigation and old backups. Preserve portable assignee text. | Phase 3 |
 | Calendar | Weekly/monthly views distinguish task deadlines from publication dates. Verify filters, direct navigation and mobile. | Phase 3 |
@@ -76,3 +76,11 @@ Login/management rate limits should run at the Vercel WAF before hitting any fun
 Logout clears the current browser cookie. The existing signing-key rotation invalidates all sessions if needed during incident response. Per-session revocation would require shared state with expiry. That dependency and any credential operation remain separate from this milestone. Structured events use fixed labels and intentionally omit request metadata, credentials and documents.
 
 - Clean install, lint, typecheck, 133 unit tests, four MCP preflight tests, build, independent DOCX validation and 50 browser tests passed locally. The browser run configured only synthetic credentials. Independent Chromium confirmed Secure, HttpOnly and SameSite=Strict cookie flags and logout. [Mobile login](docs/reports/phase2-security/admin-mobile.png) · [Owner workspace](docs/reports/phase2-security/owner-workspace.png)
+
+## Data reliability milestone
+
+Stacked on the [server-hardening PR](https://github.com/Human-Unit/IPOS.Plan/pull/39). A local browser fixture exposed stale share snapshots when a draft edit arrived during an IndexedDB save. The flush barrier now commits pending edits in order before returning the final draft. Each write still compares the local version and atomically records the matching history. No schema or stored record changes are required.
+
+Added real-browser regressions for sharing while an IndexedDB write is in flight and retrying a draft after an interrupted write. Existing coverage verifies transactional rollback, invalid and oversized JSON, duplicate IDs, same-browser stale-tab conflicts, backup restoration, publication updates, and isolated private Blob compare-and-swap. Forced browser termination can still interrupt asynchronous persistence, and cloud/provider behavior remains mock-verified only.
+
+- Clean install, lint, typecheck, 133 unit, four MCP preflight, 52 browser tests, production build and independent DOCX verification passed. Captured source dashboard/editor and updated snapshot at all five widths in both themes. [Desktop snapshot](docs/reports/phase2-data/snapshot-desktop.png) · [Dark mobile snapshot](docs/reports/phase2-data/snapshot-mobile.png)

@@ -35,6 +35,81 @@ test("stale tab never overwrites and can export its unsaved copy", async ({
     "Изменения первой вкладки",
   );
 });
+test("sharing waits for an edit made during the first IndexedDB write", async ({ page, context }) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: demoPlan.title }).click();
+  const title = page.getByLabel("Название плана", { exact: true });
+  await title.evaluate((element) => {
+    const put = IDBObjectStore.prototype.put;
+    const prototype = element instanceof HTMLTextAreaElement
+      ? HTMLTextAreaElement.prototype
+      : HTMLInputElement.prototype;
+    const setValue = Object.getOwnPropertyDescriptor(prototype, "value")!.set!;
+    IDBObjectStore.prototype.put = function (value, key) {
+      const request = key === undefined ? put.call(this, value) : put.call(this, value, key);
+      if (this.name === "plans" && value?.title === "Перед первой записью") {
+        IDBObjectStore.prototype.put = put;
+        setValue.call(element, "Изменение во время записи");
+        element.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText" }));
+      }
+      return request;
+    };
+  });
+  await title.fill("Перед первой записью");
+  await page.getByRole("button", { name: "Поделиться", exact: true }).click();
+  await expect(title).toHaveValue("Изменение во время записи");
+  await page.getByText("Другой способ: ссылка без публикации", { exact: true }).click();
+  const url = await page.getByLabel("Самодостаточная ссылка").inputValue();
+  const viewer = await context.newPage();
+  await viewer.goto(url);
+  await expect(viewer.getByRole("heading", { name: "Изменение во время записи", exact: true })).toBeVisible();
+  await page.reload();
+  await expect(title).toHaveValue("Изменение во время записи");
+});
+
+test("an interrupted browser write preserves the draft for the next explicit save", async ({ page, context }) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: demoPlan.title }).click();
+  const title = page.getByLabel("Название плана", { exact: true });
+  await title.evaluate(() => {
+    const put = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (value, key) {
+      if (this.name === "plans" && value?.title === "Черновик после сбоя") {
+        IDBObjectStore.prototype.put = put;
+        throw new DOMException("Fixture write interrupted", "AbortError");
+      }
+      return key === undefined ? put.call(this, value) : put.call(this, value, key);
+    };
+  });
+  await title.fill("Черновик после сбоя");
+  await expect(page.getByRole("status").filter({ hasText: "Не сохранено" })).toBeVisible();
+  await expect(title).toHaveValue("Черновик после сбоя");
+  const persistedTitle = await page.evaluate(async () => {
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const open = indexedDB.open("ipos-content-plans");
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () => reject(open.error);
+    });
+    try {
+      return await new Promise<string>((resolve, reject) => {
+        const id = location.pathname.split("/").at(-1);
+        if (!id) return reject(new Error("Expected an editor route"));
+        const get = db.transaction("plans").objectStore("plans").get(id);
+        get.onsuccess = () => resolve(get.result.title);
+        get.onerror = () => reject(get.error);
+      });
+    } finally {
+      db.close();
+    }
+  });
+  expect(persistedTitle).toBe(demoPlan.title);
+  await page.getByRole("button", { name: "Поделиться", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  const other = await context.newPage();
+  await other.goto(page.url());
+  await expect(other.getByLabel("Название плана", { exact: true })).toHaveValue("Черновик после сбоя");
+});
+
 test("references and slash blocks persist; deleted task supports undo", async ({
   page,
 }) => {

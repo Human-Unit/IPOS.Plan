@@ -54,23 +54,25 @@ export function usePlan(id: string) {
       .then(async () => {
         if (!current.current) throw new Error("План ещё не загружен");
         if (!dirty.current) return current.current;
-        const snapshot = current.current;
-        const serial = change.current;
         setStatus("Сохранение…");
         try {
-          const saved = await savePlan(snapshot);
-          current.current = {
-            ...current.current,
-            version: saved.version,
-            updatedAt: saved.updatedAt,
-          };
-          setPlan(current.current);
-          if (serial === change.current) {
-            dirty.current = false;
-            setStatus("Сохранено локально");
-          } else setStatus("Есть изменения…");
+          // Sharing, imports, and navigation require the latest committed draft.
+          // An edit during a write must use the newly committed version.
+          while (dirty.current) {
+            const snapshot = current.current;
+            const serial = change.current;
+            const saved = await savePlan(snapshot);
+            current.current = {
+              ...current.current,
+              version: saved.version,
+              updatedAt: saved.updatedAt,
+            };
+            setPlan(current.current);
+            dirty.current = serial !== change.current;
+          }
+          setStatus("Сохранено локально");
           setError("");
-          return saved;
+          return current.current;
         } catch (e) {
           setStatus("Не сохранено");
           setError(errorMessage(e));
