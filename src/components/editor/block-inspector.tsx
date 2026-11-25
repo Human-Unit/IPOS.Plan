@@ -341,7 +341,7 @@ export function BlockInspector({
       <p className="panel-eyebrow">СВОЙСТВА БЛОКА</p>
       {
         <>
-          <h2>
+          <h2 key={block.id} className="cobalt-inspector-heading">
             {task
               ? "Задача"
               : block.type === "reference"

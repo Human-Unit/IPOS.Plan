@@ -11,9 +11,11 @@ import {
   Share2,
   Maximize2,
   Minimize2,
+  Bot,
 } from "lucide-react";
 import { toast } from "@/lib/notifications";
 import { usePlan } from "./use-plan";
+import { AiSyncDialog } from "@/features/ai-sync/ai-sync-dialog";
 import { db } from "@/lib/db/database";
 import { event, saveRevision } from "./repository";
 import { PlanRenderer } from "@/components/plan/renderer";
@@ -50,7 +52,7 @@ export function EditorScreen({ id }: { id: string }) {
   const [mode, setMode] = useState<"workspace" | "document">("workspace");
   const [focusMode, setFocusMode] = useState(false);
   const [watermark, setWatermark] = useState(true);
-  const [dialog, setDialog] = useState<"import" | "export" | "history">();
+  const [dialog, setDialog] = useState<"import" | "export" | "history" | "ai-sync">();
   const [exportPlan, setExportPlan] = useState<PortablePlan>();
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [sharePlan, setSharePlan] = useState<PortablePlan>();
@@ -180,7 +182,7 @@ export function EditorScreen({ id }: { id: string }) {
   return (
     <>
       <header
-        className={`${preview ? "preview-bar" : "editor-bar"}${focusMode ? " is-focus" : ""}`}
+        className={`cobalt-editor-bar ${preview ? "preview-bar" : "editor-bar"}${focusMode ? " is-focus" : ""}`}
       >
         <div className="editor-identity">
           <Button
@@ -289,6 +291,12 @@ export function EditorScreen({ id }: { id: string }) {
               </span>
             </Button>
           )}
+          {!preview && (
+            <Button size="sm" variant="outline" disabled={busy} aria-label="Синхронизация с ChatGPT" title="Синхронизация плана с ChatGPT" onClick={() => void run(async () => { await flush(); setDialog("ai-sync"); })}>
+              <Bot data-icon="inline-start" />
+              <span className="toolbar-desktop-label">GPT</span>
+            </Button>
+          )}
           <PlanActionsMenu
             disabled={busy}
             readonly={preview}
@@ -351,7 +359,7 @@ export function EditorScreen({ id }: { id: string }) {
           </Button>
         </nav>
       </header>
-      <main className={`editor-stage${focusMode ? " focus-stage" : ""}`}>
+      <main className={`editor-stage cobalt-editor-stage${focusMode ? " focus-stage" : ""}`}>
         {error && (
           <Alert variant="destructive">
             <AlertDescription>
@@ -400,6 +408,9 @@ export function EditorScreen({ id }: { id: string }) {
           />
         </div>
       </main>
+      {dialog === "ai-sync" && (
+        <AiSyncDialog plan={plan} flush={flush} replace={replace} onClose={() => setDialog(undefined)} />
+      )}
       {dialog === "import" && (
         <ImportDialog
           replacing

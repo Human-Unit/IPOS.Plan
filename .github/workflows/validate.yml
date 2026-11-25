@@ -2,9 +2,9 @@ name: IPOS.Plan checks
 
 on:
   pull_request:
-    branches: [main, design/ipos-plan-2, design/ipos-2-task-sections-2026-10-20, fix/ipos-3-0-1-ux-reliability, feat/ipos-plan-3-1-productivity]
   push:
-    branches: [main, design/ipos-plan-2, design/ipos-2-task-sections-2026-10-20, feat/ipos-plan-3-workspace]
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   validate:
@@ -13,14 +13,17 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: npm run mcp:preflight:test
       - name: Independently validate DOCX archive and OOXML
         run: |
           python3 - <<'PY'

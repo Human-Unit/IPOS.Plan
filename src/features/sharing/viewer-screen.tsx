@@ -46,7 +46,7 @@ export function ViewerScreen() {
   }, []);
   return (
     <>
-      <header className="app-bar">
+      <header className="app-bar cobalt-reader-bar">
         <Brand />
         <div className="app-bar-tools"><span className="local-indicator">
           <LockKeyhole size={14} aria-hidden="true" />
