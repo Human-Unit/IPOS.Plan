@@ -51,9 +51,28 @@ test("seven widths keep library actions, editor drawers and portable content acc
     await page.goto("/");
     await expect(page.locator(".plan-row")).toHaveCount(2);
     await noOverflow(page);
-    await expect(page.locator(".dashboard-actions button").first()).toHaveText(
-      "Новый план",
-    );
+    await expect(page.getByRole("button", { name: "Новый план", exact: true })).toBeVisible();
+    await expect(page.locator(".plan-row").first().locator(".plan-row-meta time")).toBeVisible();
+    if (width <= 700) {
+      const stats = page.getByRole("group", { name: "Задачи во всей библиотеке" });
+      const totals = stats.getByRole("button", { name: "Задачи", exact: true });
+      const upcoming = stats.getByText("В ближайшие 7 дней", { exact: true });
+      await expect(upcoming).toBeHidden();
+      await totals.click();
+      await expect(upcoming).toBeVisible();
+      await totals.click();
+
+      const files = page.getByRole("button", { name: "Файлы", exact: true });
+      const dashboardSearch = page.getByRole("searchbox", { name: "Поиск планов" });
+      await files.click();
+      const importButton = page.getByRole("button", { name: "Импорт JSON", exact: true });
+      await expect(importButton).toBeVisible();
+      const importBox = (await importButton.boundingBox())!;
+      const searchBox = (await dashboardSearch.boundingBox())!;
+      expect(importBox.y + importBox.height).toBeLessThanOrEqual(searchBox.y);
+      await page.keyboard.press("Escape");
+      await expect(files).toBeFocused();
+    }
     // A row's index must not imply selection or priority.
     const rows = await page.locator(".plan-row").evaluateAll((nodes) =>
       nodes.map((node) => {
@@ -72,6 +91,7 @@ test("seven widths keep library actions, editor drawers and portable content acc
       .getByRole("button", { name: "Сбросить фильтры", exact: true })
       .first()
       .click();
+    await expect(search).toBeFocused();
     await expect(page.locator(".plan-row")).toHaveCount(2);
     await page.goto(url);
     await page.locator(".bn-editor").waitFor();

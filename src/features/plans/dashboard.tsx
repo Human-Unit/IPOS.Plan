@@ -7,7 +7,7 @@ import { motionEase, motionTiming } from "@/lib/motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Plus, Copy, Trash2, ArrowUpRight, Upload, FileText, ChevronDown, FolderOpen, Search, ShieldCheck } from "lucide-react";
+import { Plus, Copy, Trash2, ArrowUpRight, Upload, FileText, ChevronDown, FolderOpen, Search, ShieldCheck, X } from "lucide-react";
 import { toast } from "@/lib/notifications";
 import { db } from "@/lib/db/database";
 import { createPlan, deletePlan, duplicatePlan } from "./repository";
@@ -49,11 +49,11 @@ import {
   syncDirectoryFromPlans,
 } from "@/features/activists/directory";
 const planFilters = [
-  { value: "all", label: "Все планы" },
-  { value: "unfinished", label: "Не завершено" },
-  { value: "overdue", label: "Просрочено" },
-  { value: "recent", label: "Недавние" },
-] as const satisfies ReadonlyArray<{ value: PlanFilter; label: string }>;
+  { value: "all", label: "Все планы", compactLabel: "Все" },
+  { value: "unfinished", label: "Не завершено", compactLabel: "Не готовы" },
+  { value: "overdue", label: "Просрочено", compactLabel: "Просрочка" },
+  { value: "recent", label: "Недавние", compactLabel: "Недавние" },
+] as const satisfies ReadonlyArray<{ value: PlanFilter; label: string; compactLabel: string }>;
 
 export function Dashboard() {
   const router = useRouter();
@@ -66,13 +66,16 @@ export function Dashboard() {
   const [deleting, setDeleting] = useState<Plan>();
   const [importing, setImporting] = useState(false);
   const [filesOpen, setFilesOpen] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
   const filesToggle = useRef<HTMLButtonElement>(null);
+  const searchInput = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<PlanFilter>("all");
   const today = useLocalDate();
   const resetFilters = () => {
     setQuery("");
     setFilter("all");
+    searchInput.current?.focus();
   };
   const rosterRows = useLiveQuery(
     () =>
@@ -87,6 +90,7 @@ export function Dashboard() {
     const match = matchPlan(plan, query, filter, today);
     return match ? [{ plan, match }] : [];
   });
+  const canClearResults = Boolean((query || filter !== "all") && visiblePlans?.length);
   const overdueOnly = filter === "overdue" && !query.trim();
   const stats = taskStats(
     (plans ?? []).flatMap((p) => Object.values(p.tasks)),
@@ -123,262 +127,305 @@ export function Dashboard() {
         </span><ThemeControl /></div>
       </header>
       <main className="dashboard dashboard-main">
-        <DashboardOpening recentPlan={plans?.[0]} busy={busy} onCreate={create} />
-          <div className="library-stats" aria-label="Задачи во всей библиотеке">
-            <span>
-              <ChangingNumber value={stats.unfinished} ready={plans !== undefined} /> Не завершено
-            </span>
-            <div className="library-overdue" data-warning={stats.overdue > 0 || undefined}>
-              <button
-                type="button"
-                aria-label={`Просроченные задачи во всех планах: ${stats.overdue}`}
-                aria-pressed={overdueOnly}
-                aria-controls="plan-library"
-                disabled={!plans}
-                onClick={() => {
-                  setQuery("");
-                  setFilter(overdueOnly ? "all" : "overdue");
-                }}
-              >
-                <ChangingNumber value={stats.overdue} ready={plans !== undefined} /> <span>Просрочено</span>
-              </button>
-            </div>
-            <span>
-              <ChangingNumber value={stats.upcoming} ready={plans !== undefined} /> В ближайшие 7 дней
-            </span>
-            <span>
-              <ChangingNumber value={stats.completed} ready={plans !== undefined} /> Готово
-            </span>
-          </div>
+        <header className="dashboard-titlebar">
+          <h1>Контент-планы</h1>
+          <Button disabled={busy} onClick={create}>
+            <Plus data-icon="inline-start" /> Новый план
+          </Button>
+        </header>
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        <section id="plan-library" tabIndex={-1} className="plan-list" data-filtered={Boolean(query || filter !== "all")} aria-label="Сохранённые планы">
-          <div className="library-heading">
-            <div className="list-label">
-              <div className="library-title-line">
-                <h2>Сохранённые планы</h2>
-                <span role="status" aria-label="Найдено планов">
-                  {visiblePlans?.length ?? "…"} / {plans?.length ?? "…"}
-                </span>
-              </div>
-            </div>
-            <div
-              className="dashboard-library-tools"
-              onKeyDown={(event) => {
-                if (event.key === "Escape" && !event.defaultPrevented && filesOpen) {
-                  setFilesOpen(false);
-                  filesToggle.current?.focus();
-                }
-              }}
-            >
-              <Button
-                ref={filesToggle}
-                className="dashboard-files-toggle"
-                variant="outline"
-                aria-expanded={filesOpen}
-                aria-controls="dashboard-file-actions"
-                onClick={() => setFilesOpen((open) => !open)}
-              >
-                <FolderOpen data-icon="inline-start" />
-                Файлы
-              </Button>
-              <div className="library-utilities" id="dashboard-file-actions" data-open={filesOpen}>
-                <BackupMenu />
-                <Button variant="outline" disabled={busy} onClick={() => setImporting(true)}>
-                  <Upload data-icon="inline-start" />
-                  Импорт JSON
-                </Button>
-              </div>
-            </div>
-            <div className="library-search" role="search" aria-label="Поиск по библиотеке">
-              <label className="sr-only" htmlFor="dashboard-plan-search">Поиск планов</label>
-              <Search size={16} aria-hidden="true" />
-              <Input
-                type="search"
-                id="dashboard-plan-search"
-                placeholder="Название, задача или имя"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </div>
-          </div>
-          <div className="dashboard-library-surface">
-            <nav className="dashboard-filters" aria-label="Фильтры планов">
-              {planFilters.map(({ value, label }) => (
-                <button
-                  type="button"
-                  className="dashboard-filter"
-                  key={value}
-                  aria-pressed={filter === value}
-                  onClick={() => setFilter(value)}
+        <div className="dashboard-workspace">
+          {(!plans || plans.length > 0) && (
+            <aside className="dashboard-overview" aria-label="Продолжение работы и задачи">
+              {plans?.[0]
+                ? <DashboardOpening plan={plans[0]} />
+                : <Skeleton className="dashboard-resume-loading" />}
+              <div className="library-stats" role="group" aria-label="Задачи во всей библиотеке">
+                <h2>Задачи</h2>
+                <Button
+                  className="library-stats-toggle"
+                  variant="ghost"
+                  aria-expanded={statsOpen}
+                  aria-controls="dashboard-task-totals"
+                  onClick={() => setStatsOpen((open) => !open)}
                 >
-                  {label}
+                  Задачи <ChevronDown data-icon="inline-end" />
+                </Button>
+                <button
+                  className="library-stat library-overdue"
+                  type="button"
+                  data-warning={stats.overdue > 0 || undefined}
+                  aria-label={`Просроченные задачи во всех планах: ${stats.overdue}`}
+                  aria-pressed={overdueOnly}
+                  aria-controls="plan-library"
+                  disabled={!plans}
+                  onClick={() => {
+                    setQuery("");
+                    setFilter(overdueOnly ? "all" : "overdue");
+                  }}
+                >
+                  <span>Просрочено</span>
+                  <ChangingNumber value={stats.overdue} ready={plans !== undefined} />
                 </button>
-              ))}
-              {(query || filter !== "all") && Boolean(visiblePlans?.length) && (
-                <Button className="dashboard-reset" variant="ghost" onClick={resetFilters}>
-                  Сбросить фильтры
-                </Button>
-              )}
-            </nav>
-          {!plans && !error && <Skeleton className="h-28 w-full" />}
-          {/* Search replaces the result set immediately. Retaining old results
-              through rapid filter resets can leave invisible live actions. IDs
-              remain stable within each result set and across Dexie updates. */}
-          <AnimatePresence key={`${filter}:${query}`} initial={false} mode="popLayout">
-          {visiblePlans?.map(({ plan, match }) => {
-            const tasks = Object.values(plan.tasks);
-            const done = tasks.filter((task) => task.status === "done").length;
-            const next = nextUnfinishedTask(tasks);
-            const overdue = next?.deadline && deadlineInfo(next, today).kind === "overdue" ? next : null;
-            return (
-              <motion.article className="plan-row" key={plan.id}
-                layout={reducedMotion ? false : "position"}
-                initial={reducedMotion ? false : { opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reducedMotion ? { opacity: 1 } : { opacity: 0, y: -3 }}
-                transition={{ duration: reducedMotion ? 0 : motionTiming.surface, ease: motionEase }}
-              >
-                <span className="plan-row-icon" aria-hidden="true">
-                  <FileText size={24} />
-                </span>
-                <div className="plan-row-content">
-                  <Link className="plan-title" href={`/plan/${plan.id}`}>
-                    <span>{plan.title}</span>
-                    <ArrowUpRight size={17} aria-hidden="true" />
-                  </Link>
-                  <div className="plan-row-meta">
-                    <time dateTime={plan.updatedAt}>
-                      Обновлён {formatDate(plan.updatedAt)}
-                    </time>
-                    <span>Задач: {tasks.length}</span>
-                    <span>Готово: {done}</span>
+                <div className="library-stat-rows" id="dashboard-task-totals" data-open={statsOpen}>
+                  <div className="library-stat">
+                    <span>Не завершено</span>
+                    <ChangingNumber value={stats.unfinished} ready={plans !== undefined} />
                   </div>
-                  {overdue?.deadline && (
-                    <p className="plan-row-context">
-                      <strong>Просрочено:</strong> {overdue.title || "Задача без названия"}
-                      {" · "}<time dateTime={overdue.deadline}>{overdue.deadline.split("-").reverse().join(".")}</time>
-                      {overdue.assignee && ` · ${overdue.assignee}`}
-                    </p>
-                  )}
-                  {match.task && (
-                    <p className="plan-row-context">
-                      {match.field === "assignee" ? `Ответственные: ${match.task.assignee} · `
-                        : match.field === "description" ? "Совпадение в описании задачи: " : "Задача: "}
-                      {match.task.title || "Без названия"}
-                    </p>
-                  )}
-                  {!overdue && !match.task && (
-                    <p className="plan-row-summary" title={tasks.map((task) => task.title).join(" · ")}>
-                      {tasks.length
-                        ? tasks.slice(0, 2).map((task) => task.title).join(" · ") +
-                          (tasks.length > 2 ? ` · ещё ${tasks.length - 2}` : "")
-                        : "Добавьте первое задание или начните с текста"}
-                    </p>
-                  )}
-                </div>
-                <time className="dashboard-row-date" dateTime={plan.updatedAt}>{formatDate(plan.updatedAt)}</time>
-                <div className="dashboard-row-progress">
-                  <div
-                    className="plan-progress"
-                    role="progressbar"
-                    aria-label={`Готовность ${plan.title}`}
-                    aria-valuemin={0}
-                    aria-valuemax={Math.max(1, tasks.length)}
-                    aria-valuenow={done}
-                    aria-valuetext={`${done} из ${tasks.length} задач готово`}
-                  >
-                    <motion.span
-                      initial={false}
-                      animate={{ width: `${tasks.length ? (done / tasks.length) * 100 : 0}%` }}
-                      transition={{ duration: reducedMotion ? 0 : motionTiming.surface }}
-                    />
+                  <div className="library-stat">
+                    <span>В ближайшие 7 дней</span>
+                    <ChangingNumber value={stats.upcoming} ready={plans !== undefined} />
                   </div>
-                  <span aria-hidden="true">{done} из {tasks.length}</span>
+                  <div className="library-stat">
+                    <span>Готово</span>
+                    <ChangingNumber value={stats.completed} ready={plans !== undefined} />
+                  </div>
                 </div>
-                <div className="plan-row-actions">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    aria-label={`Дублировать ${plan.title}`}
-                    title="Дублировать план"
-                    disabled={busy}
-                    onClick={() =>
-                      void run(async () => {
-                        await duplicatePlan(plan);
-                        toast.success("Копия создана");
-                      })
+              </div>
+            </aside>
+          )}
+          <div className="dashboard-library">
+            <section id="plan-library" tabIndex={-1} className="plan-list" data-filtered={Boolean(query || filter !== "all")} aria-label="Сохранённые планы">
+              <div className="library-heading">
+                <div className="list-label">
+                  <div className="library-title-line">
+                    <h2 aria-label="Сохранённые планы">
+                      <span className="library-title-wide" aria-hidden="true">Сохранённые планы</span>
+                      <span className="library-title-compact" aria-hidden="true">Планы</span>
+                    </h2>
+                    <span role="status" aria-label="Найдено планов">
+                      {visiblePlans?.length ?? "…"} / {plans?.length ?? "…"}
+                    </span>
+                  </div>
+                </div>
+                <div
+                  className="dashboard-library-tools"
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape" && !event.defaultPrevented && filesOpen) {
+                      setFilesOpen(false);
+                      filesToggle.current?.focus();
                     }
-                  >
-                    <Copy />
-                  </Button>
+                  }}
+                >
                   <Button
-                    size="icon"
-                    variant="ghost"
-                    aria-label={`Удалить ${plan.title}`}
-                    title="Удалить план"
-                    disabled={busy}
-                    onClick={() => setDeleting(plan)}
+                    ref={filesToggle}
+                    className="dashboard-files-toggle"
+                    variant="outline"
+                    aria-expanded={filesOpen}
+                    aria-controls="dashboard-file-actions"
+                    onClick={() => setFilesOpen((open) => !open)}
                   >
-                    <Trash2 />
+                    <FolderOpen data-icon="inline-start" />
+                    Файлы
+                  </Button>
+                  <div className="library-utilities" id="dashboard-file-actions" data-open={filesOpen}>
+                    <BackupMenu />
+                    <Button variant="outline" disabled={busy} onClick={() => setImporting(true)}>
+                      <Upload data-icon="inline-start" />
+                      Импорт JSON
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <div className="dashboard-library-surface">
+                <div className="dashboard-library-controls">
+                  <div className="library-search" role="search" aria-label="Поиск по библиотеке" data-can-clear={canClearResults}>
+                    <label className="sr-only" htmlFor="dashboard-plan-search">Поиск планов</label>
+                    <Search size={16} aria-hidden="true" />
+                    <Input
+                      ref={searchInput}
+                      type="search"
+                      id="dashboard-plan-search"
+                      placeholder="Название, задача или имя"
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                    />
+                    {canClearResults && (
+                      <Button
+                        className="dashboard-reset"
+                        size="icon"
+                        variant="ghost"
+                        aria-label="Сбросить фильтры"
+                        title="Сбросить фильтры"
+                        onClick={resetFilters}
+                      >
+                        <X aria-hidden="true" />
+                      </Button>
+                    )}
+                  </div>
+                  <nav className="dashboard-filters" aria-label="Фильтры планов">
+                    {planFilters.map(({ value, label, compactLabel }) => (
+                      <button
+                        type="button"
+                        className="dashboard-filter"
+                        key={value}
+                        aria-pressed={filter === value}
+                        onClick={() => setFilter(value)}
+                      >
+                        <span className="filter-label-wide">{label}</span>
+                        <span className="filter-label-compact">{compactLabel}</span>
+                      </button>
+                    ))}
+                  </nav>
+                </div>
+              {!plans && !error && <Skeleton className="h-28 w-full" />}
+              {/* Search replaces the result set immediately. Retaining old results
+                  through rapid filter resets can leave invisible live actions. IDs
+                  remain stable within each result set and across Dexie updates. */}
+              <AnimatePresence key={`${filter}:${query}`} initial={false} mode="popLayout">
+              {visiblePlans?.map(({ plan, match }) => {
+                const tasks = Object.values(plan.tasks);
+                const done = tasks.filter((task) => task.status === "done").length;
+                const next = nextUnfinishedTask(tasks);
+                const overdue = next?.deadline && deadlineInfo(next, today).kind === "overdue" ? next : null;
+                return (
+                  <motion.article className="plan-row" key={plan.id}
+                    layout={reducedMotion ? false : "position"}
+                    initial={reducedMotion ? false : { opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={reducedMotion ? { opacity: 1 } : { opacity: 0, y: -3 }}
+                    transition={{ duration: reducedMotion ? 0 : motionTiming.surface, ease: motionEase }}
+                  >
+                    <span className="plan-row-icon" aria-hidden="true">
+                      <FileText size={24} />
+                    </span>
+                    <div className="plan-row-content">
+                      <Link className="plan-title" href={`/plan/${plan.id}`}>
+                        <span>{plan.title}</span>
+                        <ArrowUpRight size={17} aria-hidden="true" />
+                      </Link>
+                      {overdue?.deadline && (
+                        <p className="plan-row-context">
+                          <strong>Просрочено:</strong> {overdue.title || "Задача без названия"}
+                          {" · "}<time dateTime={overdue.deadline}>{overdue.deadline.split("-").reverse().join(".")}</time>
+                          {overdue.assignee && ` · ${overdue.assignee}`}
+                        </p>
+                      )}
+                      {match.task && (
+                        <p className="plan-row-context">
+                          {match.field === "assignee" ? `Ответственные: ${match.task.assignee} · `
+                            : match.field === "description" ? "Совпадение в описании задачи: " : "Задача: "}
+                          {match.task.title || "Без названия"}
+                        </p>
+                      )}
+                      {!overdue && !match.task && (
+                        <p className="plan-row-summary" title={tasks.map((task) => task.title).join(" · ")}>
+                          {tasks.length
+                            ? tasks.slice(0, 2).map((task) => task.title).join(" · ") +
+                              (tasks.length > 2 ? ` · ещё ${tasks.length - 2}` : "")
+                            : "Добавьте первое задание или начните с текста"}
+                        </p>
+                      )}
+                    </div>
+                    <div className="plan-row-meta">
+                      <time dateTime={plan.updatedAt} title="Последнее изменение">{formatDate(plan.updatedAt)}</time>
+                      {tasks.length > 0 ? (
+                        <div className="dashboard-row-progress">
+                          <div
+                            className="plan-progress"
+                            role="progressbar"
+                            aria-label={`Готовность ${plan.title}`}
+                            aria-valuemin={0}
+                            aria-valuemax={tasks.length}
+                            aria-valuenow={done}
+                            aria-valuetext={`${done} из ${tasks.length} задач готово`}
+                          >
+                            <motion.span
+                              initial={false}
+                              animate={{ width: `${(done / tasks.length) * 100}%` }}
+                              transition={{ duration: reducedMotion ? 0 : motionTiming.surface }}
+                            />
+                          </div>
+                          <span aria-hidden="true">{done} из {tasks.length} готово</span>
+                        </div>
+                      ) : <span>Без задач</span>}
+                    </div>
+                    <div className="plan-row-actions">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label={`Дублировать ${plan.title}`}
+                        title="Дублировать план"
+                        disabled={busy}
+                        onClick={() =>
+                          void run(async () => {
+                            await duplicatePlan(plan);
+                            toast.success("Копия создана");
+                          })
+                        }
+                      >
+                        <Copy />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        aria-label={`Удалить ${plan.title}`}
+                        title="Удалить план"
+                        disabled={busy}
+                        onClick={() => setDeleting(plan)}
+                      >
+                        <Trash2 />
+                      </Button>
+                    </div>
+                  </motion.article>
+                );
+              })}
+              </AnimatePresence>
+              {Boolean(plans?.length) && visiblePlans?.length === 0 && (
+                <div className="search-empty" role="status">
+                  <p>Планы не найдены. Измените запрос или фильтр.</p>
+                  <Button variant="ghost" onClick={resetFilters}>
+                    Сбросить фильтры
                   </Button>
                 </div>
-              </motion.article>
-            );
-          })}
-          </AnimatePresence>
-          {Boolean(plans?.length) && visiblePlans?.length === 0 && (
-            <div className="search-empty" role="status">
-              <p>Планы не найдены. Измените запрос или фильтр.</p>
-              <Button variant="ghost" onClick={resetFilters}>
-                Сбросить фильтры
-              </Button>
-            </div>
-          )}
-          {plans?.length === 0 && (
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <PlanEmblem size={40} />
-                </EmptyMedia>
-                <EmptyTitle>Начните с первого плана</EmptyTitle>
-                <EmptyDescription>
-                  Добавьте задачи, тексты и референсы. Всё автоматически
-                  сохранится в этом браузере.
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent>
-                <Button disabled={busy} onClick={create}>
-                  <Plus data-icon="inline-start" />
-                  Новый план
-                </Button>
-              </EmptyContent>
-            </Empty>
-          )}
+              )}
+              {plans?.length === 0 && (
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <PlanEmblem size={40} />
+                    </EmptyMedia>
+                    <EmptyTitle>Начните с первого плана</EmptyTitle>
+                    <EmptyDescription>
+                      Добавьте задачи, тексты и референсы. Всё автоматически
+                      сохранится в этом браузере.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                  <EmptyContent>
+                    <Button disabled={busy} onClick={create}>
+                      <Plus data-icon="inline-start" />
+                      Новый план
+                    </Button>
+                  </EmptyContent>
+                </Empty>
+              )}
+              </div>
+            </section>
+            <details className="activist-directory">
+              <summary>
+                <span>Имена из назначений</span>
+                <small>{rememberedPeople.length} сохранено локально</small>
+                <ChevronDown aria-hidden="true" />
+              </summary>
+              <p>
+                Справочник для следующих заданий. Это имена из поручений, а не
+                подтверждённый список активистов. Они остаются здесь даже после
+                завершения задачи.
+              </p>
+              {rememberedPeople.length ? (
+                <ul aria-label="Сохранённые ответственные">
+                  {rememberedPeople.map((name) => <li key={name}>{name}</li>)}
+                </ul>
+              ) : (
+                <p>Назначьте человека в свойствах задачи — имя запомнится после ввода.</p>
+              )}
+            </details>
           </div>
-        </section>
-        <details className="activist-directory">
-          <summary>
-            <span>Имена из назначений</span>
-            <small>{rememberedPeople.length} сохранено локально</small>
-            <ChevronDown aria-hidden="true" />
-          </summary>
-          <p>
-            Справочник для следующих заданий. Это имена из поручений, а не
-            подтверждённый список активистов. Они остаются здесь даже после
-            завершения задачи.
-          </p>
-          {rememberedPeople.length ? (
-            <ul aria-label="Сохранённые ответственные">
-              {rememberedPeople.map((name) => <li key={name}>{name}</li>)}
-            </ul>
-          ) : (
-            <p>Назначьте человека в свойствах задачи — имя запомнится после ввода.</p>
-          )}
-        </details>
+        </div>
         <footer className="dashboard-footer">
           <p>
             Планы сохраняются в этом браузере. «Резервная копия» скачивает всю
