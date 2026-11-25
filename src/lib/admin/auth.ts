@@ -62,7 +62,24 @@ export async function isAdmin() {
 
 export function sameOrigin(request: NextRequest) {
   const origin = request.headers.get("origin");
-  return Boolean(origin && origin === request.nextUrl.origin);
+  if (!origin) return false;
+
+  // Next normalizes the bound 127.0.0.1 production server to localhost in nextUrl.
+  // For loopback only, trust the actual request authority rather than a forwarded header.
+  const expected = request.nextUrl;
+  const host = request.headers.get("host");
+  if (
+    /^(localhost|127\.0\.0\.1|\[::1\])$/i.test(expected.hostname) &&
+    host && /^(localhost|127\.0\.0\.1|\[::1\])(:\d{1,5})?$/i.test(host)
+  ) {
+    try {
+      const authority = new URL(expected.protocol + "//" + host);
+      return authority.port === expected.port && origin === authority.origin;
+    } catch {
+      return false;
+    }
+  }
+  return origin === expected.origin;
 }
 
 export const adminCookieOptions = {
