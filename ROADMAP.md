@@ -23,7 +23,7 @@ Preserve Cobalt & Ink, IndexedDB and the schema-v1 document contract, BlockNote,
 |---|---|---|
 | Baseline | Record exact main SHA and Node version. Run clean install, lint, typecheck, unit/MCP/build/browser and independent DOCX validation. Capture the current UI in both themes at the specified widths. | Recorded |
 | Dependencies | Run both npm audits and review advisory ranges. Apply supported selective updates on Node 24 with the same full gate. Record any deferred peer conflicts. | Verified locally |
-| Security | Inventory admin, publication, workspace and MCP boundaries. Demonstrate existing authorization, safe response headers/errors and input limits with focused tests. Document a persistent limiter and revocation decision with any external prerequisites. | Pending |
+| Security | Inventory admin, publication, workspace and MCP boundaries. Demonstrate existing authorization, safe response headers/errors and input limits with focused tests. Document a persistent limiter and revocation decision with any external prerequisites. | App code verified locally. Durable WAF and per-session revocation deferred. |
 | Data reliability | Prove atomic failures do not partially save data. Cover stale tabs, interrupted autosave, backup restore, malformed/duplicate/large inputs and mocked Blob version conflicts. | Pending |
 | Performance | Measure static and runtime JS, dashboard/search/IndexedDB/BlockNote/image timing, memory and mobile on repeatable fixtures. Measure private listing cost using isolated mocks and justify any metadata index. Keep production storage unchanged. | Pending |
 | Activists | Port useful #16 capabilities individually. Validate local profiles, assignment history/navigation and old backups. Preserve portable assignee text. | Phase 3 |
@@ -59,3 +59,20 @@ For rendered acceptance use 320, 390, 768, 1024 and 1440 px in both themes. Reco
 - Evidence from the patched build: [1440 px light dashboard](docs/reports/phase2-baseline/dashboard-desktop.png) and [320 px dark editor](docs/reports/phase2-baseline/editor-mobile.png). Screenshots use the bundled demo only.
 - If the framework patch regresses preview behavior, revert this change together with its lockfile and reassess the advisory exposure before any release.
 - Patched build browser suite: 47 passed and two credential-gated cases skipped. Independent DOCX ZIP/OOXML validation also passed.
+
+## Security milestone
+
+Stacked on the [dependency baseline PR](https://github.com/Human-Unit/IPOS.Plan/pull/38). The current routes serve four distinct trust boundaries.
+
+| Boundary | Review and decision |
+|---|---|
+| Admin session | Keep HMAC, secure HttpOnly cookie, seven-day expiry and exact Origin enforcement. Next can normalize a loopback URL to localhost, so match the actual loopback authority without trusting forwarded headers. Stream login JSON under 1,000 bytes. Record fixed security event names only. |
+| Publication API | Keep publication key, independent management key, document contract and existing ETag conflict behavior. Stream document writes under 1,500,000 bytes after authorization. Return actionable validation errors and generic infrastructure errors. Management and JSON responses remain uncached. |
+| Private workspace | Preserve the owner session and origin requirements for browser writes, bounded validation, CAS and explicit configuration. Reuse bounded JSON transport. No live private storage is involved in tests. |
+| MCP and OAuth metadata | Keep stateless SDK transport's body limit, origin policy, token/scope checks and fail-closed mode. Existing mocks exercise the read/write separation. Real OAuth and private Blob remain behind their existing readiness gate. |
+
+Login/management rate limits should run at the Vercel WAF before hitting any function. Confirm rule limits and cost with the owner, start with a low-volume observation period, and validate 429 handling on isolated preview traffic. A function-local map would reset across instances and cannot enforce this limit. No WAF change was made. [Provider rate limiting](https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting)
+
+Logout clears the current browser cookie. The existing signing-key rotation invalidates all sessions if needed during incident response. Per-session revocation would require shared state with expiry. That dependency and any credential operation remain separate from this milestone. Structured events use fixed labels and intentionally omit request metadata, credentials and documents.
+
+- Clean install, lint, typecheck, 133 unit tests, four MCP preflight tests, build, independent DOCX validation and 50 browser tests passed locally. The browser run configured only synthetic credentials. Independent Chromium confirmed Secure, HttpOnly and SameSite=Strict cookie flags and logout. [Mobile login](docs/reports/phase2-security/admin-mobile.png) · [Owner workspace](docs/reports/phase2-security/owner-workspace.png)

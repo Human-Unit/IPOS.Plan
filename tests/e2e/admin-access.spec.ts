@@ -16,9 +16,18 @@ test("bad credentials do not create a session", async ({ page }) => {
   await page.goto("/admin/login");
   await page.getByLabel("Пароль администратора").fill("incorrect-password-not-the-real-admin-secret");
   await page.getByRole("button", { name: "Войти" }).click();
-  await expect(page.getByRole("alert")).toContainText("Неверный пароль");
+  await expect(page.getByRole("main").getByRole("alert")).toContainText("Неверный пароль");
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/admin\/login$/);
+});
+
+test("admin pages send framing and content protections", async ({ request }) => {
+  const response = await request.get("/admin/login");
+  expect(response.headers()["x-frame-options"]).toBe("DENY");
+  expect(response.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(response.headers()["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  const session = await request.get("/api/admin/session");
+  expect(session.headers()["cache-control"]).toBe("no-store");
 });
 
 test("cross-origin login attempts are rejected", async ({ request }) => {

@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  cleanTitle, isConfigured, mayManage, parseDocument, publicData,
-  publicationId, readPublication, removePublication, updatePublication, PublicationConflictError,
+  isConfigured, mayManage, publicData,
+  publicationId, readPublication, removePublication, updatePublication,
 } from "@/lib/publications/server";
+
+import { publicationHeaders, publicationWriteError, readPublicationInput } from "@/lib/publications/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 type RouteContext = { params: Promise<{ id: string }> };
-const noStore = { "Cache-Control": "no-store" };
 
 async function load(params: RouteContext["params"]) {
   const { id } = await params;
@@ -16,47 +17,39 @@ async function load(params: RouteContext["params"]) {
 }
 
 export async function GET(_request: NextRequest, { params }: RouteContext) {
-  if (!isConfigured()) return NextResponse.json({ error: "Публикация временно недоступна." }, { status: 503, headers: noStore });
+  if (!isConfigured()) return NextResponse.json({ error: "Публикация временно недоступна." }, { status: 503, headers: publicationHeaders });
   try {
     const publication = await load(params);
-    if (!publication) return NextResponse.json({ error: "Страница не найдена или снята с публикации." }, { status: 404, headers: noStore });
-    return NextResponse.json(publicData(publication.record), { headers: noStore });
+    if (!publication) return NextResponse.json({ error: "Страница не найдена или снята с публикации." }, { status: 404, headers: publicationHeaders });
+    return NextResponse.json(publicData(publication.record), { headers: publicationHeaders });
   } catch {
-    return NextResponse.json({ error: "Не удалось загрузить публикацию." }, { status: 500, headers: noStore });
+    return NextResponse.json({ error: "Не удалось загрузить публикацию." }, { status: 500, headers: publicationHeaders });
   }
 }
 
 export async function PUT(request: NextRequest, { params }: RouteContext) {
-  if (!isConfigured()) return NextResponse.json({ error: "Сервис публикаций недоступен." }, { status: 503 });
-  if (Number(request.headers.get("content-length") || 0) > 1_500_000) return NextResponse.json({ error: "Снимок слишком большой." }, { status: 413 });
+  if (!isConfigured()) return NextResponse.json({ error: "Сервис публикаций недоступен." }, { status: 503, headers: publicationHeaders });
   try {
     const publication = await load(params);
-    if (!publication) return NextResponse.json({ error: "Публикация не найдена." }, { status: 404 });
-    if (!mayManage(publication.record, request.headers.get("x-ipos-manager-key") || "")) return NextResponse.json({ error: "Нет прав на изменение." }, { status: 403 });
-    const body = await request.json();
-    const title = cleanTitle(body.title);
-    const document = parseDocument(body.document);
+    if (!publication) return NextResponse.json({ error: "Публикация не найдена." }, { status: 404, headers: publicationHeaders });
+    if (!mayManage(publication.record, request.headers.get("x-ipos-manager-key") || "")) return NextResponse.json({ error: "Нет прав на изменение." }, { status: 403, headers: publicationHeaders });
+    const { title, document } = await readPublicationInput(request);
     const updated = await updatePublication(publication.record, publication.etag, title, document);
-    return NextResponse.json(updated, { headers: noStore });
+    return NextResponse.json(updated, { headers: publicationHeaders });
   } catch (error) {
-    if (error instanceof PublicationConflictError)
-      return NextResponse.json({ error: error.message }, { status: 409, headers: noStore });
-    const message = error instanceof Error ? error.message : "Не удалось обновить публикацию.";
-    if (/etag mismatch|precondition failed/i.test(message))
-      return NextResponse.json({ error: "Страница была изменена одновременно с вашим запросом. Проверьте её и попробуйте ещё раз. Локальный план не затронут." }, { status: 409, headers: noStore });
-    return NextResponse.json({ error: message }, { status: 400, headers: noStore });
+    return publicationWriteError(error);
   }
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteContext) {
-  if (!isConfigured()) return NextResponse.json({ error: "Сервис публикаций недоступен." }, { status: 503 });
+  if (!isConfigured()) return NextResponse.json({ error: "Сервис публикаций недоступен." }, { status: 503, headers: publicationHeaders });
   try {
     const publication = await load(params);
-    if (!publication) return NextResponse.json({ error: "Публикация не найдена." }, { status: 404 });
-    if (!mayManage(publication.record, request.headers.get("x-ipos-manager-key") || "")) return NextResponse.json({ error: "Нет прав на удаление." }, { status: 403 });
+    if (!publication) return NextResponse.json({ error: "Публикация не найдена." }, { status: 404, headers: publicationHeaders });
+    if (!mayManage(publication.record, request.headers.get("x-ipos-manager-key") || "")) return NextResponse.json({ error: "Нет прав на удаление." }, { status: 403, headers: publicationHeaders });
     await removePublication(publication.record.id);
-    return new Response(null, { status: 204, headers: noStore });
+    return new Response(null, { status: 204, headers: publicationHeaders });
   } catch {
-    return NextResponse.json({ error: "Не удалось снять с публикации." }, { status: 500 });
+    return NextResponse.json({ error: "Не удалось снять с публикации." }, { status: 500, headers: publicationHeaders });
   }
 }
