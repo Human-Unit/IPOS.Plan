@@ -1,7 +1,13 @@
 import { db, type Activity, type Revision } from "@/lib/db/database";
 import { bindingKey, bindingSchema, type CloudBinding } from "@/lib/ai-workspace/binding";
 import { activityChanges } from "./activity-changes";
-import { toPortable, type Plan, type PortablePlan } from "@/lib/schema/plan";
+import { toPortable, type LocalPlanContent, type Plan, type PortablePlan } from "@/lib/schema/plan";
+import type { LocalAssignments } from "@/lib/schema/task-assignment";
+import {
+  assignmentEvents,
+  canonicalAssignments,
+  validateAssignmentPeople,
+} from "@/features/activists/task-assignments";
 export const uid = () => crypto.randomUUID();
 export const now = () => new Date().toISOString();
 export function newPlan(data?: PortablePlan): Plan {
@@ -27,7 +33,7 @@ function revision(plan: Plan, title: string): Revision {
     planId: plan.id,
     createdAt: now(),
     title,
-    snapshot: structuredClone(plan),
+    snapshot: structuredClone({ ...plan, ...toPortable(plan), assignments: canonicalAssignments(plan) }),
   };
 }
 export async function saveCloudBinding(localId: string, binding: CloudBinding) {
@@ -40,9 +46,16 @@ export async function saveCloudBinding(localId: string, binding: CloudBinding) {
   });
 }
 
-export async function createPlan(data?: PortablePlan, type = "PLAN_CREATED", binding?: CloudBinding) {
+export async function createPlan(
+  data?: PortablePlan,
+  type = "PLAN_CREATED",
+  binding?: CloudBinding,
+  assignments?: LocalAssignments,
+) {
   const plan = newPlan(data ? toPortable(data) : undefined);
+  if (assignments) plan.assignments = canonicalAssignments({ ...plan, assignments });
   await db.transaction("rw", db.plans, db.activity, db.settings, async () => {
+    await validateAssignmentPeople(plan.assignments);
     await db.plans.add(plan);
     if (binding) await saveCloudBinding(plan.id, binding);
     await db.activity.add(
@@ -52,12 +65,24 @@ export async function createPlan(data?: PortablePlan, type = "PLAN_CREATED", bin
         type === "PLAN_IMPORTED" ? "План импортирован" : "План создан",
       ),
     );
+    await recordAssignmentEvents({ ...plan, assignments: undefined }, plan);
   });
   return plan;
 }
+
+async function recordAssignmentEvents(previous: Plan, next: Plan) {
+  const changes = assignmentEvents(previous, next);
+  if (changes.length) {
+    await db.activity.bulkAdd(changes.map(({ type, message, metadata }) => ({
+      ...event(next.id, type, message),
+      metadata,
+    })));
+  }
+}
+
 export async function savePlan(plan: Plan): Promise<Plan> {
   const portable = toPortable(plan);
-  return db.transaction("rw", db.plans, db.activity, async () => {
+  return db.transaction("rw", db.plans, db.activity, db.settings, async () => {
     const previous = await db.plans.get(plan.id);
     if (!previous) throw new Error("План удалён. Экспортируйте текущую копию.");
     if (previous.version !== plan.version)
@@ -69,15 +94,25 @@ export async function savePlan(plan: Plan): Promise<Plan> {
       ...portable,
       version: plan.version + 1,
       updatedAt: now(),
+      assignments: canonicalAssignments({ ...plan, ...portable }),
     };
+    await validateAssignmentPeople(saved.assignments);
     const events = activityChanges(toPortable(previous), portable).map(
       ({ type, message, metadata }) => ({
         ...event(plan.id, type, message),
-        metadata,
+        metadata: typeof metadata?.taskId === "string"
+          ? {
+              ...metadata,
+              identityVersion: 1,
+              personIds: (saved.assignments?.[metadata.taskId] ??
+                previous.assignments?.[metadata.taskId])?.people.map((person) => person.personId) ?? [],
+            }
+          : metadata,
       }),
     );
     await db.plans.put(saved);
     if (events.length) await db.activity.bulkAdd(events);
+    await recordAssignmentEvents(previous, saved);
     return saved;
   });
 }
@@ -88,7 +123,7 @@ export async function saveRevision(plan: Plan, title = "Сохранённая �
 }
 export async function replacePlan(
   plan: Plan,
-  data: PortablePlan,
+  data: LocalPlanContent,
   type: "PLAN_IMPORTED" | "PLAN_RESTORED",
   binding?: CloudBinding,
 ) {
@@ -108,7 +143,9 @@ export async function replacePlan(
       ...portable,
       version: current.version + 1,
       updatedAt: now(),
+      assignments: type === "PLAN_RESTORED" ? canonicalAssignments(data) : undefined,
     };
+    await validateAssignmentPeople(next.assignments);
     await db.plans.put(next);
     if (binding) await saveCloudBinding(next.id, binding);
     await db.activity.add(
@@ -120,6 +157,7 @@ export async function replacePlan(
           : "Восстановлена версия",
       ),
     );
+    await recordAssignmentEvents(current, next);
     return next;
   });
 }
@@ -131,5 +169,10 @@ export async function deletePlan(id: string) {
   });
 }
 export async function duplicatePlan(plan: Plan) {
-  return createPlan({ ...toPortable(plan), title: `${plan.title} — копия` });
+  return createPlan(
+    { ...toPortable(plan), title: plan.title + " — копия" },
+    "PLAN_CREATED",
+    undefined,
+    canonicalAssignments(plan),
+  );
 }

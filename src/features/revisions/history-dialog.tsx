@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { PlanRenderer } from "@/components/plan/renderer";
 import { formatDate, errorMessage } from "@/lib/labels";
-import type { PortablePlan } from "@/lib/schema/plan";
+import type { LocalPlanContent } from "@/lib/schema/plan";
 import { toast } from "@/lib/notifications";
 export function HistoryDialog({
   planId,
@@ -23,7 +23,7 @@ export function HistoryDialog({
 }: {
   planId: string;
   onClose: () => void;
-  onRestore: (plan: PortablePlan) => Promise<void>;
+  onRestore: (plan: LocalPlanContent) => Promise<void>;
 }) {
   const revisions = useLiveQuery(
     () => db.revisions.where({ planId }).reverse().sortBy("createdAt"),

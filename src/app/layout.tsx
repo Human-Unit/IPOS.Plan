@@ -9,6 +9,7 @@ import "./editor-reference-header.css";
 import "./editor-reference-outline.css";
 import "./editor-reference-document.css";
 import "./editor-reference-inspector.css";
+import "./people.css";
 import "./print.css";
 import { AppProviders } from "@/components/theme/app-providers";
 import { Toaster } from "@/components/ui/sonner";

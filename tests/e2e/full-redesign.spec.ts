@@ -53,7 +53,7 @@ test("narrow editor keeps named actions and native keyboard mode switching", asy
     await page.goto("/");
     await expect(page.locator(".plan-row").first()).toBeVisible();
     const order = await page.locator(".plan-list").evaluate((el) =>
-      Boolean(el.compareDocumentPosition(document.querySelector(".activist-directory")!) & Node.DOCUMENT_POSITION_FOLLOWING),
+      Boolean(el.compareDocumentPosition(document.querySelector(".dashboard-operations")!) & Node.DOCUMENT_POSITION_FOLLOWING),
     );
     expect(order).toBe(true);
     await page.locator(".plan-title").first().click();

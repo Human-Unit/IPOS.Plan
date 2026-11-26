@@ -12,6 +12,7 @@ import { panelReveal } from "@/lib/motion";
 import {
   forwardRef,
   useEffect,
+  useCallback,
   useId,
   useMemo,
   useRef,
@@ -60,7 +61,9 @@ import type {
   BlockTypography,
   FontSource,
   PortablePlan,
+  LocalPlanContent,
 } from "@/lib/schema/plan";
+import type { TaskAssignment } from "@/lib/schema/task-assignment";
 import type { Task } from "@/lib/schema/task";
 import { uid } from "@/features/plans/repository";
 import { cn } from "@/lib/utils";
@@ -88,7 +91,9 @@ import {
 } from "@/components/ui/dialog";
 
 type Props = {
-  plan: PortablePlan;
+  plan: LocalPlanContent;
+  onAssignmentChange?: (taskId: string, value: TaskAssignment | undefined, textWhenEmpty?: string) => void;
+  onOpenPerson?: (id: string) => void;
   editable?: boolean;
   showCover?: boolean;
   onTitleChange?: (title: string) => void;
@@ -100,7 +105,7 @@ type Props = {
   onWatermarkChange?: (value: boolean) => void;
   focusMode?: boolean;
   mode?: "workspace" | "document";
-  onPlanChange?: (plan: PortablePlan) => void;
+  onPlanChange?: (plan: LocalPlanContent) => void;
 };
 function subscribeWidth(callback: () => void) {
   const query = window.matchMedia("(min-width: 1200px)");
@@ -147,6 +152,8 @@ export default function PlanRenderer({
   focusMode = false,
   mode = "document",
   onPlanChange,
+  onAssignmentChange,
+  onOpenPerson,
 }: Props) {
   const { resolvedTheme } = useTheme();
   const editor = useCreateBlockNote({
@@ -394,6 +401,8 @@ export default function PlanRenderer({
     plan: { ...plan, blocks },
     editable,
     updateTask: onTaskChange,
+    updateAssignment: onAssignmentChange,
+    openPerson: onOpenPerson,
     selectedId,
     selectBlock,
     ...grouping,
@@ -501,7 +510,7 @@ export default function PlanRenderer({
         setSelectedId(editor.getTextCursorPosition().block.id);
     });
   }, [editor, editable]);
-  const locate = (id?: string) => {
+  const locate = useCallback((id?: string) => {
     setPanel(undefined);
     setSelectedId(id);
     setCollapsedIds(
@@ -537,7 +546,31 @@ export default function PlanRenderer({
       editor.setTextCursorPosition(id, "start");
       editor.focus();
     } else target?.focus({ preventScroll: true });
-  };
+  }, [editor, wide, grouping.sectionById]);
+  const [navigationError, setNavigationError] = useState("");
+  const handledTaskHash = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (!editable) return;
+    const navigate = () => {
+      const hash = window.location.hash;
+      if (handledTaskHash.current === hash) return;
+      handledTaskHash.current = hash;
+      const taskId = new URLSearchParams(hash.slice(1)).get("task");
+      if (!taskId) return;
+      const find = (nodes: readonly EditorNode[]): EditorNode | undefined => {
+        for (const node of nodes) {
+          if ((node.type === "brief" || node.type === "task") && node.props?.taskId === taskId) return node;
+          const nested = find(node.children ?? []); if (nested) return nested;
+        }
+      };
+      const target = find(editor.document as unknown as EditorNode[]);
+      if (!target?.id) { setNavigationError("Задание по ссылке не найдено. Оно могло быть удалено. Остальной план доступен."); return; }
+      setNavigationError("");
+      requestAnimationFrame(() => locate(target.id));
+    };
+    navigate(); window.addEventListener("hashchange", navigate);
+    return () => window.removeEventListener("hashchange", navigate);
+  }, [editor, editable, locate]);
   const add = (type: keyof typeof editorSchema.blockSchema, slash = false) => {
     const partial: PartialBlock<typeof editorSchema.blockSchema> =
       type === "task" ? { type: "brief", props: { taskId: uid() } } : { type };
@@ -750,6 +783,7 @@ export default function PlanRenderer({
             Подготовка изображения…
           </p>
         )}
+        {navigationError && <p className="media-progress" role="alert">{navigationError}</p>}
         <style>{presentationStyle}</style>
         {editable && !focusMode && (
           <>

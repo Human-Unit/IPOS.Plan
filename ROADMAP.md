@@ -120,3 +120,27 @@ Chromium, local production build, Node 24, 101 fixture plans in a fresh profile 
 Local admin-session probe was 3.5 → 2.7 ms. The browser measures vary between short runs. This server-only change leaves client bundles unchanged, and the browser sample does not support a UI-speed or heap improvement claim. To repeat the Chromium fixture, start the local production build and run `node scripts/measure-local-performance.mjs` from the checkout.
 
 - Final clean install, lint, typecheck, 136 unit cases, four MCP preflight cases, 52 Chromium cases and production build passed. Independent DOCX ZIP/OOXML validation passed. Final browser captures verified both themes at all five required widths. [Dark tablet dashboard](docs/reports/phase2-performance/dashboard-tablet-dark.png)
+
+## Phase 3 — Editorial operations
+
+Base: verified main at **fe5fb14031ce754064f72dd452e80082f4f469f0** with the four Phase 2 commits. Drafts are stacked in review order. Keep production, credentials, OAuth and private storage configuration outside this phase.
+
+- **Activists.** Selectively port the UUID profile, explicit linking and backup logic from [PR #16](https://github.com/Human-Unit/IPOS.Plan/pull/16), using its [original design notes](https://github.com/Human-Unit/IPOS.Plan/blob/5f59537/docs/IPOS_PLAN_3_3.md). Preserve stable IDs and separate same-name profiles. Saved legacy rows become candidates by source key; task text is reviewed manually and cannot create identities or membership. Local links are kept with the plan and share its version and transaction. Exported schema v1 sees only assignee text. Backup v2 keeps relationships and history and accepts v1. Restore inserts records atomically and remaps links to new profile IDs.
+- **Calendar.** Reuse live task IDs and explicit participant links. Keep deadlines separate from planned publication dates. Derive upcoming and overdue states from saved deadlines in browser-local dates.
+- **Kanban.** Keep existing portable task statuses. Design a deterministic local stage fallback and retain cancelled tasks outside the six production stages.
+- **Approval.** Record editorial review state, decisions and feedback locally. Authentication and publication stay on their existing boundaries.
+- **Analytics.** Derive counts from each saved live task once. Use recorded events for weekly activity.
+
+The verified Phase 3 baseline uses Node 24.13.0. Clean install, lint, type checking, 136 units, four MCP preflight tests, optimized build and independent DOCX ZIP CRC plus all six OOXML parses passed. Seeded Chromium dashboard captures cover 320, 390, 768, 1024, 1366, 1440 and 1920 px in both themes.
+
+The [baseline GitHub Actions run](https://github.com/Human-Unit/IPOS.Plan/actions/runs/45599869611) passed on the merged SHA. Local baseline Playwright ran 52 cases with synthetic admin values. Forty-six passed, and six reported blocked outbound requests from the restricted Windows browser, including Google Fonts. The original failing traces are retained in local evidence.
+
+### Phase 3.1 — Activist management
+
+The existing Cobalt & Ink shell leads to «Активисты», with named profile rows, explicit picker confirmation, origin-local membership and a separate legacy reconciliation list. A task can have several people and one portable text snapshot. Profile links from the editor flush first. Links from profiles and workload open the exact native brief. Native brief and whole-plan copies keep local identities. Undo of a deleted brief restores the working assignment metadata; a committed deletion still prunes the unreferenced entries.
+
+The browser evidence uses four synthetic profiles including identical names with distinct roles. Reviewed the dashboard, directory, profile, workload and inspector across both themes at all seven playbook widths. The 320 px header overflow found during QA was fixed with a labeled icon control at narrow widths. [Mobile directory](docs/reports/phase3-activists/directory-light-320.png) · [Dark profile](docs/reports/phase3-activists/profile-dark-1440.png) · [Mobile workload](docs/reports/phase3-activists/workload-dark-390.png)
+
+The CI browser server uses isolated synthetic administrator values. The existing DOCX checker continues to validate ZIP CRC and six required OOXML parts.
+
+Gates: clean install, lint, typecheck, 161 unit tests, four MCP preflight tests, build and independent DOCX validation passed. The full Playwright run verified 56 of 59, including both admin cases. Three ported locators were aligned to the current share and membership UI and their cases passed on rerun. The native duplicate/undo case was also rerun and passed after waiting for the duplicate to save before testing the later delete history event.

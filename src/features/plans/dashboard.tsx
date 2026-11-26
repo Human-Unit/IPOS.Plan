@@ -7,7 +7,7 @@ import { motionEase, motionTiming } from "@/lib/motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Plus, Copy, Trash2, ArrowUpRight, Upload, FileText, ChevronDown, FolderOpen, Search, ShieldCheck, Bot } from "lucide-react";
+import { Plus, Copy, Trash2, ArrowUpRight, Upload, FileText, FolderOpen, Search, ShieldCheck, Bot, UsersRound } from "lucide-react";
 import { toast } from "@/lib/notifications";
 import { db } from "@/lib/db/database";
 import { createPlan, deletePlan, duplicatePlan } from "./repository";
@@ -44,11 +44,6 @@ import { Input } from "@/components/ui/input";
 import { dashboardMatches, tasksInPlan, taskStats, type PlanFilter } from "./productivity";
 import { useLocalDate } from "./use-local-date";
 import { DashboardOpening } from "./dashboard-opening";
-import {
-  ACTIVIST_PREFIX,
-  directoryNames,
-  syncDirectoryFromPlans,
-} from "@/features/activists/directory";
 const planFilters = [
   { value: "all", label: "Все планы" },
   { value: "unfinished", label: "Не завершено" },
@@ -78,14 +73,6 @@ export function Dashboard() {
     setQuery("");
     setFilter("all");
   };
-  const rosterRows = useLiveQuery(
-    () =>
-      db.settings
-        .filter((row) => row.key.startsWith(ACTIVIST_PREFIX))
-        .toArray(),
-    [],
-  );
-  const rememberedPeople = directoryNames(rosterRows ?? []);
 
   const visiblePlans = plans?.flatMap((plan) => {
     const tasks = tasksInPlan(plan);
@@ -98,7 +85,6 @@ export function Dashboard() {
   );
   useEffect(() => {
     void seedDemo()
-      .then(() => syncDirectoryFromPlans())
       .catch((e) => setError(errorMessage(e)));
   }, []);
   const run = async (action: () => Promise<void>) => {
@@ -376,25 +362,11 @@ export function Dashboard() {
           )}
           </div>
         </section>
-        <details className="activist-directory">
-          <summary>
-            <span>Имена из назначений</span>
-            <small>{rememberedPeople.length} сохранено локально</small>
-            <ChevronDown aria-hidden="true" />
-          </summary>
-          <p>
-            Справочник для следующих заданий. Это имена из поручений, а не
-            подтверждённый список активистов. Они остаются здесь даже после
-            завершения задачи.
-          </p>
-          {rememberedPeople.length ? (
-            <ul aria-label="Сохранённые ответственные">
-              {rememberedPeople.map((name) => <li key={name}>{name}</li>)}
-            </ul>
-          ) : (
-            <p>Назначьте человека в свойствах задачи — имя запомнится после ввода.</p>
-          )}
-        </details>
+        <nav className="dashboard-operations" aria-label="Работа редакции">
+          <Button asChild variant="outline">
+            <Link href="/activists"><UsersRound data-icon="inline-start" />Активисты</Link>
+          </Button>
+        </nav>
         <footer className="dashboard-footer">
           <p>
             Планы сохраняются в этом браузере. «Резервная копия» скачивает всю

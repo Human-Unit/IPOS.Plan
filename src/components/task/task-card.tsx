@@ -23,6 +23,8 @@ import { statuses, type Task } from "@/lib/schema/task";
 import { flattenBlocks } from "@/lib/schema/plan";
 import { deadlineInfo } from "@/features/plans/productivity";
 import { useLocalDate } from "@/features/plans/use-local-date";
+import { confirmedAssignment } from "@/features/activists/task-assignments";
+import { AssignedPeople } from "@/features/activists/assigned-people";
 
 export function TaskCard({
   taskId,
@@ -46,6 +48,7 @@ export function TaskCard({
   if (!task) return <p role="alert">Задача недоступна: {taskId}</p>;
   const collapsed = editable && Boolean(collapsedIds?.has(blockId));
   const deadline = deadlineInfo(task, today);
+  const assignment = editable ? confirmedAssignment(plan, task.id) : undefined;
   const number =
     context.taskOrder?.get(blockId) ??
     flattenBlocks(plan.blocks)
@@ -225,7 +228,7 @@ export function TaskCard({
             </div>
             <div>
               <dt><UserRound className="brief-fact-icon" size={15} aria-hidden="true" />Ответственные</dt>
-              <dd>{task.assignee || "Не назначены"}</dd>
+              <dd>{assignment ? <AssignedPeople assignment={assignment} text={task.assignee || ""} openPerson={context.openPerson} /> : task.assignee || "Не назначены"}</dd>
             </div>
             <div className="brief-priority">
               <dt>Приоритет</dt>

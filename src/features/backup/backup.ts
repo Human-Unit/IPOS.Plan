@@ -1,5 +1,14 @@
 import { z } from "zod";
-import { ACTIVIST_PREFIX, activistEntrySchema, activistNameKey, directoryNames } from "@/features/activists/directory";
+import {
+  ACTIVIST_PREFIX,
+  activistEntrySchema,
+} from "@/features/activists/directory";
+import {
+  PERSON_PREFIX,
+  migrateLegacyPeople,
+  peopleFromRows,
+} from "@/features/activists/people-repository";
+import { personSchema } from "@/lib/schema/person";
 import {
   db,
   type Activity,
@@ -30,10 +39,12 @@ const settingSchema = z.union([
       value: templateValueSchema,
     })
     .strict(),
-  z.object({
-    key: z.string().regex(/^activist:[a-zA-Z0-9-]{1,100}$/),
-    value: activistEntrySchema,
-  }).strict(),
+  z
+    .object({
+      key: z.string().regex(/^activist:[a-zA-Z0-9-]{1,100}$/),
+      value: activistEntrySchema,
+    })
+    .strict(),
 ]);
 const revisionSchema = z
   .object({
@@ -54,21 +65,42 @@ const activitySchema = z
     metadata: z.record(z.string().max(100), z.json()).optional(),
   })
   .strict();
-const backupSchema = z
+const backupFields = {
+  app: z.literal("IPOS.Plan"),
+  createdAt: z.iso.datetime(),
+  plans: z.array(planSchema).max(1000),
+  revisions: z.array(revisionSchema).max(10000),
+  activity: z.array(activitySchema).max(50000),
+  settings: z.array(settingSchema).max(1501),
+};
+const backupV1Schema = z
   .object({
-    app: z.literal("IPOS.Plan"),
+    ...backupFields,
     formatVersion: z.literal(1),
-    createdAt: z.iso.datetime(),
     schemas: z
       .object({ database: z.literal(1), portable: z.literal(1) })
       .strict(),
-    plans: z.array(planSchema).max(1000),
-    revisions: z.array(revisionSchema).max(10000),
-    activity: z.array(activitySchema).max(50000),
-    settings: z.array(settingSchema).max(1001),
   })
   .strict();
-export type LibraryBackup = z.infer<typeof backupSchema>;
+const backupV2Schema = z
+  .object({
+    ...backupFields,
+    formatVersion: z.literal(2),
+    schemas: z
+      .object({
+        database: z.literal(1),
+        portable: z.literal(1),
+        people: z.literal(1),
+      })
+      .strict(),
+    people: z.array(personSchema).max(1000),
+  })
+  .strict();
+const backupSchema = z.discriminatedUnion("formatVersion", [
+  backupV1Schema,
+  backupV2Schema,
+]);
+export type LibraryBackup = z.infer<typeof backupV2Schema>;
 export type RestoreStrategy = "copies" | "skip";
 
 /** Bound recursion before Zod traverses recursive blocks or metadata. No media is fetched. */
@@ -107,7 +139,15 @@ export function parseBackup(raw: string): LibraryBackup {
           .map((i) => `${i.path.join(".")}: ${i.message}`)
           .join("; "),
     );
-  const backup = result.data;
+  const backup: LibraryBackup =
+    result.data.formatVersion === 1
+      ? {
+          ...result.data,
+          formatVersion: 2,
+          schemas: { database: 1, portable: 1, people: 1 },
+          people: [],
+        }
+      : result.data;
   for (const rows of [backup.plans, backup.revisions, backup.activity]) {
     const ids = rows.map((r) => r.id);
     if (new Set(ids).size !== ids.length)
@@ -117,11 +157,16 @@ export function parseBackup(raw: string): LibraryBackup {
     new Set(backup.settings.map((s) => s.key)).size !== backup.settings.length
   )
     throw new Error("Повторяющиеся настройки.");
-  const rosterNames = backup.settings
-    .filter((s) => s.key.startsWith(ACTIVIST_PREFIX))
-    .map((s) => activistNameKey((s.value as z.infer<typeof activistEntrySchema>).name));
-  if (new Set(rosterNames).size !== rosterNames.length)
-    throw new Error("Повторяющиеся имена в справочнике.");
+  const personIds = new Set(backup.people.map((p) => p.id));
+  if (personIds.size !== backup.people.length)
+    throw new Error("Повторяющиеся ID людей в резервной копии.");
+  const legacyKeys = new Set(
+    backup.settings
+      .filter((s) => s.key.startsWith(ACTIVIST_PREFIX))
+      .map((s) => s.key),
+  );
+  if (backup.people.some((p) => p.sourceKey && !legacyKeys.has(p.sourceKey)))
+    throw new Error("Отсутствует исходная запись миграции человека.");
 
   const plans = new Set(backup.plans.map((p) => p.id));
   for (const p of [
@@ -141,6 +186,25 @@ export function parseBackup(raw: string): LibraryBackup {
       new TextEncoder().encode(JSON.stringify(portable)).length > MAX_JSON_BYTES
     )
       throw new Error("План в копии превышает допустимый размер.");
+    for (const assignment of Object.values(p.assignments ?? {}))
+      if (assignment.people.some((person) => !personIds.has(person.personId)))
+        throw new Error("Назначение ссылается на отсутствующего человека.");
+  }
+  for (const event of backup.activity) {
+    if (
+      !event.type.startsWith("TASK_") ||
+      event.metadata?.identityVersion !== 1
+    )
+      continue;
+    for (const key of ["personIds", "previousPersonIds"]) {
+      const ids = event.metadata[key] ?? [];
+      if (
+        !Array.isArray(ids) ||
+        ids.length > 20 ||
+        ids.some((id) => typeof id !== "string" || !personIds.has(id))
+      )
+        throw new Error("Событие ссылается на отсутствующего человека.");
+    }
   }
   for (const setting of backup.settings) {
     if (
@@ -163,27 +227,69 @@ export function parseBackup(raw: string): LibraryBackup {
   return backup;
 }
 export async function exportLibrary(): Promise<LibraryBackup> {
+  await migrateLegacyPeople();
   const data = await db.transaction(
     "r",
     [db.plans, db.revisions, db.activity, db.settings],
-    async () => ({
-      plans: await db.plans.toArray(),
-      revisions: await db.revisions.toArray(),
-      activity: await db.activity.toArray(),
-      settings: (await db.settings.toArray()).filter(
-        (s) => s.key === "demo-seeded-v1" || s.key.startsWith("task-template:") || s.key.startsWith(ACTIVIST_PREFIX),
-      ),
-    }),
+    async () => {
+      const rows = await db.settings.toArray();
+      return {
+        plans: await db.plans.toArray(),
+        revisions: await db.revisions.toArray(),
+        activity: await db.activity.toArray(),
+        settings: rows.filter(
+          (s) =>
+            s.key === "demo-seeded-v1" ||
+            s.key.startsWith("task-template:") ||
+            s.key.startsWith(ACTIVIST_PREFIX),
+        ),
+        people: peopleFromRows(rows),
+      };
+    },
   );
   return parseBackup(
     JSON.stringify({
       app: "IPOS.Plan",
-      formatVersion: 1,
+      formatVersion: 2,
       createdAt: new Date().toISOString(),
-      schemas: { database: 1, portable: 1 },
+      schemas: { database: 1, portable: 1, people: 1 },
       ...data,
     }),
   );
+}
+function remapPlan(plan: Plan, id: string, people: Map<string, string>): Plan {
+  return {
+    ...plan,
+    id,
+    ...(plan.assignments
+      ? {
+          assignments: Object.fromEntries(
+            Object.entries(plan.assignments).map(([taskId, value]) => [
+              taskId,
+              {
+                ...value,
+                people: value.people.map((p) => ({
+                  ...p,
+                  personId: people.get(p.personId)!,
+                })),
+              },
+            ]),
+          ),
+        }
+      : {}),
+  };
+}
+function remapActivity(item: Activity, people: Map<string, string>): Activity {
+  if (item.type.startsWith("TASK_") && item.metadata?.identityVersion === 1) {
+    const metadata = { ...item.metadata };
+    for (const key of ["personIds", "previousPersonIds"])
+      if (Array.isArray(metadata[key]))
+        metadata[key] = (metadata[key] as string[]).map(
+          (id) => people.get(id)!,
+        );
+    return { ...item, metadata };
+  }
+  return item;
 }
 export async function restoreLibrary(
   input: LibraryBackup,
@@ -197,13 +303,26 @@ export async function restoreLibrary(
     "rw",
     [db.plans, db.revisions, db.activity, db.settings],
     async () => {
+      const personMapping = new Map(
+        backup.people.map((p) => [p.id, crypto.randomUUID()]),
+      );
+      if (
+        (await db.settings
+          .filter((r) => r.key.startsWith(PERSON_PREFIX))
+          .count()) +
+          backup.people.length >
+        1000
+      )
+        throw new Error(
+          "Восстановление превысит 1000 профилей. Данные не изменены.",
+        );
       const mapping = new Map<string, string>();
       const plans: Plan[] = [];
       for (const plan of backup.plans) {
         if (strategy === "skip" && (await db.plans.get(plan.id))) continue;
         const newId = strategy === "copies" ? crypto.randomUUID() : plan.id;
         mapping.set(plan.id, newId);
-        plans.push({ ...plan, id: newId });
+        plans.push(remapPlan(plan, newId, personMapping));
       }
       const revisions: Revision[] = backup.revisions
         .filter((r) => mapping.has(r.planId))
@@ -211,39 +330,66 @@ export async function restoreLibrary(
           ...r,
           id: crypto.randomUUID(),
           planId: mapping.get(r.planId)!,
-          snapshot: { ...r.snapshot, id: mapping.get(r.planId)! },
+          snapshot: remapPlan(
+            r.snapshot,
+            mapping.get(r.planId)!,
+            personMapping,
+          ),
         }));
       const activity: Activity[] = backup.activity
         .filter((a) => mapping.has(a.planId))
         .map((a) => ({
-          ...a,
+          ...remapActivity(a, personMapping),
           id: crypto.randomUUID(),
           planId: mapping.get(a.planId)!,
         }));
       const settings: Setting[] = [];
-      const knownNames = new Set(directoryNames(
-        await db.settings.filter((row) => row.key.startsWith(ACTIVIST_PREFIX)).toArray(),
-      ).map(activistNameKey));
+      const legacyMapping = new Map<string, string>();
       for (const s of backup.settings) {
-        if (s.key.startsWith(ACTIVIST_PREFIX)) {
-          const name = (s.value as z.infer<typeof activistEntrySchema>).name;
-          const normalized = activistNameKey(name);
-          if (knownNames.has(normalized) || knownNames.size >= 500) continue;
-          knownNames.add(normalized);
-        }
-        const key =
+        let key =
           strategy === "copies" && s.key.startsWith("task-template:")
             ? `task-template:${crypto.randomUUID()}`
-            : strategy === "copies" && s.key.startsWith(ACTIVIST_PREFIX)
-              ? `${ACTIVIST_PREFIX}${crypto.randomUUID()}`
-              : s.key;
+            : s.key;
+        if (s.key.startsWith(ACTIVIST_PREFIX)) {
+          const existing = await db.settings.get(key);
+          if (
+            existing &&
+            JSON.stringify(existing.value) !== JSON.stringify(s.value)
+          )
+            key = `${ACTIVIST_PREFIX}${crypto.randomUUID()}`;
+          legacyMapping.set(s.key, key);
+        }
         if (!(await db.settings.get(key))) settings.push({ ...s, key });
+      }
+      const people = backup.people.map((p) => ({
+        ...p,
+        id: personMapping.get(p.id)!,
+        ...(p.sourceKey ? { sourceKey: legacyMapping.get(p.sourceKey)! } : {}),
+      }));
+      const currentSettings = await db.settings.toArray();
+      for (const [prefix, cap] of [
+        ["task-template:", 500],
+        [ACTIVIST_PREFIX, 1000],
+      ] as const) {
+        if (
+          [...currentSettings, ...settings].filter((s) =>
+            s.key.startsWith(prefix),
+          ).length > cap
+        )
+          throw new Error(
+            "Восстановление превысит лимит локальных шаблонов или исходных имён. Данные не изменены.",
+          );
       }
       await db.plans.bulkAdd(plans);
       await db.revisions.bulkAdd(revisions);
       await db.activity.bulkAdd(activity);
-      await db.settings.bulkAdd(settings);
+      await db.settings.bulkAdd([
+        ...settings,
+        ...people.map((p) => ({ key: PERSON_PREFIX + p.id, value: p })),
+      ]);
+      const migration = await migrateLegacyPeople();
       return {
+        people: people.length + migration.created,
         plans: plans.length,
         skipped: backup.plans.length - plans.length,
         revisions: revisions.length,
