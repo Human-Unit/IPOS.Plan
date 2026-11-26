@@ -24,7 +24,8 @@ function localEntries(data: Uint8Array): Record<string, Uint8Array> {
 describe("editable Word export", () => {
   it("creates valid OOXML parts and ZIP structure", () => {
     const doc = buildPlanDocx(demoPlan);
-    if (process.env.CI) writeFileSync("/tmp/ipos-export-smoke.docx", doc.bytes);
+    const smokePath = process.env.IPOS_DOCX_SMOKE_PATH ?? (process.env.CI ? "/tmp/ipos-export-smoke.docx" : undefined);
+    if (smokePath) writeFileSync(smokePath, doc.bytes);
     const items = localEntries(doc.bytes);
     expect([...doc.bytes.slice(0, 4)]).toEqual([80, 75, 3, 4]);
     expect(items["word/document.xml"]).toBeDefined();

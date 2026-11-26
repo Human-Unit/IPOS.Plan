@@ -1,7 +1,8 @@
 "use client";
 import type { Block, PortablePlan } from "@/lib/schema/plan";
-import { flattenBlocks } from "@/lib/schema/plan";
-import { assigneeNames } from "./directory";
+import { liveTasks, confirmedAssignment } from "./task-assignments";
+import { usePlanContext } from "@/components/editor/plan-context";
+import { AssignedPeople } from "./assigned-people";
 import { statusLabels } from "@/lib/labels";
 
 /** Read-only navigation: never filter or mutate the BlockNote document. */
@@ -13,14 +14,10 @@ export function AssignmentsPanel({
   selectedId?: string;
   select: (id: string) => void;
 }) {
-  const tasks = flattenBlocks(blocks)
-    .filter((block) => block.type === "task" && block.id)
-    .map((block) => ({
-      blockId: block.id!,
-      task: block.type === "task" ? plan.tasks[block.props.taskId] : undefined,
-    }))
-    .filter((item) => Boolean(item.task));
-  const assigned = tasks.filter((item) => assigneeNames(item.task?.assignee).length > 0).length;
+  const context = usePlanContext();
+  const local = { ...plan, blocks, assignments: context.plan.assignments };
+  const tasks = liveTasks(local).filter(item => item.blockId);
+  const assigned = tasks.filter(item => Boolean(item.task.assignee?.trim())).length;
 
   return (
     <details className="assignments-panel" open>
@@ -33,12 +30,13 @@ export function AssignmentsPanel({
       ) : (
         <nav aria-label="Быстрый переход к заданиям" className="assignments-list">
           {tasks.map(({ blockId, task }, index) => (
+            <div key={blockId} className="assignment-entry">
             <button
               type="button"
               key={blockId}
               className="assignment-row"
               aria-current={selectedId === blockId ? "location" : undefined}
-              onClick={() => select(blockId)}
+              onClick={() => select(blockId!)}
               title={task?.title || "Без названия"}
             >
               <span className="assignment-row-title">
@@ -46,12 +44,12 @@ export function AssignmentsPanel({
                 <span>{task?.title || "Без названия"}</span>
               </span>
               <span className="assignment-row-people">
-                {assigneeNames(task?.assignee).length
-                  ? assigneeNames(task?.assignee).join(", ")
-                  : "Не назначены"}
+                {confirmedAssignment(local, task.id) ? "Профили ниже" : task.assignee || "Не назначены"}
                 {" · "}{task && statusLabels[task.status]}
               </span>
             </button>
+            {confirmedAssignment(local, task.id) && <div className="assignment-profile-links"><AssignedPeople assignment={confirmedAssignment(local, task.id)!} text={task.assignee || ""} openPerson={context.openPerson} /></div>}
+            </div>
           ))}
         </nav>
       )}

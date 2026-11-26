@@ -1,8 +1,9 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { db } from "@/lib/db/database";
-import type { Plan, PortablePlan } from "@/lib/schema/plan";
+import type { LocalPlanContent, Plan } from "@/lib/schema/plan";
 import type { CloudBinding } from "@/lib/ai-workspace/binding";
+import { invalidateEditedReviews } from "@/features/editorial/review";
 import { replacePlan, savePlan } from "./repository";
 import { errorMessage } from "@/lib/labels";
 export function usePlan(id: string) {
@@ -40,7 +41,7 @@ export function usePlan(id: string) {
   }, [id]);
   const update = useCallback((fn: (p: Plan) => Plan) => {
     if (!current.current) return;
-    const next = fn(current.current);
+    const next = invalidateEditedReviews(current.current, fn(current.current));
     current.current = next;
     dirty.current = true;
     change.current++;
@@ -109,7 +110,7 @@ export function usePlan(id: string) {
   }, [flush]);
   const replace = useCallback(
     async (
-      data: PortablePlan,
+      data: LocalPlanContent,
       kind: "PLAN_IMPORTED" | "PLAN_RESTORED",
       sync?: { expectedLocalVersion: number; binding: CloudBinding },
     ) => {

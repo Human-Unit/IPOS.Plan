@@ -1,7 +1,7 @@
 import {
   flattenBlocks,
   type Block,
-  type PortablePlan,
+  type LocalPlanContent,
 } from "@/lib/schema/plan";
 
 /** Editor-only nodes. These types never cross the persistence/share boundary. */
@@ -194,15 +194,17 @@ export function serializeWithSource(
 
 /** Duplicate the whole brief, including legacy siblings and original children. */
 export function duplicateBrief(
-  plan: PortablePlan,
+  plan: LocalPlanContent,
   id: string,
   uid: () => string,
-): { plan: PortablePlan; id: string } {
+): { plan: LocalPlanContent; id: string } {
   const projected = projectBriefs(plan.blocks);
   const original = findEditorNode(projected, id);
   if (!original || original.type !== "brief")
     throw new Error("Выберите задачу для копирования.");
   const tasks = { ...plan.tasks };
+  const assignments = { ...plan.assignments };
+  const editorial = { ...plan.editorial };
   const typography = { ...plan.typography };
   const taskIds = new Map<string, string>();
   const copy = (node: EditorNode): EditorNode => {
@@ -221,6 +223,12 @@ export function duplicateBrief(
           id: taskId,
           title: `${plan.tasks[sourceId].title} — копия`,
         };
+        if (plan.assignments && Object.hasOwn(plan.assignments, sourceId)) {
+          assignments[taskId] = structuredClone(plan.assignments[sourceId]);
+        }
+        if (plan.editorial && Object.hasOwn(plan.editorial, sourceId)) {
+          editorial[taskId] = { ...structuredClone(plan.editorial[sourceId]), review: undefined };
+        }
       }
       props = { ...props, taskId };
     }
@@ -253,6 +261,8 @@ export function duplicateBrief(
       ...plan,
       blocks,
       tasks,
+      ...(Object.keys(assignments).length ? { assignments } : {}),
+      ...(Object.keys(editorial).length ? { editorial } : {}),
       ...(Object.keys(nextTypography).length
         ? { typography: nextTypography }
         : {}),

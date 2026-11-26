@@ -40,6 +40,10 @@ import {
   type PortablePlan,
 } from "@/lib/schema/plan";
 import type { Task } from "@/lib/schema/task";
+import { applyReview } from "@/features/editorial/review";
+import { moveTaskToStage } from "@/features/editorial/stages";
+import { setTaskEditorial } from "@/features/editorial/metadata";
+import { setTaskAssignment } from "@/features/activists/task-assignments";
 export function EditorScreen({ id }: { id: string }) {
   const { plan, loaded, status, error, update, flush, replace, generation } =
     usePlan(id);
@@ -120,7 +124,17 @@ export function EditorScreen({ id }: { id: string }) {
   );
   const changeTask = useCallback(
     (task: Task) =>
-      update((p) => ({ ...p, tasks: { ...p.tasks, [task.id]: task } })),
+      update((p) => {
+        const assignments = { ...p.assignments };
+        if ((p.tasks[task.id]?.assignee ?? "") !== (task.assignee ?? "")) {
+          delete assignments[task.id];
+        }
+        return {
+          ...p,
+          tasks: { ...p.tasks, [task.id]: task },
+          assignments: Object.keys(assignments).length ? assignments : undefined,
+        };
+      }),
     [update],
   );
   const changeTypography = useCallback(
@@ -389,6 +403,19 @@ export function EditorScreen({ id }: { id: string }) {
           inert={busy || dialog !== undefined || shareUrl !== null}
         >
           <PlanRenderer
+            onReviewAction={async (taskId, action, feedback) => {
+              update((current) => applyReview(current, taskId, action, feedback));
+              await flush();
+            }}
+            onStageChange={(taskId, stage) => update((current) => moveTaskToStage(current, taskId, stage))}
+            onEditorialChange={(taskId, change) => update((current) => setTaskEditorial(current, taskId, change))}
+            onAssignmentChange={(taskId, value, text) =>
+              update((current) => setTaskAssignment(current, taskId, value, text))
+            }
+            onOpenPerson={(personId) => void run(async () => {
+              await flush();
+              router.push("/activists/" + personId);
+            })}
             key={generation}
             plan={plan}
             editable={!preview && mode === "workspace"}

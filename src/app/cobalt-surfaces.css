@@ -10,7 +10,9 @@
 
 @media screen {
   :root.dark { --cobalt-canvas: #0b1229; }
-  :is(.dashboard-app-bar, .cobalt-reader-bar, .cobalt-editor-bar) {
+  .dashboard-app-bar,
+  .cobalt-reader-bar,
+  .cobalt-editor-bar:is(.editor-bar, .preview-bar) {
     background: var(--cobalt-ink);
     color: var(--cobalt-on-dark);
     border-bottom-color: var(--cobalt-line-on-dark);
@@ -18,7 +20,7 @@
   :is(.dashboard-app-bar, .cobalt-reader-bar, .cobalt-editor-bar)
     :is(.brand-name, .editor-plan-name, .admin-entry) { color: var(--cobalt-on-dark); }
   :is(.dashboard-app-bar, .cobalt-reader-bar, .cobalt-editor-bar)
-    :is(.brand-description, .local-indicator, .save-status) { color: var(--cobalt-muted-on-dark); }
+    :is(.brand-description, .local-indicator, .save-status, .editor-context-title) { color: var(--cobalt-muted-on-dark); }
   :is(.dashboard-app-bar, .cobalt-reader-bar) .local-indicator > span { background: #9db8ff; }
   :is(.dashboard-app-bar, .cobalt-reader-bar) .brand-description,
   .cobalt-editor-bar .editor-identity > [data-slot="button"]:first-child {
@@ -108,13 +110,18 @@
     mask: url("/brand/student-council-emblem.svg") center / contain no-repeat;
     transform: rotate(-11deg);
   }
-  :is(.cobalt-editor-stage, .viewer-stage) .plan-cover :is(h1, .cover-title) {
+  :is(.cobalt-editor-stage, .viewer-stage) .plan-cover :is(h1, .cover-title),
+  .cobalt-editor-stage .editor-workspace.mode-workspace .plan-cover .cover-title {
     color: var(--cobalt-on-dark);
     overflow-wrap: anywhere;
     caret-color: var(--cobalt-on-dark);
   }
-  :is(.cobalt-editor-stage, .viewer-stage) .plan-cover :is(.cover-eyebrow, .cover-meta) {
+  :is(.cobalt-editor-stage, .viewer-stage) .plan-cover :is(.cover-eyebrow, .cover-meta),
+  .cobalt-editor-stage .editor-workspace.mode-workspace .plan-cover :is(.cover-eyebrow, .cover-meta) {
     color: var(--cobalt-muted-on-dark);
+  }
+  .cobalt-editor-stage .editor-workspace.mode-workspace .plan-cover > div::after {
+    background: var(--cobalt-muted-on-dark);
   }
   .cobalt-editor-stage .plan-cover .cover-title:focus-visible {
     outline: 2px solid var(--cobalt-on-dark);

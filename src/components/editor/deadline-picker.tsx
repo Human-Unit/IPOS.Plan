@@ -16,23 +16,31 @@ export function DeadlinePicker({
   id,
   value,
   onChange,
+  label = "Дедлайн",
+  chooseLabel = "Выбрать дедлайн",
+  calendarLabel = "Календарь дедлайна",
+  clearLabel = "Убрать дедлайн",
 }: {
   id: string;
   value?: string;
+  label?: string;
+  chooseLabel?: string;
+  calendarLabel?: string;
+  clearLabel?: string;
   onChange: (value: string | undefined) => void;
 }) {
   const [open, setOpen] = useState(false);
   const selected = value ? parseISO(value) : undefined;
   return (
     <Field>
-      <FieldLabel htmlFor={id}>Дедлайн</FieldLabel>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             id={id}
             variant="outline"
             className="deadline-trigger"
-            aria-label="Выбрать дедлайн"
+            aria-label={chooseLabel}
             aria-describedby={`${id}-value`}
           >
             <CalendarDays data-icon="inline-start" />
@@ -44,7 +52,7 @@ export function DeadlinePicker({
         <PopoverContent
           align="start"
           className="deadline-popover"
-          aria-label="Календарь дедлайна"
+          aria-label={calendarLabel}
           collisionPadding={12}
         >
           <Calendar
@@ -68,7 +76,7 @@ export function DeadlinePicker({
               setOpen(false);
             }}
           >
-            Убрать дедлайн
+            {clearLabel}
           </Button>
         </PopoverContent>
       </Popover>

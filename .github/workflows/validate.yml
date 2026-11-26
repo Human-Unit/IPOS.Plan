@@ -43,6 +43,11 @@ jobs:
       - name: Install Chromium for UI validation
         run: npx playwright install --with-deps chromium
       - name: Verify editor, responsive viewer, data safety and portable media
+        env:
+          # Fixture values are scoped to this loopback browser run.
+          IPOS_ADMIN_PASSWORD: ipos-playwright-synthetic-password-only
+          IPOS_TEST_ADMIN_PASSWORD: ipos-playwright-synthetic-password-only
+          IPOS_ADMIN_SESSION_SECRET: ipos-playwright-synthetic-session-secret-only-for-local-browser-tests
         run: npm run test:e2e
       - name: Retain browser failure evidence
         if: failure()

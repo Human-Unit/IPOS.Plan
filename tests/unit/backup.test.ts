@@ -174,7 +174,7 @@ describe("atomic library backups", () => {
       { ...b, plans: [p, p] },
       { ...b, revisions: [b.revisions[0], b.revisions[0]] },
       { ...b, activity: [b.activity[0], b.activity[0]] },
-      { ...b, formatVersion: 2 },
+      { ...b, formatVersion: 999 },
       { ...b, plans: [] },
       {
         ...b,

@@ -26,11 +26,11 @@ Preserve Cobalt & Ink, IndexedDB and the schema-v1 document contract, BlockNote,
 | Security | Inventory admin, publication, workspace and MCP boundaries. Demonstrate existing authorization, safe response headers/errors and input limits with focused tests. Document a persistent limiter and revocation decision with any external prerequisites. | App code verified locally. Durable WAF and per-session revocation deferred. |
 | Data reliability | Prove atomic failures do not partially save data. Cover stale tabs, interrupted autosave, backup restore, malformed/duplicate/large inputs and mocked Blob version conflicts. | Verified locally |
 | Performance | Measure static and runtime JS, dashboard/search/IndexedDB/BlockNote/image timing, memory and mobile on repeatable fixtures. Measure private listing cost using isolated mocks and justify any metadata index. Keep production storage unchanged. | Verified locally and in storage mocks |
-| Activists | Port useful #16 capabilities individually. Validate local profiles, assignment history/navigation and old backups. Preserve portable assignee text. | Phase 3 |
-| Calendar | Weekly/monthly views distinguish task deadlines from publication dates. Verify filters, direct navigation and mobile. | Phase 3 |
-| Kanban | Specify a backward-compatible stage mapping. Verify keyboard and pointer changes operate on the same task records. | Phase 3 |
-| Editorial approval | Validate draft, review, changes, feedback, approval and readiness. Identify local workflow metadata truthfully. | Phase 3 |
-| Analytics and integration | Derive counts and weekly activity from saved records. Verify both themes and the full integrated workflow. | Phase 3 |
+| Activists | Port useful #16 capabilities individually. Validate local profiles, assignment history/navigation and old backups. Preserve portable assignee text. | [Draft #42](https://github.com/Human-Unit/IPOS.Plan/pull/42) |
+| Calendar | Weekly/monthly views distinguish task deadlines from publication dates. Verify filters, direct navigation and mobile. | [Draft #43](https://github.com/Human-Unit/IPOS.Plan/pull/43) |
+| Kanban | Specify a backward-compatible stage mapping. Verify keyboard and pointer changes operate on the same task records. | [Draft #44](https://github.com/Human-Unit/IPOS.Plan/pull/44) |
+| Editorial approval | Validate draft, review, changes, feedback, approval and readiness. Identify local workflow metadata truthfully. | [Draft #45](https://github.com/Human-Unit/IPOS.Plan/pull/45) |
+| Analytics and integration | Derive counts and weekly activity from saved records. Verify both themes and the full integrated workflow. | [Review branch](https://github.com/Human-Unit/IPOS.Plan/tree/phase3/editorial-analytics) |
 
 For rendered acceptance use 320, 390, 768, 1024 and 1440 px in both themes. Record commands, fixture conditions, limitations, commit and PR for each milestone. Retain the independent DOCX ZIP/OOXML check.
 
@@ -120,3 +120,67 @@ Chromium, local production build, Node 24, 101 fixture plans in a fresh profile 
 Local admin-session probe was 3.5 → 2.7 ms. The browser measures vary between short runs. This server-only change leaves client bundles unchanged, and the browser sample does not support a UI-speed or heap improvement claim. To repeat the Chromium fixture, start the local production build and run `node scripts/measure-local-performance.mjs` from the checkout.
 
 - Final clean install, lint, typecheck, 136 unit cases, four MCP preflight cases, 52 Chromium cases and production build passed. Independent DOCX ZIP/OOXML validation passed. Final browser captures verified both themes at all five required widths. [Dark tablet dashboard](docs/reports/phase2-performance/dashboard-tablet-dark.png)
+
+## Phase 3 — Editorial operations
+
+Base: verified main at **fe5fb14031ce754064f72dd452e80082f4f469f0** with the four Phase 2 commits. Drafts are stacked in review order. Keep production, credentials, OAuth and private storage configuration outside this phase.
+
+- **Activists.** Selectively port the UUID profile, explicit linking and backup logic from [PR #16](https://github.com/Human-Unit/IPOS.Plan/pull/16), using its [original design notes](https://github.com/Human-Unit/IPOS.Plan/blob/5f59537/docs/IPOS_PLAN_3_3.md). Preserve stable IDs and separate same-name profiles. Saved legacy rows become candidates by source key; task text is reviewed manually and cannot create identities or membership. Local links are kept with the plan and share its version and transaction. Exported schema v1 sees only assignee text. Backup v2 keeps relationships and history and accepts v1. Restore inserts records atomically and remaps links to new profile IDs.
+- **Calendar.** Reuse live task IDs and explicit participant links. Keep deadlines separate from planned publication dates. Derive upcoming and overdue states from saved deadlines in browser-local dates.
+- **Kanban.** Keep existing portable task statuses. Design a deterministic local stage fallback and retain cancelled tasks outside the six production stages.
+- **Approval.** Record editorial review state, decisions and feedback locally. Authentication and publication stay on their existing boundaries.
+- **Analytics.** Derive counts from each saved live task once. Use recorded events for weekly activity.
+
+The verified Phase 3 baseline uses Node 24.13.0. Clean install, lint, type checking, 136 units, four MCP preflight tests, optimized build and independent DOCX ZIP CRC plus all six OOXML parses passed. Seeded Chromium dashboard captures cover 320, 390, 768, 1024, 1366, 1440 and 1920 px in both themes.
+
+The [baseline GitHub Actions run](https://github.com/Human-Unit/IPOS.Plan/actions/runs/45599869611) passed on the merged SHA. Local baseline Playwright ran 52 cases with synthetic admin values. Forty-six passed, and six reported blocked outbound requests from the restricted Windows browser, including Google Fonts. The original failing traces are retained in local evidence.
+
+### Phase 3.1 — Activist management
+
+The existing Cobalt & Ink shell leads to «Активисты», with named profile rows, explicit picker confirmation, origin-local membership and a separate legacy reconciliation list. A task can have several people and one portable text snapshot. Profile links from the editor flush first. Links from profiles and workload open the exact native brief. Native brief and whole-plan copies keep local identities. Undo of a deleted brief restores the working assignment metadata; a committed deletion still prunes the unreferenced entries.
+
+The browser evidence uses four synthetic profiles including identical names with distinct roles. Reviewed the dashboard, directory, profile, workload and inspector across both themes at all seven playbook widths. The 320 px header overflow found during QA was fixed with a labeled icon control at narrow widths. [Mobile directory](docs/reports/phase3-activists/directory-light-320.png) · [Dark profile](docs/reports/phase3-activists/profile-dark-1440.png) · [Mobile workload](docs/reports/phase3-activists/workload-dark-390.png)
+
+The CI browser server uses isolated synthetic administrator values. The existing DOCX checker continues to validate ZIP CRC and six required OOXML parts.
+
+Gates: clean install, lint, typecheck, 161 unit tests, four MCP preflight tests, build and independent DOCX validation passed. The full Playwright run verified 56 of 59, including both admin cases. Three ported locators were aligned to the current share and membership UI and their cases passed on rerun. The native duplicate/undo case was also rerun and passed after waiting for the duplicate to save before testing the later delete history event.
+
+Draft [PR #42](https://github.com/Human-Unit/IPOS.Plan/pull/42) contains the activist milestone.
+
+### Phase 3.2 — Content calendar
+
+The calendar uses one row per live task ID in each plan. Its Monday-first month and week use date-only keys, with the browser's local day as the starting point. Task deadlines remain portable. Planned publication dates are optional local metadata, editable in the brief inspector and included in local revisions and library backups. They do not represent an actual publication. The calendar's narrow layout uses an agenda for the selected period. The two deadline queues use the same filters and established rules for cancellation and completion.
+
+Verification: clean install, lint, typecheck, 164 unit cases, four MCP preflight cases, build and independent DOCX validation passed. The unchanged 59 Playwright cases passed together. The calendar case passed after wiring explicit accessible labels for all three filters. Reviewed rendered date views at 320, 390, 768, 1024, 1366, 1440 and 1920 px in both themes. [Mobile agenda](docs/reports/phase3-calendar/calendar-light-320.png) · [Dark week](docs/reports/phase3-calendar/week-dark-1440.png)
+
+The calendar is tracked in stacked draft [PR #43](https://github.com/Human-Unit/IPOS.Plan/pull/43). The preceding activist draft passed its [Linux CI run](https://github.com/Human-Unit/IPOS.Plan/actions/runs/45831600275).
+
+### Phase 3.3 — Production board
+
+Backward-compatible mapping is defined before implementation. A compatible explicit local stage is authoritative for the board. Otherwise `todo` becomes Idea, or Assigned when an explicit participant link already exists. `in_progress` becomes Production. `review` becomes Review. Legacy `done` files under Published with an explicit legacy-completion label. Cancelled tasks remain separate. Moving to Idea or Assigned writes `todo`, Production or Editing writes `in_progress`, Review writes `review`, and Published writes `done`. The Published stage describes local workflow and never invokes the publication API. Moving a task cannot create a person record or assignment.
+
+Verification: clean install, lint, typecheck, 166 unit tests, four MCP preflight tests, production build and independent DOCX validation passed. Sixty of 61 Playwright scenarios passed in the full run, including the board's drag, keyboard, focus and exact-brief checks. The unchanged snapshot test passed on isolated retry after a page-load timeout. Inspected the board across seven widths, 320 through 1920 px, in both themes. [Mobile board](docs/reports/phase3-board/board-light-320.png) · [Dark desktop board](docs/reports/phase3-board/board-dark-1440.png)
+
+The production board is tracked in draft [PR #44](https://github.com/Human-Unit/IPOS.Plan/pull/44). The calendar draft passed its [Linux CI run](https://github.com/Human-Unit/IPOS.Plan/actions/runs/45833384468).
+
+### Phase 3.4 — Editorial approval
+
+The inspector records draft submission, review, feedback, requests for revisions and approval. Local approval sets a readiness indicator in the inspector and board. Review decisions and feedback use the same versioned plan write and existing activity transaction. Changes to the reviewed task content or explicit participants return an active review to draft; scheduling and stage-only edits preserve it. Readiness is cleared on copies. Exact revisions and backups retain review metadata and its original context. This workflow has no accounts or reviewer authorization and never calls the publishing API.
+
+Verification: clean install, lint, typecheck, 168 unit cases, four MCP preflight cases, production build and independent DOCX validation passed. Captured the inspector in both themes at all seven widths. The approval flow passed in the full suite and on repeat. The full suite exposed two failures: duplicate React keys when switching tasks were corrected, and the existing pre-hydration theme test was rerun unchanged. The focused retest passed all three scenarios. [Dark mobile review](docs/reports/phase3-approval/approval-dark-320.png) · [Light desktop review](docs/reports/phase3-approval/approval-light-1440.png)
+
+Editorial approval is tracked in draft [PR #45](https://github.com/Human-Unit/IPOS.Plan/pull/45). The production board passed its [Linux CI run](https://github.com/Human-Unit/IPOS.Plan/actions/runs/45835681907).
+
+### Phase 3.5 — Editorial analytics
+
+The analytics page derives task totals and production stages from unique live task IDs. Participant workload uses explicit UUID links, and each collaborator receives the shared task once. Upcoming publication counts refer to planned dates through day seven and omit cancelled and explicitly published tasks. The activity chart groups actual saved task events into the trailing seven local calendar days using the existing IndexedDB time index. Historical status alone supplies no completion timestamp. Legacy completions and cancellations are accounted for openly. All chart values are available as text.
+
+The final integration review found a pre-existing conflict between the approved Cobalt rules and later editor CSS. The screen-only selectors now restore the navy bar and light title and metadata on the cobalt cover. Print rules remain separate.
+
+The four editorial navigation links appear beside the library controls, ahead of any plan rows, so their location is consistent across library sizes and keyboard navigation.
+
+The final Cobalt integration review resolved both findings. The final recaptures verified all seven widths in both themes and checked the computed toolbar and cover colors. [Mobile navigation](docs/reports/phase3-analytics/dashboard-dark-320.png) · [Restored editor contrast](docs/reports/phase3-analytics/approval-light-1440.png) · [Mobile analytics](docs/reports/phase3-analytics/analytics-light-320.png) · [Dark desktop analytics](docs/reports/phase3-analytics/analytics-dark-1440.png)
+
+The editorial screens reuse the application bar, current typography, theme-aware surface and focus tokens, and the existing document and inspector. Analytics counts are visible as text. Impeccable flagged pre-existing drift between DESIGN.md and its JSON sidecar.
+
+Final gates passed: clean Node 24 install, lint, typecheck, 170 unit tests, four MCP preflight tests, optimized build, independent DOCX ZIP CRC and six OOXML parses, and 63 Playwright tests including both synthetic administrator cases. Playwright verified an existing analytics tab receives board changes from another tab through the saved records, including workload and daily activity. The four preceding drafts passed GitHub Actions. Phase 3 remains a stack of drafts for review.

@@ -14,6 +14,11 @@ import { statusLabels, priorityLabels } from "@/lib/labels";
 import { PlanInspector } from "./plan-inspector";
 import { DeadlinePicker } from "./deadline-picker";
 import { AssigneePicker } from "@/features/activists/assignee-picker";
+import { ReviewPanel } from "@/features/editorial/review-panel";
+import { productionStage } from "@/features/editorial/stages";
+import { productionStages, stageLabels, type ProductionStage } from "@/lib/schema/editorial";
+import { taskEditorial } from "@/features/editorial/metadata";
+import { confirmedAssignment } from "@/features/activists/task-assignments";
 
 const textBlockTypes = new Set([
   "paragraph",
@@ -73,7 +78,7 @@ export function BlockInspector({
   const [fontUrl, setFontUrl] = useState("");
   const [fontError, setFontError] = useState("");
   const [failedImage, setFailedImage] = useState("");
-  const { plan, updateTask, replaceImage } = usePlanContext();
+  const { plan, updateTask, replaceImage, updateAssignment, openPerson, updateEditorial, updateStage, reviewAction } = usePlanContext();
   const task =
     block?.type === "task" ? plan.tasks[block.props.taskId] : undefined;
   const isTextBlock = Boolean(block && textBlockTypes.has(block.type));
@@ -400,11 +405,40 @@ export function BlockInspector({
                     </select>
                   </Field>
                 </FieldGroup>
+                {updateStage && (
+                  <Field>
+                    <FieldLabel htmlFor={id + "-stage"}>Этап производства</FieldLabel>
+                    <select
+                      id={id + "-stage"}
+                      disabled={task.status === "cancelled"}
+                      value={productionStage(task, taskEditorial(plan, task.id), Boolean(confirmedAssignment(plan, task.id))) ?? ""}
+                      onChange={(event) => updateStage(task.id, event.target.value as ProductionStage)}
+                    >
+                      {task.status === "cancelled" && <option value="">Задача отменена</option>}
+                      {productionStages.map((stage) => <option key={stage} value={stage}>{stageLabels[stage]}</option>)}
+                    </select>
+                  </Field>
+                )}
                 <AssigneePicker
+                  key={task.id}
                   value={task.assignee ?? ""}
                   onChange={(value) => change({ assignee: value || undefined })}
+                  assignment={confirmedAssignment(plan, task.id)}
+                  onApply={updateAssignment ? (value, text) => updateAssignment(task.id, value, text) : undefined}
+                  onOpenPerson={openPerson}
                 />
-                <DeadlinePicker id={`${id}-deadline`} value={task.deadline} onChange={(deadline) => change({ deadline })} />
+                <DeadlinePicker id={id + "-deadline"} value={task.deadline} onChange={(deadline) => change({ deadline })} />
+                {updateEditorial && (
+                  <DeadlinePicker
+                    id={id + "-publication-date"}
+                    label="Плановая публикация"
+                    chooseLabel="Выбрать дату публикации"
+                    calendarLabel="Календарь плановой публикации"
+                    clearLabel="Убрать дату публикации"
+                    value={taskEditorial(plan, task.id)?.publicationDate}
+                    onChange={(publicationDate) => updateEditorial(task.id, { publicationDate })}
+                  />
+                )}
                 {field(
                   "description",
                   "Описание",
@@ -415,6 +449,8 @@ export function BlockInspector({
                 <p className="inspector-hint">
                   Формат, разрешение и FPS можно указать в описании.
                 </p>
+                {reviewAction && <ReviewPanel key={"review-" + task.id} task={task} review={taskEditorial(plan, task.id)?.review}
+                  onAction={(action, feedback) => reviewAction(task.id, action, feedback)} />}
               </>
             ) : block.type === "reference" ? (
               <>
