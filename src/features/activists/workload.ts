@@ -7,6 +7,8 @@ import {
   normalizeSearch,
   taskStats,
 } from "@/features/plans/productivity";
+import { taskEditorial } from "@/features/editorial/metadata";
+import type { TaskEditorial } from "@/lib/schema/editorial";
 import { confirmedAssignment, liveTasks } from "./task-assignments";
 
 export type AssignmentRow = {
@@ -15,6 +17,7 @@ export type AssignmentRow = {
   blockId?: string;
   task: Task;
   personIds: string[];
+  editorial?: TaskEditorial;
 };
 export function assignmentRows(plans: Plan[]): AssignmentRow[] {
   return plans.flatMap((plan) =>
@@ -23,6 +26,7 @@ export function assignmentRows(plans: Plan[]): AssignmentRow[] {
       planTitle: plan.title,
       blockId,
       task,
+      editorial: taskEditorial(plan, task.id),
       personIds:
         confirmedAssignment(plan, task.id)?.people.map((p) => p.personId) ?? [],
     })),

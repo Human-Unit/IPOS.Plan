@@ -7,7 +7,7 @@ import { motionEase, motionTiming } from "@/lib/motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Plus, Copy, Trash2, ArrowUpRight, Upload, FileText, FolderOpen, Search, ShieldCheck, Bot, UsersRound } from "lucide-react";
+import { Plus, Copy, Trash2, ArrowUpRight, Upload, FileText, FolderOpen, Search, ShieldCheck, Bot, UsersRound, CalendarDays } from "lucide-react";
 import { toast } from "@/lib/notifications";
 import { db } from "@/lib/db/database";
 import { createPlan, deletePlan, duplicatePlan } from "./repository";
@@ -365,6 +365,9 @@ export function Dashboard() {
         <nav className="dashboard-operations" aria-label="Работа редакции">
           <Button asChild variant="outline">
             <Link href="/activists"><UsersRound data-icon="inline-start" />Активисты</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/calendar"><CalendarDays data-icon="inline-start" />Календарь</Link>
           </Button>
         </nav>
         <footer className="dashboard-footer">

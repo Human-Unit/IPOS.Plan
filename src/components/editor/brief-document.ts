@@ -204,6 +204,7 @@ export function duplicateBrief(
     throw new Error("Выберите задачу для копирования.");
   const tasks = { ...plan.tasks };
   const assignments = { ...plan.assignments };
+  const editorial = { ...plan.editorial };
   const typography = { ...plan.typography };
   const taskIds = new Map<string, string>();
   const copy = (node: EditorNode): EditorNode => {
@@ -222,7 +223,12 @@ export function duplicateBrief(
           id: taskId,
           title: `${plan.tasks[sourceId].title} — копия`,
         };
-        if (plan.assignments?.[sourceId]) assignments[taskId] = structuredClone(plan.assignments[sourceId]);
+        if (plan.assignments && Object.hasOwn(plan.assignments, sourceId)) {
+          assignments[taskId] = structuredClone(plan.assignments[sourceId]);
+        }
+        if (plan.editorial && Object.hasOwn(plan.editorial, sourceId)) {
+          editorial[taskId] = structuredClone(plan.editorial[sourceId]);
+        }
       }
       props = { ...props, taskId };
     }
@@ -256,6 +262,7 @@ export function duplicateBrief(
       blocks,
       tasks,
       ...(Object.keys(assignments).length ? { assignments } : {}),
+      ...(Object.keys(editorial).length ? { editorial } : {}),
       ...(Object.keys(nextTypography).length
         ? { typography: nextTypography }
         : {}),
