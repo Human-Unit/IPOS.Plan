@@ -14,6 +14,8 @@ import { statusLabels, priorityLabels } from "@/lib/labels";
 import { PlanInspector } from "./plan-inspector";
 import { DeadlinePicker } from "./deadline-picker";
 import { AssigneePicker } from "@/features/activists/assignee-picker";
+import { productionStage } from "@/features/editorial/stages";
+import { productionStages, stageLabels, type ProductionStage } from "@/lib/schema/editorial";
 import { taskEditorial } from "@/features/editorial/metadata";
 import { confirmedAssignment } from "@/features/activists/task-assignments";
 
@@ -75,7 +77,7 @@ export function BlockInspector({
   const [fontUrl, setFontUrl] = useState("");
   const [fontError, setFontError] = useState("");
   const [failedImage, setFailedImage] = useState("");
-  const { plan, updateTask, replaceImage, updateAssignment, openPerson, updateEditorial } = usePlanContext();
+  const { plan, updateTask, replaceImage, updateAssignment, openPerson, updateEditorial, updateStage } = usePlanContext();
   const task =
     block?.type === "task" ? plan.tasks[block.props.taskId] : undefined;
   const isTextBlock = Boolean(block && textBlockTypes.has(block.type));
@@ -402,6 +404,20 @@ export function BlockInspector({
                     </select>
                   </Field>
                 </FieldGroup>
+                {updateStage && (
+                  <Field>
+                    <FieldLabel htmlFor={id + "-stage"}>Этап производства</FieldLabel>
+                    <select
+                      id={id + "-stage"}
+                      disabled={task.status === "cancelled"}
+                      value={productionStage(task, taskEditorial(plan, task.id), Boolean(confirmedAssignment(plan, task.id))) ?? ""}
+                      onChange={(event) => updateStage(task.id, event.target.value as ProductionStage)}
+                    >
+                      {task.status === "cancelled" && <option value="">Задача отменена</option>}
+                      {productionStages.map((stage) => <option key={stage} value={stage}>{stageLabels[stage]}</option>)}
+                    </select>
+                  </Field>
+                )}
                 <AssigneePicker
                   key={task.id}
                   value={task.assignee ?? ""}

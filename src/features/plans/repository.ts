@@ -3,6 +3,7 @@ import { bindingKey, bindingSchema, type CloudBinding } from "@/lib/ai-workspace
 import { activityChanges } from "./activity-changes";
 import { toPortable, type LocalPlanContent, type Plan, type PortablePlan } from "@/lib/schema/plan";
 import { canonicalEditorial } from "@/features/editorial/metadata";
+import { stageEvents } from "@/features/editorial/stages";
 import {
   assignmentEvents,
   canonicalAssignments,
@@ -73,16 +74,25 @@ export async function createPlan(
         type === "PLAN_IMPORTED" ? "План импортирован" : "План создан",
       ),
     );
-    await recordAssignmentEvents({ ...plan, assignments: undefined }, plan);
+    const links = assignmentEvents({ ...plan, assignments: undefined }, plan);
+    await appendLocalTaskEvents(plan.id, links);
   });
   return plan;
 }
 
-async function recordAssignmentEvents(previous: Plan, next: Plan) {
-  const changes = assignmentEvents(previous, next);
+async function recordLocalTaskEvents(previous: Plan, next: Plan) {
+  const changes = [...assignmentEvents(previous, next), ...stageEvents(previous, next)];
+  await appendLocalTaskEvents(next.id, changes);
+}
+
+async function appendLocalTaskEvents(planId: string, changes: Array<{
+  type: string;
+  message: string;
+  metadata: Record<string, unknown>;
+}>) {
   if (changes.length) {
     await db.activity.bulkAdd(changes.map(({ type, message, metadata }) => ({
-      ...event(next.id, type, message),
+      ...event(planId, type, message),
       metadata,
     })));
   }
@@ -121,7 +131,7 @@ export async function savePlan(plan: Plan): Promise<Plan> {
     );
     await db.plans.put(saved);
     if (events.length) await db.activity.bulkAdd(events);
-    await recordAssignmentEvents(previous, saved);
+    await recordLocalTaskEvents(previous, saved);
     return saved;
   });
 }
@@ -167,7 +177,7 @@ export async function replacePlan(
           : "Восстановлена версия",
       ),
     );
-    await recordAssignmentEvents(current, next);
+    await recordLocalTaskEvents(current, next);
     return next;
   });
 }

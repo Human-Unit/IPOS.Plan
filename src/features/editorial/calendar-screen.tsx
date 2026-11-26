@@ -3,9 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3 } from "lucide-react";
-import { useLiveQuery } from "dexie-react-hooks";
-import { db } from "@/lib/db/database";
-import { errorMessage } from "@/lib/labels";
+import { useEditorialPlans } from "./use-editorial-plans";
 import { Button } from "@/components/ui/button";
 import { EditorialHeader } from "@/components/plan/editorial-header";
 import { usePeople } from "@/features/activists/people-hooks";
@@ -48,10 +46,7 @@ function CalendarEntry({ entry, today, showDate = false }: {
 export function CalendarScreen() {
   const today = useLocalDate();
   const roster = usePeople();
-  const library = useLiveQuery(async () => {
-    try { return { plans: await db.plans.orderBy("updatedAt").reverse().toArray(), error: "" }; }
-    catch (error) { return { plans: [], error: errorMessage(error) }; }
-  });
+  const library = useEditorialPlans();
   const [mode, setMode] = useState<CalendarMode>("month");
   const [date, setDate] = useState("");
   const [filter, setFilter] = useState(defaultEditorialFilter);

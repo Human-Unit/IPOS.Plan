@@ -40,6 +40,7 @@ import {
   type PortablePlan,
 } from "@/lib/schema/plan";
 import type { Task } from "@/lib/schema/task";
+import { moveTaskToStage } from "@/features/editorial/stages";
 import { setTaskEditorial } from "@/features/editorial/metadata";
 import { setTaskAssignment } from "@/features/activists/task-assignments";
 export function EditorScreen({ id }: { id: string }) {
@@ -401,6 +402,7 @@ export function EditorScreen({ id }: { id: string }) {
           inert={busy || dialog !== undefined || shareUrl !== null}
         >
           <PlanRenderer
+            onStageChange={(taskId, stage) => update((current) => moveTaskToStage(current, taskId, stage))}
             onEditorialChange={(taskId, change) => update((current) => setTaskEditorial(current, taskId, change))}
             onAssignmentChange={(taskId, value, text) =>
               update((current) => setTaskAssignment(current, taskId, value, text))
