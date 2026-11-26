@@ -1,64 +1,66 @@
 # IPOS.Plan
 
-Локально-ориентированное рабочее пространство медиасектора: контент-планы, производственные брифы, задачи, исполнители, дедлайны, версии, публикации и экспорт документов.
+**Local-first editorial planning workspace for media teams.**
 
-**Production:** https://ipos-plan.vercel.app · Vercel: `diamond-dogs2/ipos-plan` · основная ветка: `main`.
+Create production briefs, organize assignments and deadlines, edit structured documents, maintain revisions, and publish or export plans without requiring a cloud account for ordinary editing.
 
-## Возможности и границы
+[Live application](https://ipos-plan.vercel.app) · [Architecture](docs/ARCHITECTURE.md) · [CI runs](https://github.com/Human-Unit/IPOS.Plan/actions) · [Русская документация](docs/README.ru.md)
 
-- Dashboard Cobalt & Ink: поиск по планам и задачам, фильтры, прогресс, последние изменения, импорт и резервные копии.
-- BlockNote: редактируемый документ и рабочее пространство, задания, референсы, изображения, инспектор, outline, история и восстановление.
-- JSON schemaVersion 1, DOCX, A4 print/PDF, неизменяемые снимки `/view#p=…`, именованные публикации `/p/[id]`.
-- Локальные данные хранятся в IndexedDB (Dexie); сервер не получает все планы автоматически. Админка защищена отдельной сессией владельца, но сама по себе не переносит локальные документы между устройствами.
-- Серверные публикации используют существующий Blob store. Опциональная GPT-синхронизация и MCP используют **другое приватное хранилище**, отдельную авторизацию и проверку версий. Код интеграции присутствует; реальное подключение ChatGPT отложено до настройки приватного Blob, личного OAuth и сквозных проверок. Не включайте legacy token mode для обхода OAuth.
-- Не является многопользовательской облачной системой. Справочник собранных имён не равен полноценному управлению участниками и ролями.
+[![IPOS.Plan checks](https://github.com/Human-Unit/IPOS.Plan/actions/workflows/validate.yml/badge.svg?branch=main)](https://github.com/Human-Unit/IPOS.Plan/actions/workflows/validate.yml)
 
-## Запуск
+## Product overview
 
-Node.js **24.x** (как Vercel и CI), npm с зафиксированным lockfile.
+- Dashboard with search, filters, progress and recent activity.
+- Block-based editor for production briefs, tasks, references and media.
+- Local autosave, revision history, recovery and portable JSON backups.
+- Read-only snapshots, named publications, editable DOCX export and A4 printing.
+- Optional private workspace synchronization and MCP integration, subject to separate configuration and acceptance.
+
+## Architecture
+
+```mermaid
+flowchart LR
+ UI[Dashboard and BlockNote editor] --> R[Plan repository]
+ R --> DB[(IndexedDB)]
+ R --> EX[JSON / DOCX / print]
+ R --> S[Explicit sharing]
+ S --> P[Read-only publications]
+ R -. Optional explicit sync .-> W[Private workspace]
+ M[MCP client] -. Scoped authorization .-> W
+```
+
+**Stack:** Next.js 16, React 19, TypeScript, BlockNote, Dexie / IndexedDB, Zod, Vercel Blob, MCP SDK, Vitest and Playwright.
+
+### Engineering decisions
+
+| Decision | Rationale |
+| --- | --- |
+| Local-first persistence | Ordinary documents remain in the browser; cloud transfer is explicit. |
+| Transactional version checks | Prevent silent overwrites from competing tabs and support recoverable imports. |
+| Portable schema | Keep document interchange independent of local database metadata. |
+| Shared rendering model | Reuse validated document structures across editing, preview and sharing. |
+| Separate publication and private sync | Keep public snapshots distinct from authorized workspace access. |
+| Bounded input validation | Validate imported documents and enforce size limits before processing. |
+
+## Run locally
+
+Requires Node.js 24.x and npm.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Откройте http://127.0.0.1:3105. Для production-подобной сборки:
+Open http://127.0.0.1:3105. Ordinary local editing needs no server credentials. Use synthetic content for evaluation; browser storage is origin-specific.
+
+For a production-like local build:
 
 ```sh
 npm run build
 npm start
 ```
 
-Локальный редактор работает без серверных секретов. Данные IndexedDB привязаны к origin, браузеру и профилю; localhost и production имеют разные библиотеки. Сделайте резервную копию перед переносом или очисткой данных сайта.
-
-## Серверное окружение
-
-| Переменная | Назначение |
-| --- | --- |
-| `BLOB_READ_WRITE_TOKEN` | Существующее хранилище публикаций; не заменять приватным токеном |
-| `IPOS_PUBLISH_ACCESS_KEY` | Авторизация публикаций |
-| `IPOS_ADMIN_PASSWORD`, `IPOS_ADMIN_SESSION_SECRET` | Вход владельца и подпись cookie |
-| `IPOS_AI_BLOB_READ_WRITE_TOKEN` | Отдельный приватный Blob; пока не подключён |
-| `IPOS_MCP_AUTH_MODE=oauth` | Закрытый OAuth-режим в production |
-| `IPOS_MCP_RESOURCE_URL`, `IPOS_MCP_OAUTH_*` | Публичный ресурс и личный OAuth-провайдер; см. инструкцию |
-
-Секреты задаются в Vercel или локально в игнорируемом `.env.local`, не в Git и не в `NEXT_PUBLIC_*`. Preview должен использовать изолированные тестовые данные; никогда не ослабляйте авторизацию для проверки. См. [ADMIN](docs/ADMIN.md), [MCP](docs/CHATGPT_MCP.md).
-
-## Структура
-
-| Каталог | Ответственность |
-| --- | --- |
-| `src/app` | Routes, layouts, CSS, API и metadata |
-| `src/components/editor` | BlockNote, renderer, брифы и inspector |
-| `src/features/plans` | Dashboard, редактор, repository, autosave |
-| `src/features/ai-sync` | Явная отправка / получение облачной версии |
-| `src/features/sharing` | Публикации и read-only viewer |
-| `src/features/export`, `src/features/backup` | Экспорт и резервные копии |
-| `src/lib/db`, `src/lib/schema` | IndexedDB и контракты данных |
-| `src/lib/ai-workspace` | Приватное хранилище, OAuth и MCP tools |
-| `tests/unit`, `tests/e2e` | Unit, интеграционные моки и Chromium |
-
-## Проверки
+## Quality and reproducibility
 
 ```sh
 npm run lint
@@ -70,17 +72,29 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-CI выполняет эти проверки, независимую проверку ZIP/OOXML и Playwright на собранном приложении. Для локальной проверки production-сборки используйте режим CI. Моки не подтверждают работу личного OAuth или приватного Blob. Не используйте реальные планы для интеграционных тестов.
+A [verified successful main-branch CI run](https://github.com/Human-Unit/IPOS.Plan/actions/runs/45599869611) at commit `fe5fb140` passed lint, type checking, unit tests, MCP preflight tests, independent DOCX ZIP/OOXML validation, production build and Chromium browser checks. This is historical evidence for that commit, not a guarantee for every subsequent revision. See the live badge and Actions for current results.
 
-## Разработка и релизы
+## Repository guide
 
-- Работайте в отдельной ветке и открывайте PR в main; CI запускается для любого PR и push в main.
-- Проверяйте CI и Vercel Preview до merge. Main — источник релизов; не продвигайте произвольные Preview на production.
-- Сохраняйте историю Git и проверяйте предыдущий READY deployment для rollback. После релиза проверьте публичные страницы и закрытый MCP без токена.
-- Не изменяйте существующие публикации, схемы данных и секреты без отдельного согласования.
+| Path | Responsibility |
+| --- | --- |
+| `src/app` | Routes, layouts and server endpoints |
+| `src/components/editor` | BlockNote editor, briefs and inspector |
+| `src/features/plans` | Dashboard, persistence and autosave |
+| `src/features/sharing` | Read-only snapshots and publications |
+| `src/features/export`, `src/features/backup` | Document export and backups |
+| `src/lib/db`, `src/lib/schema` | Local persistence and validation |
+| `src/lib/ai-workspace` | Private workspace authorization and MCP |
+| `tests` | Unit and browser verification |
 
-## Документация
+## Security and current boundaries
 
-[Архитектура](docs/ARCHITECTURE.md) · [Portable schema](docs/PLAN_SCHEMA.md) · [Версия 3.0](docs/IPOS_PLAN_3.md) · [3.1](docs/IPOS_PLAN_3_1.md) · [3.2](docs/IPOS_PLAN_3_2.md) · [Админка](docs/ADMIN.md) · [MCP](docs/CHATGPT_MCP.md) · [Дизайн Cobalt](docs/design/COBALT_APPROVED.md) · [Design playbook](docs/design/IPOS_DESIGN_PLAYBOOK.md) · [Правила для агентов](AGENTS.md).
+This is a local-first, single-owner workspace, not a multi-tenant SaaS. Browser storage is not a substitute for backups. Share links are not access-control credentials. Optional private synchronization and MCP require configured private storage, owner OAuth and end-to-end acceptance; mocked tests do not prove live connectivity. Keep all credentials outside Git and use isolated test data.
 
-Исторический README и подробные результаты старых QA сохранены в [коммите b8f1cd0](https://github.com/Human-Unit/IPOS.Plan/blob/b8f1cd008c8996a4cca9f31fd5748d96898e23f9/README.md). Актуальные результаты тестов берите из GitHub Actions для конкретного SHA.
+See [Russian setup and environment documentation](docs/README.ru.md), [MCP setup](docs/CHATGPT_MCP.md), [portable schema](docs/PLAN_SCHEMA.md) and [architecture](docs/ARCHITECTURE.md).
+
+## Design and development
+
+Historical design iterations and responsive screenshots are available in [design documentation](docs/design). They represent earlier revisions, not necessarily the current deployment.
+
+Use focused branches and pull requests, verify CI and preview deployments before merging, and preserve compatibility with existing documents. No license grant is implied by public repository visibility.
