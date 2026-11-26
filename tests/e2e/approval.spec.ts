@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { planAction } from "./actions";
 
 test("editorial review keeps private feedback, persists approval and resets it after a brief edit", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("ipos-plan-theme", "light"));
   await page.goto("/");
   const fixture = {
     schemaVersion: 1, title: "Подготовка выпуска",
@@ -20,6 +21,8 @@ test("editorial review keeps private feedback, persists approval and resets it a
     await page.getByText("Редакционное согласование", { exact: true }).click();
   };
   await show();
+  await expect(page.locator("header.cobalt-editor-bar")).toHaveCSS("background-color", "rgb(16, 31, 92)");
+  await expect(page.locator(".plan-cover .cover-title")).toHaveCSS("color", "rgb(255, 255, 255)");
   const panel = page.locator(".task-approval");
   const state = panel.getByRole("status");
   await expect(state).toHaveText("Черновик");

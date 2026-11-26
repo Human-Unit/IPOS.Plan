@@ -52,9 +52,16 @@ test("narrow editor keeps named actions and native keyboard mode switching", asy
     await page.setViewportSize({ width, height: 700 });
     await page.goto("/");
     await expect(page.locator(".plan-row").first()).toBeVisible();
-    const order = await page.locator(".plan-list").evaluate((el) =>
-      Boolean(el.compareDocumentPosition(document.querySelector(".dashboard-operations")!) & Node.DOCUMENT_POSITION_FOLLOWING),
-    );
+    const order = await page.locator(".plan-list").evaluate((el) => {
+      const heading = el.querySelector(".library-heading");
+      const navigation = el.querySelector(".dashboard-operations");
+      const row = el.querySelector(".plan-row");
+      return Boolean(
+        heading && navigation && row &&
+        (heading.compareDocumentPosition(navigation) & Node.DOCUMENT_POSITION_FOLLOWING) &&
+        (navigation.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING),
+      );
+    });
     expect(order).toBe(true);
     await page.locator(".plan-title").first().click();
     await page.locator(".bn-editor").waitFor();

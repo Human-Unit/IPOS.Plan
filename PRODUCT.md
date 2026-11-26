@@ -41,6 +41,7 @@ Frequent artifacts include Instagram Reels production plans, event announcements
 ### Present in the repository
 
 - Plan library: create, open, search, filter, import, duplicate, delete; task summaries and actual progress.
+- Phase 3 adds local activist profiles, explicit participant links, a content calendar, a production board, editorial approval and analytics. Availability and review evidence are tracked in [ROADMAP.md](ROADMAP.md).
 - BlockNote-based rich editor with headings, lists, notes, references, images and linked task blocks.
 - Tasks: title, description, assignee, due date, status and priority; task inspection and direct editing.
 - Workspace mode and A4-oriented Document mode, preview, printing and editable DOCX export.
@@ -65,7 +66,7 @@ Frequent artifacts include Instagram Reels production plans, event announcements
 
 - Whether the sector needs a shared cloud workspace, roles, comments and notifications.
 - Whether to unify the app's fonts completely with the Student Council website.
-- Whether to add planning-specific calendar/Kanban views or automated content discovery.
+- Whether automated content discovery is useful for the media team.
 
 These are decisions for a later product scope; they are not commitments or claims about the deployed app.
 

@@ -26,11 +26,11 @@ Preserve Cobalt & Ink, IndexedDB and the schema-v1 document contract, BlockNote,
 | Security | Inventory admin, publication, workspace and MCP boundaries. Demonstrate existing authorization, safe response headers/errors and input limits with focused tests. Document a persistent limiter and revocation decision with any external prerequisites. | App code verified locally. Durable WAF and per-session revocation deferred. |
 | Data reliability | Prove atomic failures do not partially save data. Cover stale tabs, interrupted autosave, backup restore, malformed/duplicate/large inputs and mocked Blob version conflicts. | Verified locally |
 | Performance | Measure static and runtime JS, dashboard/search/IndexedDB/BlockNote/image timing, memory and mobile on repeatable fixtures. Measure private listing cost using isolated mocks and justify any metadata index. Keep production storage unchanged. | Verified locally and in storage mocks |
-| Activists | Port useful #16 capabilities individually. Validate local profiles, assignment history/navigation and old backups. Preserve portable assignee text. | Phase 3 |
-| Calendar | Weekly/monthly views distinguish task deadlines from publication dates. Verify filters, direct navigation and mobile. | Phase 3 |
-| Kanban | Specify a backward-compatible stage mapping. Verify keyboard and pointer changes operate on the same task records. | Phase 3 |
-| Editorial approval | Validate draft, review, changes, feedback, approval and readiness. Identify local workflow metadata truthfully. | Phase 3 |
-| Analytics and integration | Derive counts and weekly activity from saved records. Verify both themes and the full integrated workflow. | Phase 3 |
+| Activists | Port useful #16 capabilities individually. Validate local profiles, assignment history/navigation and old backups. Preserve portable assignee text. | [Draft #42](https://github.com/Human-Unit/IPOS.Plan/pull/42) |
+| Calendar | Weekly/monthly views distinguish task deadlines from publication dates. Verify filters, direct navigation and mobile. | [Draft #43](https://github.com/Human-Unit/IPOS.Plan/pull/43) |
+| Kanban | Specify a backward-compatible stage mapping. Verify keyboard and pointer changes operate on the same task records. | [Draft #44](https://github.com/Human-Unit/IPOS.Plan/pull/44) |
+| Editorial approval | Validate draft, review, changes, feedback, approval and readiness. Identify local workflow metadata truthfully. | [Draft #45](https://github.com/Human-Unit/IPOS.Plan/pull/45) |
+| Analytics and integration | Derive counts and weekly activity from saved records. Verify both themes and the full integrated workflow. | [Review branch](https://github.com/Human-Unit/IPOS.Plan/tree/phase3/editorial-analytics) |
 
 For rendered acceptance use 320, 390, 768, 1024 and 1440 px in both themes. Record commands, fixture conditions, limitations, commit and PR for each milestone. Retain the independent DOCX ZIP/OOXML check.
 
@@ -168,3 +168,19 @@ The production board is tracked in draft [PR #44](https://github.com/Human-Unit/
 The inspector records draft submission, review, feedback, requests for revisions and approval. Local approval sets a readiness indicator in the inspector and board. Review decisions and feedback use the same versioned plan write and existing activity transaction. Changes to the reviewed task content or explicit participants return an active review to draft; scheduling and stage-only edits preserve it. Readiness is cleared on copies. Exact revisions and backups retain review metadata and its original context. This workflow has no accounts or reviewer authorization and never calls the publishing API.
 
 Verification: clean install, lint, typecheck, 168 unit cases, four MCP preflight cases, production build and independent DOCX validation passed. Captured the inspector in both themes at all seven widths. The approval flow passed in the full suite and on repeat. The full suite exposed two failures: duplicate React keys when switching tasks were corrected, and the existing pre-hydration theme test was rerun unchanged. The focused retest passed all three scenarios. [Dark mobile review](docs/reports/phase3-approval/approval-dark-320.png) · [Light desktop review](docs/reports/phase3-approval/approval-light-1440.png)
+
+Editorial approval is tracked in draft [PR #45](https://github.com/Human-Unit/IPOS.Plan/pull/45). The production board passed its [Linux CI run](https://github.com/Human-Unit/IPOS.Plan/actions/runs/45835681907).
+
+### Phase 3.5 — Editorial analytics
+
+The analytics page derives task totals and production stages from unique live task IDs. Participant workload uses explicit UUID links, and each collaborator receives the shared task once. Upcoming publication counts refer to planned dates through day seven and omit cancelled and explicitly published tasks. The activity chart groups actual saved task events into the trailing seven local calendar days using the existing IndexedDB time index. Historical status alone supplies no completion timestamp. Legacy completions and cancellations are accounted for openly. All chart values are available as text.
+
+The final integration review found a pre-existing conflict between the approved Cobalt rules and later editor CSS. The screen-only selectors now restore the navy bar and light title and metadata on the cobalt cover. Print rules remain separate.
+
+The four editorial navigation links appear beside the library controls, ahead of any plan rows, so their location is consistent across library sizes and keyboard navigation.
+
+The final Cobalt integration review resolved both findings. The final recaptures verified all seven widths in both themes and checked the computed toolbar and cover colors. [Mobile navigation](docs/reports/phase3-analytics/dashboard-dark-320.png) · [Restored editor contrast](docs/reports/phase3-analytics/approval-light-1440.png) · [Mobile analytics](docs/reports/phase3-analytics/analytics-light-320.png) · [Dark desktop analytics](docs/reports/phase3-analytics/analytics-dark-1440.png)
+
+The editorial screens reuse the application bar, current typography, theme-aware surface and focus tokens, and the existing document and inspector. Analytics counts are visible as text. Impeccable flagged pre-existing drift between DESIGN.md and its JSON sidecar.
+
+Final gates passed: clean Node 24 install, lint, typecheck, 170 unit tests, four MCP preflight tests, optimized build, independent DOCX ZIP CRC and six OOXML parses, and 63 Playwright tests including both synthetic administrator cases. Playwright verified an existing analytics tab receives board changes from another tab through the saved records, including workload and daily activity. The four preceding drafts passed GitHub Actions. Phase 3 remains a stack of drafts for review.

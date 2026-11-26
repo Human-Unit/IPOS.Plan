@@ -92,7 +92,7 @@
 .people-app-bar .app-bar-tools > a { color: inherit; }
 .people-heading-actions [data-slot="button"] { min-height: 44px; }
 .person-picker-row > a { min-width: 36px; min-height: 36px; display: grid; place-items: center; }
-.dashboard-main .dashboard-operations { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.dashboard-main .dashboard-operations { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .dashboard-main .dashboard-operations a { min-height: 44px; background: var(--background); }
 
 @media (max-width: 420px) {

@@ -7,7 +7,7 @@ import { motionEase, motionTiming } from "@/lib/motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Plus, Copy, Trash2, ArrowUpRight, Upload, FileText, FolderOpen, Search, ShieldCheck, Bot, UsersRound, CalendarDays, Columns3 } from "lucide-react";
+import { Plus, Copy, Trash2, ArrowUpRight, Upload, FileText, FolderOpen, Search, ShieldCheck, Bot, UsersRound, CalendarDays, Columns3, ChartBar } from "lucide-react";
 import { toast } from "@/lib/notifications";
 import { db } from "@/lib/db/database";
 import { createPlan, deletePlan, duplicatePlan } from "./repository";
@@ -188,6 +188,20 @@ export function Dashboard() {
               </div>
             </div>
           </div>
+          <nav className="dashboard-operations" aria-label="Работа редакции">
+            <Button asChild variant="outline">
+              <Link href="/activists"><UsersRound data-icon="inline-start" />Активисты</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/calendar"><CalendarDays data-icon="inline-start" />Календарь</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/board"><Columns3 data-icon="inline-start" />Доска</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/analytics"><ChartBar data-icon="inline-start" />Аналитика</Link>
+            </Button>
+          </nav>
           <div className="dashboard-library-surface">
             <nav className="dashboard-filters" aria-label="Фильтры планов">
               <select
@@ -362,17 +376,6 @@ export function Dashboard() {
           )}
           </div>
         </section>
-        <nav className="dashboard-operations" aria-label="Работа редакции">
-          <Button asChild variant="outline">
-            <Link href="/activists"><UsersRound data-icon="inline-start" />Активисты</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/calendar"><CalendarDays data-icon="inline-start" />Календарь</Link>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/board"><Columns3 data-icon="inline-start" />Доска</Link>
-          </Button>
-        </nav>
         <footer className="dashboard-footer">
           <p>
             Планы сохраняются в этом браузере. «Резервная копия» скачивает всю
