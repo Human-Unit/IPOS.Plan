@@ -227,7 +227,7 @@ export function duplicateBrief(
           assignments[taskId] = structuredClone(plan.assignments[sourceId]);
         }
         if (plan.editorial && Object.hasOwn(plan.editorial, sourceId)) {
-          editorial[taskId] = structuredClone(plan.editorial[sourceId]);
+          editorial[taskId] = { ...structuredClone(plan.editorial[sourceId]), review: undefined };
         }
       }
       props = { ...props, taskId };

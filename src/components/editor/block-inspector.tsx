@@ -14,6 +14,7 @@ import { statusLabels, priorityLabels } from "@/lib/labels";
 import { PlanInspector } from "./plan-inspector";
 import { DeadlinePicker } from "./deadline-picker";
 import { AssigneePicker } from "@/features/activists/assignee-picker";
+import { ReviewPanel } from "@/features/editorial/review-panel";
 import { productionStage } from "@/features/editorial/stages";
 import { productionStages, stageLabels, type ProductionStage } from "@/lib/schema/editorial";
 import { taskEditorial } from "@/features/editorial/metadata";
@@ -77,7 +78,7 @@ export function BlockInspector({
   const [fontUrl, setFontUrl] = useState("");
   const [fontError, setFontError] = useState("");
   const [failedImage, setFailedImage] = useState("");
-  const { plan, updateTask, replaceImage, updateAssignment, openPerson, updateEditorial, updateStage } = usePlanContext();
+  const { plan, updateTask, replaceImage, updateAssignment, openPerson, updateEditorial, updateStage, reviewAction } = usePlanContext();
   const task =
     block?.type === "task" ? plan.tasks[block.props.taskId] : undefined;
   const isTextBlock = Boolean(block && textBlockTypes.has(block.type));
@@ -448,6 +449,8 @@ export function BlockInspector({
                 <p className="inspector-hint">
                   Формат, разрешение и FPS можно указать в описании.
                 </p>
+                {reviewAction && <ReviewPanel key={"review-" + task.id} task={task} review={taskEditorial(plan, task.id)?.review}
+                  onAction={(action, feedback) => reviewAction(task.id, action, feedback)} />}
               </>
             ) : block.type === "reference" ? (
               <>
