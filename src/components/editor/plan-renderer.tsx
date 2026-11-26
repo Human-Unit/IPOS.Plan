@@ -64,6 +64,7 @@ import type {
   LocalPlanContent,
 } from "@/lib/schema/plan";
 import type { TaskAssignment } from "@/lib/schema/task-assignment";
+import type { TaskEditorial } from "@/lib/schema/editorial";
 import type { Task } from "@/lib/schema/task";
 import { uid } from "@/features/plans/repository";
 import { cn } from "@/lib/utils";
@@ -93,6 +94,7 @@ import {
 type Props = {
   plan: LocalPlanContent;
   onAssignmentChange?: (taskId: string, value: TaskAssignment | undefined, textWhenEmpty?: string) => void;
+  onEditorialChange?: (taskId: string, change: Partial<TaskEditorial>) => void;
   onOpenPerson?: (id: string) => void;
   editable?: boolean;
   showCover?: boolean;
@@ -154,6 +156,7 @@ export default function PlanRenderer({
   onPlanChange,
   onAssignmentChange,
   onOpenPerson,
+  onEditorialChange,
 }: Props) {
   const { resolvedTheme } = useTheme();
   const editor = useCreateBlockNote({
@@ -402,6 +405,7 @@ export default function PlanRenderer({
     editable,
     updateTask: onTaskChange,
     updateAssignment: onAssignmentChange,
+    updateEditorial: onEditorialChange,
     openPerson: onOpenPerson,
     selectedId,
     selectBlock,

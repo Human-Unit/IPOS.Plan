@@ -144,3 +144,11 @@ The browser evidence uses four synthetic profiles including identical names with
 The CI browser server uses isolated synthetic administrator values. The existing DOCX checker continues to validate ZIP CRC and six required OOXML parts.
 
 Gates: clean install, lint, typecheck, 161 unit tests, four MCP preflight tests, build and independent DOCX validation passed. The full Playwright run verified 56 of 59, including both admin cases. Three ported locators were aligned to the current share and membership UI and their cases passed on rerun. The native duplicate/undo case was also rerun and passed after waiting for the duplicate to save before testing the later delete history event.
+
+Draft [PR #42](https://github.com/Human-Unit/IPOS.Plan/pull/42) contains the activist milestone.
+
+### Phase 3.2 — Content calendar
+
+The calendar uses one row per live task ID in each plan. Its Monday-first month and week use date-only keys, with the browser's local day as the starting point. Task deadlines remain portable. Planned publication dates are optional local metadata, editable in the brief inspector and included in local revisions and library backups. They do not represent an actual publication. The calendar's narrow layout uses an agenda for the selected period. The two deadline queues use the same filters and established rules for cancellation and completion.
+
+Verification: clean install, lint, typecheck, 164 unit cases, four MCP preflight cases, build and independent DOCX validation passed. The unchanged 59 Playwright cases passed together. The calendar case passed after wiring explicit accessible labels for all three filters. Reviewed rendered date views at 320, 390, 768, 1024, 1366, 1440 and 1920 px in both themes. [Mobile agenda](docs/reports/phase3-calendar/calendar-light-320.png) · [Dark week](docs/reports/phase3-calendar/week-dark-1440.png)

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { taskSchema } from "./task";
+import { editorialSchema, type Editorial } from "./editorial";
 import { inlineRasterSchema } from "./image-source";
 import { assignmentText, localAssignmentsSchema, type LocalAssignments } from "./task-assignment";
 export const SCHEMA_VERSION = 1;
@@ -264,6 +265,7 @@ export const planSchema = z
     updatedAt: z.iso.datetime(),
     version: z.number().int().positive(),
     assignments: localAssignmentsSchema.optional(),
+    editorial: editorialSchema.optional(),
     schemaVersion: z.literal(SCHEMA_VERSION),
     title: z.string(),
     blocks: z.array(blockSchema),
@@ -276,6 +278,11 @@ export const planSchema = z
     const live = new Set(flattenBlocks(plan.blocks).filter(b => b.type === "task").map(b => b.props.taskId));
     for (const [taskId, value] of Object.entries(plan.assignments ?? {})) {
       if (!live.has(taskId) || !plan.tasks[taskId] || assignmentText(value) !== (plan.tasks[taskId].assignee ?? "")) ctx.addIssue({ code: "custom", path: ["assignments", taskId], message: "Назначение не соответствует живой задаче или её тексту" });
+    }
+    for (const taskId of Object.keys(plan.editorial ?? {})) {
+      if (!live.has(taskId)) {
+        ctx.addIssue({ code: "custom", path: ["editorial", taskId], message: "Настройки относятся к отсутствующей задаче" });
+      }
     }
     const result = portablePlanSchema.safeParse({
       schemaVersion: plan.schemaVersion,
@@ -293,7 +300,10 @@ export const planSchema = z
           message: issue.message,
         });
   });
-export type LocalPlanContent = PortablePlan & { assignments?: LocalAssignments };
+export type LocalPlanContent = PortablePlan & {
+  assignments?: LocalAssignments;
+  editorial?: Editorial;
+};
 export type Plan = LocalPlanContent & {
   id: string;
   createdAt: string;

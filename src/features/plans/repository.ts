@@ -2,7 +2,7 @@ import { db, type Activity, type Revision } from "@/lib/db/database";
 import { bindingKey, bindingSchema, type CloudBinding } from "@/lib/ai-workspace/binding";
 import { activityChanges } from "./activity-changes";
 import { toPortable, type LocalPlanContent, type Plan, type PortablePlan } from "@/lib/schema/plan";
-import type { LocalAssignments } from "@/lib/schema/task-assignment";
+import { canonicalEditorial } from "@/features/editorial/metadata";
 import {
   assignmentEvents,
   canonicalAssignments,
@@ -33,7 +33,12 @@ function revision(plan: Plan, title: string): Revision {
     planId: plan.id,
     createdAt: now(),
     title,
-    snapshot: structuredClone({ ...plan, ...toPortable(plan), assignments: canonicalAssignments(plan) }),
+    snapshot: structuredClone({
+      ...plan,
+      ...toPortable(plan),
+      assignments: canonicalAssignments(plan),
+      editorial: canonicalEditorial(plan),
+    }),
   };
 }
 export async function saveCloudBinding(localId: string, binding: CloudBinding) {
@@ -50,10 +55,13 @@ export async function createPlan(
   data?: PortablePlan,
   type = "PLAN_CREATED",
   binding?: CloudBinding,
-  assignments?: LocalAssignments,
+  metadata?: Pick<LocalPlanContent, "assignments" | "editorial">,
 ) {
   const plan = newPlan(data ? toPortable(data) : undefined);
-  if (assignments) plan.assignments = canonicalAssignments({ ...plan, assignments });
+  if (metadata) {
+    plan.assignments = canonicalAssignments({ ...plan, ...metadata });
+    plan.editorial = canonicalEditorial({ ...plan, ...metadata });
+  }
   await db.transaction("rw", db.plans, db.activity, db.settings, async () => {
     await validateAssignmentPeople(plan.assignments);
     await db.plans.add(plan);
@@ -95,6 +103,7 @@ export async function savePlan(plan: Plan): Promise<Plan> {
       version: plan.version + 1,
       updatedAt: now(),
       assignments: canonicalAssignments({ ...plan, ...portable }),
+      editorial: canonicalEditorial({ ...plan, ...portable }),
     };
     await validateAssignmentPeople(saved.assignments);
     const events = activityChanges(toPortable(previous), portable).map(
@@ -144,6 +153,7 @@ export async function replacePlan(
       version: current.version + 1,
       updatedAt: now(),
       assignments: type === "PLAN_RESTORED" ? canonicalAssignments(data) : undefined,
+      editorial: type === "PLAN_RESTORED" ? canonicalEditorial(data) : undefined,
     };
     await validateAssignmentPeople(next.assignments);
     await db.plans.put(next);
@@ -173,6 +183,6 @@ export async function duplicatePlan(plan: Plan) {
     { ...toPortable(plan), title: plan.title + " — копия" },
     "PLAN_CREATED",
     undefined,
-    canonicalAssignments(plan),
+    { assignments: plan.assignments, editorial: plan.editorial },
   );
 }
