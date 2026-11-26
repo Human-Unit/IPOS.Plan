@@ -1,5 +1,6 @@
 import {
   taskEditorialSchema,
+  stageStatus,
   type Editorial,
   type TaskEditorial,
 } from "@/lib/schema/editorial";
@@ -20,7 +21,11 @@ export function canonicalEditorial(plan: LocalPlanContent): Editorial | undefine
   if (!plan.editorial) return undefined;
   const editorial = Object.fromEntries(liveTasks(plan).flatMap(({ task }) => {
     const details = taskEditorial(plan, task.id);
-    return meaningfulDetails(details) ? [[task.id, taskEditorialSchema.parse(details)]] : [];
+    if (!details) return [];
+    const current = details.stage && stageStatus[details.stage] !== task.status
+      ? { ...details, stage: undefined }
+      : details;
+    return meaningfulDetails(current) ? [[task.id, taskEditorialSchema.parse(current)]] : [];
   }));
   return Object.keys(editorial).length ? editorial : undefined;
 }
