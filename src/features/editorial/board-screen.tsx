@@ -15,6 +15,7 @@ import { productionStages, stageLabels, type ProductionStage } from "@/lib/schem
 import { displayDay } from "./calendar";
 import { EditorialFilters, defaultEditorialFilter, editorialMatches } from "./editorial-filters";
 import { moveTaskToStage, productionStage } from "./stages";
+import { publicationReady } from "./review";
 import { useEditorialPlans } from "./use-editorial-plans";
 
 const boardKey = (row: AssignmentRow) => taskHref(row.planId, row.task.id);
@@ -107,6 +108,7 @@ export function BoardScreen() {
         {row.editorial?.publicationDate && <small>
           Плановая публикация <time dateTime={row.editorial.publicationDate}>{displayDay(row.editorial.publicationDate)}</time>
         </small>}
+        {publicationReady(row.task, row.editorial?.review) && <small className="board-ready">Готово к публикации</small>}
         {legacyDone && <small className="board-legacy">Готово по прежнему статусу</small>}
         {stage === "assigned" && !row.personIds.length && <small className="board-legacy">Без подтверждённого участника</small>}
         {stage && plan && (

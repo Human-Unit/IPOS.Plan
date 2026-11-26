@@ -64,7 +64,7 @@ import type {
   LocalPlanContent,
 } from "@/lib/schema/plan";
 import type { TaskAssignment } from "@/lib/schema/task-assignment";
-import type { ProductionStage, TaskEditorial } from "@/lib/schema/editorial";
+import type { ProductionStage, ReviewCommand, TaskEditorial } from "@/lib/schema/editorial";
 import type { Task } from "@/lib/schema/task";
 import { uid } from "@/features/plans/repository";
 import { cn } from "@/lib/utils";
@@ -94,6 +94,7 @@ import {
 type Props = {
   plan: LocalPlanContent;
   onAssignmentChange?: (taskId: string, value: TaskAssignment | undefined, textWhenEmpty?: string) => void;
+  onReviewAction?: (taskId: string, action: ReviewCommand, feedback?: string) => Promise<void>;
   onStageChange?: (taskId: string, stage: ProductionStage) => void;
   onEditorialChange?: (taskId: string, change: Partial<TaskEditorial>) => void;
   onOpenPerson?: (id: string) => void;
@@ -159,6 +160,7 @@ export default function PlanRenderer({
   onOpenPerson,
   onEditorialChange,
   onStageChange,
+  onReviewAction,
 }: Props) {
   const { resolvedTheme } = useTheme();
   const editor = useCreateBlockNote({
@@ -409,6 +411,7 @@ export default function PlanRenderer({
     updateAssignment: onAssignmentChange,
     updateEditorial: onEditorialChange,
     updateStage: onStageChange,
+    reviewAction: onReviewAction,
     openPerson: onOpenPerson,
     selectedId,
     selectBlock,

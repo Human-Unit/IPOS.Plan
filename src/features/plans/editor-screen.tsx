@@ -40,6 +40,7 @@ import {
   type PortablePlan,
 } from "@/lib/schema/plan";
 import type { Task } from "@/lib/schema/task";
+import { applyReview } from "@/features/editorial/review";
 import { moveTaskToStage } from "@/features/editorial/stages";
 import { setTaskEditorial } from "@/features/editorial/metadata";
 import { setTaskAssignment } from "@/features/activists/task-assignments";
@@ -402,6 +403,10 @@ export function EditorScreen({ id }: { id: string }) {
           inert={busy || dialog !== undefined || shareUrl !== null}
         >
           <PlanRenderer
+            onReviewAction={async (taskId, action, feedback) => {
+              update((current) => applyReview(current, taskId, action, feedback));
+              await flush();
+            }}
             onStageChange={(taskId, stage) => update((current) => moveTaskToStage(current, taskId, stage))}
             onEditorialChange={(taskId, change) => update((current) => setTaskEditorial(current, taskId, change))}
             onAssignmentChange={(taskId, value, text) =>

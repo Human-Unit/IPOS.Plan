@@ -3,6 +3,7 @@ import { bindingKey, bindingSchema, type CloudBinding } from "@/lib/ai-workspace
 import { activityChanges } from "./activity-changes";
 import { toPortable, type LocalPlanContent, type Plan, type PortablePlan } from "@/lib/schema/plan";
 import { canonicalEditorial } from "@/features/editorial/metadata";
+import { invalidateEditedReviews, reviewEvents, withoutReviews } from "@/features/editorial/review";
 import { stageEvents } from "@/features/editorial/stages";
 import {
   assignmentEvents,
@@ -81,7 +82,11 @@ export async function createPlan(
 }
 
 async function recordLocalTaskEvents(previous: Plan, next: Plan) {
-  const changes = [...assignmentEvents(previous, next), ...stageEvents(previous, next)];
+  const changes = [
+    ...assignmentEvents(previous, next),
+    ...stageEvents(previous, next),
+    ...reviewEvents(previous, next),
+  ];
   await appendLocalTaskEvents(next.id, changes);
 }
 
@@ -107,13 +112,14 @@ export async function savePlan(plan: Plan): Promise<Plan> {
       throw new Error(
         "План изменён в другой вкладке. Экспортируйте текущую копию и перезагрузите страницу.",
       );
+    const draft = invalidateEditedReviews(previous, plan);
     const saved = {
-      ...plan,
+      ...draft,
       ...portable,
       version: plan.version + 1,
       updatedAt: now(),
       assignments: canonicalAssignments({ ...plan, ...portable }),
-      editorial: canonicalEditorial({ ...plan, ...portable }),
+      editorial: canonicalEditorial({ ...draft, ...portable }),
     };
     await validateAssignmentPeople(saved.assignments);
     const events = activityChanges(toPortable(previous), portable).map(
@@ -193,6 +199,6 @@ export async function duplicatePlan(plan: Plan) {
     { ...toPortable(plan), title: plan.title + " — копия" },
     "PLAN_CREATED",
     undefined,
-    { assignments: plan.assignments, editorial: plan.editorial },
+    { assignments: plan.assignments, editorial: withoutReviews(plan.editorial) },
   );
 }
